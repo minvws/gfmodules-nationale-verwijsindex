@@ -3,6 +3,14 @@ name: CI
 on:
     workflow_dispatch:
     pull_request:
+      paths:
+        - '.github/workflows/ci.yaml'
+        - 'app/**'
+        - 'sql/**'
+        - 'tests/**'
+        - 'Makefile'
+        - 'poetry.lock'
+        - 'pyproject.toml'
     push:
         branches:
             - main
