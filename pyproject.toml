@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "zmodules-localisation-service"
+name = "gfmodules-national-referral-index"
 version = "0.1.0"
 description = ""
 license = "EUPL-1.2"
 authors = ["Ministerie van Volksgezondheid, Welzijn en Sport"]
-repository = "https://github.com/minvws/nl-irealisatie-zmodules-localisation-register"
+repository = "https://github.com/minvws/gfmodules-national-referral-index"
 readme = "README.md"
 packages = [
     { include = "app" },

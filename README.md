@@ -1,4 +1,7 @@
-# ZModules Localisation Service
+### GFModules National Referral Index (NRI) or Nationale Verwijs Index (NVI)
+
+The National Referral Index (NRI) is responsible for the referral of the Health Data. The NRI contains a referral
+to the register that associates a Health Provider with pseudonym and data domain.
 
 
 ## First run
