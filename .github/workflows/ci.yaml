@@ -109,3 +109,25 @@ jobs:
 
             - name: Run the tests
               run: poetry run $(make test --just-print --silent)
+              
+            - name: Upload coverage report
+              uses: actions/upload-artifact@v4
+              with:
+                name: coverage
+                path: coverage.xml
+
+    sonar:
+        name: SonarCloud
+        runs-on: ubuntu-latest
+        needs: test
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                fetch-depth: 0
+            - name: Download coverage report
+              uses: actions/download-artifact@v4
+            - name: Run SonarCloud scanner
+              uses: minvws/nl-irealisatie-generic-pipelines/.github/actions/sonarcloud@main
+              with:
+                sonar-token: ${{ secrets.SONAR_TOKEN }}
