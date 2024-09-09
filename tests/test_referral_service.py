@@ -1,7 +1,5 @@
 from unittest import TestCase
 
-from pyparsing import empty
-
 from app.config import set_config
 from app.data import UraNumber, Pseudonym, DataDomain
 from app.response_models.referrals import ReferralEntry
