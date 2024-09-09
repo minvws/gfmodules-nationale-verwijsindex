@@ -1,5 +1,7 @@
 from unittest import TestCase
 
+from pyparsing import empty
+
 from app.config import set_config
 from app.data import UraNumber, Pseudonym, DataDomain
 from app.response_models.referrals import ReferralEntry
@@ -48,3 +50,37 @@ class ReferralServiceTest(TestCase):
             self.assertEqual(referral.ura_number, mock_referral.ura_number)
             self.assertEqual(referral.pseudonym, mock_referral.pseudonym)
             self.assertEqual(referral.data_domain, mock_referral.data_domain)
+
+    def test_delete_referral(self) -> None:
+        # arrange
+        mock_referral = ReferralEntry(
+            ura_number=UraNumber("12345"),
+            pseudonym=Pseudonym("6d87d96a-cb78-4f5c-823b-578095da2c4a"),
+            data_domain=DataDomain.BeeldBank
+        )
+
+        # act
+        self.referral_service.add_one_referral(
+            pseudonym=mock_referral.pseudonym,
+            data_domain=mock_referral.data_domain,
+            ura_number=mock_referral.ura_number,
+        )
+        actual_referrals = self.referral_service.get_referrals_by_domain_and_pseudonym(
+            pseudonym=mock_referral.pseudonym, data_domain=mock_referral.data_domain
+        )
+
+        # assert
+        for referral in actual_referrals:
+            self.assertEqual(referral.ura_number, mock_referral.ura_number)
+            self.assertEqual(referral.pseudonym, mock_referral.pseudonym)
+            self.assertEqual(referral.data_domain, mock_referral.data_domain)
+
+        deleted = self.referral_service.delete_one_referral(
+            pseudonym=mock_referral.pseudonym, data_domain=mock_referral.data_domain, ura_number=mock_referral.ura_number
+        )
+
+        # assert
+        assert deleted
+        assert self.referral_service.get_referrals_by_domain_and_pseudonym(
+            pseudonym=mock_referral.pseudonym, data_domain=mock_referral.data_domain
+        ) == []

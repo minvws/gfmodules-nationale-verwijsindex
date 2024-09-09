@@ -82,7 +82,7 @@ def delete_referral(
     _: UraNumber = Depends(authenticated_ura)
 ) -> Response:
     """
-    Deletes a referral by URA
+    Deletes a referral
     """
     span = trace.get_current_span()
     span.update_name(f"POST /delete  ura_number={str(req.ura_number)}")
