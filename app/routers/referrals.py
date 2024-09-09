@@ -3,6 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends
 from fastapi.exceptions import HTTPException
 from opentelemetry import trace
+from starlette.responses import Response
 
 from app import container
 from app.authentication import authenticated_ura
@@ -20,7 +21,7 @@ router = APIRouter(
 
 @router.post(
     "/info",
-    summary="Gets information about the referral by pseudonym and data domain",
+    summary="Gets information about the referrals by pseudonym and data domain",
     response_model=List[ReferralEntry],
 )
 def get_referral_info(
@@ -70,3 +71,24 @@ def create_referral(
     span.set_attribute("data.referral", str(referral))
 
     return referral
+
+@router.post(
+    "/delete",
+    summary="Deletes a referral",
+)
+def delete_referral(
+    req: CreateReferralRequest,
+    referral_service: ReferralService = Depends(container.get_referral_service),
+) -> Response:
+    """
+    Deletes a referral
+    """
+    span = trace.get_current_span()
+    span.update_name(f"POST /delete pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)}, ura_number={str(req.ura_number)}")
+
+    referral = referral_service.delete_one_referral(
+        pseudonym=req.pseudonym, data_domain=req.data_domain, ura_number=req.ura_number
+    )
+    span.set_attribute("data.referral-removed", str(referral))
+
+    return Response(status_code=204)

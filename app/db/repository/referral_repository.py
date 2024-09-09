@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from sqlalchemy import select, insert
+from sqlalchemy import select, insert, delete
 
 from app.data import UraNumber, DataDomain, Pseudonym
 from app.db.decorator import repository
@@ -26,6 +26,16 @@ class ReferralRepository(RepositoryBase):
     def add_one(self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber) -> None:
         stmt = insert(ReferralEntity).values(
             pseudonym=str(pseudonym), data_domain=str(data_domain), ura_number=str(ura_number)
+        )
+        self.db_session.execute(stmt)
+        self.db_session.commit()
+
+    def delete_one(self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber) -> None:
+        stmt = (
+            delete(ReferralEntity)
+            .where(ReferralEntity.pseudonym == str(pseudonym))
+            .where(ReferralEntity.data_domain == str(data_domain))
+            .where(ReferralEntity.ura_number == str(ura_number))
         )
         self.db_session.execute(stmt)
         self.db_session.commit()

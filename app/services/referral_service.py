@@ -37,6 +37,17 @@ class ReferralService:
             pseudonym=pseudonym,
             data_domain=data_domain,
         )
+    
+    def delete_one_referral(
+        self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber
+    ) -> True:
+        with self.database.get_db_session() as session:
+            referral_repository = session.get_repository(ReferralRepository)
+            referral_repository.delete_one(
+                pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number
+            )
+
+        return True
 
     @staticmethod
     def hydrate_referral(entity: ReferralEntity) -> ReferralEntry:
