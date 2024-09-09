@@ -26,28 +26,32 @@ class ReferralService:
     def add_one_referral(
         self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber
     ) -> ReferralEntry:
+        """
+        Method that adds a referral to the database
+        """
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)
             referral_repository.add_one(
-                pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number
-            )
+                pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number)
 
         return ReferralEntry(
             ura_number=ura_number,
             pseudonym=pseudonym,
             data_domain=data_domain,
         )
-    
+
     def delete_one_referral(
         self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber
-    ) -> True:
+    ) -> bool:
+        """
+        Method that removes a referral from the database
+        """
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)
-            referral_repository.delete_one(
-                pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number
-            )
+            return referral_repository.delete_one(pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number)
 
-        return True
+
+
 
     @staticmethod
     def hydrate_referral(entity: ReferralEntity) -> ReferralEntry:

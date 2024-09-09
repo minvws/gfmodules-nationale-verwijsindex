@@ -79,16 +79,18 @@ def create_referral(
 def delete_referral(
     req: CreateReferralRequest,
     referral_service: ReferralService = Depends(container.get_referral_service),
+    _: UraNumber = Depends(authenticated_ura)
 ) -> Response:
     """
-    Deletes a referral
+    Deletes a referral by URA
     """
     span = trace.get_current_span()
-    span.update_name(f"POST /delete pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)}, ura_number={str(req.ura_number)}")
+    span.update_name(f"POST /delete  ura_number={str(req.ura_number)}")
 
-    referral = referral_service.delete_one_referral(
-        pseudonym=req.pseudonym, data_domain=req.data_domain, ura_number=req.ura_number
-    )
+    referral = referral_service.delete_one_referral(pseudonym=req.pseudonym, data_domain=req.data_domain, ura_number=req.ura_number)
     span.set_attribute("data.referral-removed", str(referral))
 
-    return Response(status_code=204)
+    if referral:
+        return Response(status_code=204)
+    else:
+        return Response(status_code=404)
