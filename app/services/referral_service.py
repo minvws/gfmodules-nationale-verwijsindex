@@ -20,7 +20,6 @@ class ReferralService:
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)
             entities = referral_repository.find_many_referrals(pseudonym, data_domain)
-
             return [self.hydrate_referral(entity) for entity in entities]
 
     def add_one_referral(
@@ -50,7 +49,16 @@ class ReferralService:
             referral_repository = session.get_repository(ReferralRepository)
             return referral_repository.delete_one(pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number)
 
-
+    def query_referrals(
+        self, pseudonym: Pseudonym | None, data_domain: DataDomain | None, ura_number: UraNumber
+    ) -> List[ReferralEntry]:
+        """
+        Method that removes a referral from the database
+        """
+        with self.database.get_db_session() as session:
+            referral_repository = session.get_repository(ReferralRepository)
+            entities = referral_repository.query_referrals(pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number)
+            return [self.hydrate_referral(entity) for entity in entities]
 
 
     @staticmethod

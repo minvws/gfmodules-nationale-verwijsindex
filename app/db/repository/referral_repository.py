@@ -23,6 +23,19 @@ class ReferralRepository(RepositoryBase):
         )
         return self.db_session.execute(stmt).scalars().all()    # type: ignore
 
+    def query_referrals(self,
+        pseudonym: Pseudonym | None, data_domain: DataDomain | None, ura_number: UraNumber
+        ) -> Sequence[ReferralEntity]:
+        stmt = select(ReferralEntity).where(ReferralEntity.ura_number == str(ura_number))
+
+        if pseudonym is not None:
+            stmt = stmt.where(ReferralEntity.pseudonym == str(pseudonym))
+
+        if data_domain is not None:
+            stmt = stmt.where(ReferralEntity.data_domain == str(data_domain))
+
+        return self.db_session.execute(stmt).scalars().all()
+
     def add_one(self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber) -> bool:
         stmt = insert(ReferralEntity).values(
             pseudonym=str(pseudonym), data_domain=str(data_domain), ura_number=str(ura_number)
