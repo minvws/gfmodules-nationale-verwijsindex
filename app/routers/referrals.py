@@ -13,10 +13,11 @@ from app.response_models.referrals import ReferralEntry, CreateReferralRequest, 
 logger = logging.getLogger(__name__)
 router = APIRouter(
     tags=["Referral registrations"],
+    prefix="/registrations",
 )
 
 @router.post(
-    "/registrations/create",
+    "/create",
     summary="Creates a referral",
     response_model=ReferralEntry,
 )
@@ -38,7 +39,7 @@ def create_referral(
     return referral
 
 @router.post(
-    "/registrations/query",
+    "/query",
     summary="Queries referrals by pseudonym or data domain",
     response_model=List[ReferralEntry],
 )
@@ -63,7 +64,7 @@ def query_referrals(
     return referrals
 
 @router.post(
-    "/registrations/delete",
+    "/delete",
     summary="Deletes a referral",
 )
 def delete_referral(

@@ -58,8 +58,8 @@ class ReferralEntry(BaseModel):
         return str(pseudonym)
 
 class ReferralQuery(BaseModel):
-    pseudonym: Optional[Pseudonym] = None
-    data_domain: Optional[DataDomain] = None
+    pseudonym: Pseudonym | None
+    data_domain: DataDomain | None
     ura_number: UraNumber
 
     @field_validator('pseudonym', mode='before')
