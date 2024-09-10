@@ -34,7 +34,7 @@ class ReferralRepository(RepositoryBase):
         if data_domain is not None:
             stmt = stmt.where(ReferralEntity.data_domain == str(data_domain))
 
-        return self.db_session.execute(stmt).scalars().all()
+        return self.db_session.execute(stmt).scalars().all() # type: ignore
 
     def add_one(self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber) -> bool:
         stmt = insert(ReferralEntity).values(
