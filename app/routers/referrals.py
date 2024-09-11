@@ -72,6 +72,6 @@ def delete_referral(
     Deletes a referral
     """
     span = trace.get_current_span()
-    span.update_name(f"POST /delete pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)} ura_number={str(req.ura_number)}")
+    span.update_name(f"DELETE /delete pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)} ura_number={str(req.ura_number)}")
     referral_service.delete_one_referral(pseudonym=req.pseudonym, data_domain=req.data_domain, ura_number=req.ura_number)
     return Response(status_code=204)
