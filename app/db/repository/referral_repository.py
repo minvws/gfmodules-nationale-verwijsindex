@@ -11,20 +11,6 @@ from app.db.repository.respository_base import RepositoryBase
 
 @repository(ReferralEntity)
 class ReferralRepository(RepositoryBase):
-    def find_many_referrals(
-        self, pseudonym: Pseudonym, data_domain: DataDomain
-    ) -> Sequence[ReferralEntity]:
-        try:
-            stmt = (
-                select(ReferralEntity)
-                .where(ReferralEntity.pseudonym == str(pseudonym))
-                .where(ReferralEntity.data_domain == str(data_domain))
-            )
-            referrals: Sequence[ReferralEntity] = self.db_session.execute(stmt).scalars().all()
-            return referrals
-        except (SQLAlchemyError, TypeError, ValueError) as exc:
-            raise exc
-
     def find_one(
         self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber
     ) -> ReferralEntity:
@@ -40,10 +26,13 @@ class ReferralRepository(RepositoryBase):
             raise exc
 
     def query_referrals(self,
-        pseudonym: Pseudonym | None, data_domain: DataDomain | None, ura_number: UraNumber
+        pseudonym: Pseudonym | None, data_domain: DataDomain | None, ura_number: UraNumber | None
         ) -> Sequence[ReferralEntity]:
         try:
-            stmt = select(ReferralEntity).where(ReferralEntity.ura_number == str(ura_number))
+            stmt = select(ReferralEntity)
+
+            if ura_number is not None:
+                stmt = stmt.where(ReferralEntity.ura_number == str(ura_number))
 
             if pseudonym is not None:
                 stmt = stmt.where(ReferralEntity.pseudonym == str(pseudonym))

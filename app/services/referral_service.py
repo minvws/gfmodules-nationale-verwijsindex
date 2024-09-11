@@ -20,7 +20,7 @@ class ReferralService:
         """
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)
-            entities = referral_repository.find_many_referrals(pseudonym=pseudonym, data_domain=data_domain)
+            entities = referral_repository.query_referrals(pseudonym=pseudonym,data_domain=data_domain, ura_number=None)
             if not entities:
                 raise HTTPException(status_code=404)
             return [self.hydrate_referral(entity) for entity in entities]

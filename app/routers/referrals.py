@@ -66,7 +66,7 @@ def query_referrals(
 def delete_referral(
     req: DeleteReferralRequest,
     referral_service: ReferralService = Depends(container.get_referral_service),
-    # _: UraNumber = Depends(authenticated_ura)
+    _: UraNumber = Depends(authenticated_ura)
 ) -> Response:
     """
     Deletes a referral
