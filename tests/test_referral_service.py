@@ -26,6 +26,36 @@ class ReferralServiceTest(TestCase):
 
         self.assertEqual(db_connection_valid, True)
 
+    def test_add_referral(self) -> None:
+        mock_referral = ReferralEntry(
+            ura_number=UraNumber("12345"),
+            pseudonym=Pseudonym("6d87d96a-cb78-4f5c-823b-578095da2c4a"),
+            data_domain=DataDomain.BeeldBank
+        )
+
+        self.referral_service.add_one_referral(
+            pseudonym=mock_referral.pseudonym,
+            data_domain=mock_referral.data_domain,
+            ura_number=mock_referral.ura_number,
+        )
+
+    def test_add_referral_duplicate(self) -> None:
+        mock_referral = ReferralEntry(
+            ura_number=UraNumber("12345"),
+            pseudonym=Pseudonym("6d87d96a-cb78-4f5c-823b-578095da2c4a"),
+            data_domain=DataDomain.BeeldBank
+        )
+
+        with self.assertRaises(HTTPException) as context:
+            for i in range(2):
+                self.referral_service.add_one_referral(
+                    pseudonym=mock_referral.pseudonym,
+                    data_domain=mock_referral.data_domain,
+                    ura_number=mock_referral.ura_number,
+                )
+        self.assertEqual(context.exception.status_code, 409)
+
+
     def test_get_referral_by_domain_and_name(self) -> None:
         mock_referral = ReferralEntry(
             ura_number=UraNumber("12345"),

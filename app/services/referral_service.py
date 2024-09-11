@@ -38,7 +38,9 @@ class ReferralService:
                 data_domain=str(data_domain),
                 ura_number=str(ura_number),
             )
-            return self.hydrate_referral(referral_repository.add_one(referral_entity))
+            if referral_repository.find_one(pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number) is None:
+                return self.hydrate_referral(referral_repository.add_one(referral_entity))
+            raise HTTPException(status_code=409)
 
     def delete_one_referral(
         self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber
