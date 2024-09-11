@@ -33,12 +33,12 @@ class ReferralService:
         """
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)
-            referral_entity = ReferralEntity(
-                pseudonym=str(pseudonym),
-                data_domain=str(data_domain),
-                ura_number=str(ura_number),
-            )
             if referral_repository.find_one(pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number) is None:
+                referral_entity = ReferralEntity(
+                    pseudonym=str(pseudonym),
+                    data_domain=str(data_domain),
+                    ura_number=str(ura_number),
+                )
                 return self.hydrate_referral(referral_repository.add_one(referral_entity))
             raise HTTPException(status_code=409)
 
