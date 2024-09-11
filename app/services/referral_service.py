@@ -1,5 +1,6 @@
 from typing import List
 
+from fastapi.exceptions import HTTPException
 from app.data import Pseudonym, DataDomain, UraNumber
 from app.db.db import Database
 from app.db.models.referral import ReferralEntity
@@ -19,7 +20,9 @@ class ReferralService:
         """
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)
-            entities = referral_repository.find_many_referrals(pseudonym, data_domain)
+            entities = referral_repository.find_many_referrals(pseudonym=pseudonym, data_domain=data_domain)
+            if not entities:
+                raise HTTPException(status_code=404)
             return [self.hydrate_referral(entity) for entity in entities]
 
     def add_one_referral(
@@ -30,24 +33,27 @@ class ReferralService:
         """
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)
-            referral_repository.add_one(
-                pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number)
-
-        return ReferralEntry(
-            ura_number=ura_number,
-            pseudonym=pseudonym,
-            data_domain=data_domain,
-        )
+            referral_entity = ReferralEntity(
+                pseudonym=str(pseudonym),
+                data_domain=str(data_domain),
+                ura_number=str(ura_number),
+            )
+            return self.hydrate_referral(referral_repository.add_one(referral_entity))
 
     def delete_one_referral(
         self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber
-    ) -> bool:
+    ) -> None:
         """
         Method that removes a referral from the database
         """
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)
-            return referral_repository.delete_one(pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number)
+            referral = referral_repository.find_one_referral(pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number)
+            if referral is None:
+                raise HTTPException(status_code=404)
+
+            return referral_repository.delete_one(referral)
+
 
     def query_referrals(
         self, pseudonym: Pseudonym | None, data_domain: DataDomain | None, ura_number: UraNumber
@@ -58,6 +64,8 @@ class ReferralService:
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)
             entities = referral_repository.query_referrals(pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number)
+            if not entities:
+                raise HTTPException(status_code=404)
             return [self.hydrate_referral(entity) for entity in entities]
 
 

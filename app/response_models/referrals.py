@@ -19,7 +19,7 @@ class ReferralRequest(BaseModel):
         return DataDomain(val)
 
 
-class CreateReferralRequest(BaseModel):
+class CreateDeleteReferralRequest(BaseModel):
     pseudonym: Pseudonym
     data_domain: DataDomain
     ura_number: UraNumber

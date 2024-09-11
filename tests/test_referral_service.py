@@ -1,6 +1,8 @@
 from unittest import TestCase
 from uuid import uuid4
 
+from fastapi import HTTPException
+
 from app.config import set_config
 from app.data import UraNumber, Pseudonym, DataDomain
 from app.response_models.referrals import ReferralEntry
@@ -45,6 +47,13 @@ class ReferralServiceTest(TestCase):
             self.assertEqual(referral.pseudonym, mock_referral.pseudonym)
             self.assertEqual(referral.data_domain, mock_referral.data_domain)
 
+    def test_get_referral_not_found(self) -> None:
+        with self.assertRaises(HTTPException) as context:
+            self.referral_service.get_referrals_by_domain_and_pseudonym(
+                pseudonym=Pseudonym(str(uuid4())), data_domain=DataDomain.BeeldBank
+            )
+        self.assertEqual(context.exception.status_code, 404)
+
     def test_delete_referral(self) -> None:
         mock_referral = ReferralEntry(
             ura_number=UraNumber("12345"),
@@ -66,16 +75,26 @@ class ReferralServiceTest(TestCase):
             self.assertEqual(referral.pseudonym, mock_referral.pseudonym)
             self.assertEqual(referral.data_domain, mock_referral.data_domain)
 
-        deleted = self.referral_service.delete_one_referral(
+        self.referral_service.delete_one_referral(
             pseudonym=mock_referral.pseudonym, data_domain=mock_referral.data_domain, ura_number=mock_referral.ura_number
         )
 
-        assert deleted
-        assert self.referral_service.get_referrals_by_domain_and_pseudonym(
-            pseudonym=mock_referral.pseudonym, data_domain=mock_referral.data_domain
-        ) == []
+        with self.assertRaises(HTTPException) as context:
+            self.referral_service.get_referrals_by_domain_and_pseudonym(
+                pseudonym=mock_referral.pseudonym, data_domain=mock_referral.data_domain
+            )
+        self.assertEqual(context.exception.status_code, 404)
 
-    def test_query_referral(self) -> None:
+    def test_delete_referral_not_found(self) -> None:
+        with self.assertRaises(HTTPException) as context:
+            self.referral_service.delete_one_referral(
+                pseudonym=Pseudonym(str(uuid4())),
+                data_domain=DataDomain.BeeldBank,
+                ura_number=UraNumber("99999")
+            )
+        self.assertEqual(context.exception.status_code, 404)
+
+    def test_query_referral_single_item(self) -> None:
         mock_referral = ReferralEntry(
             ura_number=UraNumber("12345"),
             pseudonym=Pseudonym("6d87d96a-cb78-4f5c-823b-578095da2c4a"),
@@ -96,40 +115,18 @@ class ReferralServiceTest(TestCase):
             self.assertEqual(referral.pseudonym, mock_referral.pseudonym)
             self.assertEqual(referral.data_domain, mock_referral.data_domain)
 
-        actual_referrals = self.referral_service.query_referrals(
-            pseudonym=None, ura_number=mock_referral.ura_number, data_domain=mock_referral.data_domain
+    def test_query_referral_two_items(self) -> None:
+        mock_referral = ReferralEntry(
+            ura_number=UraNumber("12345"),
+            pseudonym=Pseudonym("6d87d96a-cb78-4f5c-823b-578095da2c4a"),
+            data_domain=DataDomain.BeeldBank
         )
 
-        for referral in actual_referrals:
-            self.assertEqual(referral.ura_number, mock_referral.ura_number)
-            self.assertEqual(referral.pseudonym, mock_referral.pseudonym)
-            self.assertEqual(referral.data_domain, mock_referral.data_domain)
-
-        actual_referrals = self.referral_service.query_referrals(
-            pseudonym=None, ura_number=mock_referral.ura_number, data_domain=None
+        self.referral_service.add_one_referral(
+            pseudonym=mock_referral.pseudonym,
+            data_domain=mock_referral.data_domain,
+            ura_number=mock_referral.ura_number,
         )
-
-        for referral in actual_referrals:
-            self.assertEqual(referral.ura_number, mock_referral.ura_number)
-            self.assertEqual(referral.pseudonym, mock_referral.pseudonym)
-            self.assertEqual(referral.data_domain, mock_referral.data_domain)
-
-        actual_referrals = self.referral_service.query_referrals(
-            pseudonym=Pseudonym(str(uuid4())), ura_number=mock_referral.ura_number, data_domain=None
-        )
-
-        assert len(actual_referrals) == 0
-
-        for referral in actual_referrals:
-            self.assertEqual(referral.ura_number, mock_referral.ura_number)
-            self.assertEqual(referral.pseudonym, mock_referral.pseudonym)
-            self.assertEqual(referral.data_domain, mock_referral.data_domain)
-
-        actual_referrals = self.referral_service.query_referrals(
-            pseudonym=None, ura_number=mock_referral.ura_number, data_domain=DataDomain.Medicatie
-        )
-
-        assert len(actual_referrals) == 0
 
         mock_referral_2 = ReferralEntry(
             ura_number=mock_referral.ura_number,
@@ -147,4 +144,17 @@ class ReferralServiceTest(TestCase):
             pseudonym=None, ura_number=mock_referral.ura_number, data_domain=None
         )
 
-        assert len(actual_referrals) == 2
+        self.assertEqual(len(actual_referrals), 2)
+
+    def test_query_referral_not_found(self) -> None:
+        with self.assertRaises(HTTPException) as context:
+            _ = self.referral_service.query_referrals(
+                pseudonym=Pseudonym(str(uuid4())), ura_number=UraNumber("99999"), data_domain=None
+            )
+        self.assertEqual(context.exception.status_code, 404)
+
+        with self.assertRaises(HTTPException) as context:
+            _ = self.referral_service.query_referrals(
+                pseudonym=None, ura_number=UraNumber("99999"), data_domain=DataDomain.Medicatie
+            )
+        self.assertEqual(context.exception.status_code, 404)

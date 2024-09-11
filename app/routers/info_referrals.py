@@ -1,7 +1,6 @@
 import logging
 from typing import List
 from fastapi import APIRouter, Depends
-from fastapi.exceptions import HTTPException
 from opentelemetry import trace
 
 from app import container
@@ -40,10 +39,6 @@ def get_referral_info(
         pseudonym=localisation_pseudonym, data_domain=req.data_domain
     )
     span.set_attribute("data.referrals_found", len(referrals))
-
-    if len(referrals) == 0:
-        raise HTTPException(status_code=404, detail="No referrals found")
-
     span.set_attribute("data.referrals", str(referrals))
 
     return referrals
