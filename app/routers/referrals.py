@@ -8,7 +8,7 @@ from app import container
 from app.authentication import authenticated_ura
 from app.data import UraNumber
 from app.services.referral_service import ReferralService
-from app.response_models.referrals import ReferralEntry, CreateDeleteReferralRequest, ReferralQuery
+from app.response_models.referrals import ReferralEntry, CreateReferralRequest, ReferralQuery, DeleteReferralRequest
 
 logger = logging.getLogger(__name__)
 router = APIRouter(
@@ -17,12 +17,12 @@ router = APIRouter(
 )
 
 @router.post(
-    "/create",
+    "/",
     summary="Creates a referral",
     response_model=ReferralEntry,
 )
 def create_referral(
-    req: CreateDeleteReferralRequest,
+    req: CreateReferralRequest,
     referral_service: ReferralService = Depends(container.get_referral_service),
     _: UraNumber = Depends(authenticated_ura)
 ) -> ReferralEntry:
@@ -30,7 +30,7 @@ def create_referral(
     Creates a referral
     """
     span = trace.get_current_span()
-    span.update_name(f"POST /create pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)}, ura_number={str(req.ura_number)}")
+    span.update_name(f"POST {router.prefix}/ pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)}, ura_number={str(req.ura_number)}")
 
     referral = referral_service.add_one_referral(pseudonym=req.pseudonym, data_domain=req.data_domain, ura_number=req.ura_number)
     span.set_attribute("data.referral", str(referral))
@@ -51,7 +51,7 @@ def query_referrals(
     Queries referrals by optional pseudonym or optional data domain
     """
     span = trace.get_current_span()
-    span.update_name(f"POST /query pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)} ura_number={str(req.ura_number)}")
+    span.update_name(f"POST {router.prefix}/query pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)} ura_number={str(req.ura_number)}")
 
     referrals = referral_service.query_referrals(pseudonym=req.pseudonym, data_domain=req.data_domain, ura_number=req.ura_number)
     span.set_attribute("data.referrals_found", len(referrals))
@@ -60,18 +60,18 @@ def query_referrals(
     return referrals
 
 @router.delete(
-    "/delete",
+    "/",
     summary="Deletes a referral",
 )
 def delete_referral(
-    req: CreateDeleteReferralRequest,
+    req: DeleteReferralRequest,
     referral_service: ReferralService = Depends(container.get_referral_service),
-    _: UraNumber = Depends(authenticated_ura)
+    # _: UraNumber = Depends(authenticated_ura)
 ) -> Response:
     """
     Deletes a referral
     """
     span = trace.get_current_span()
-    span.update_name(f"DELETE /delete pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)} ura_number={str(req.ura_number)}")
+    span.update_name(f"DELETE {router.prefix}/ pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)} ura_number={str(req.ura_number)}")
     referral_service.delete_one_referral(pseudonym=req.pseudonym, data_domain=req.data_domain, ura_number=req.ura_number)
     return Response(status_code=204)

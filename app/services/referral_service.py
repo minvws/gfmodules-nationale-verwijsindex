@@ -48,7 +48,7 @@ class ReferralService:
         """
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)
-            referral = referral_repository.find_one_referral(pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number)
+            referral = referral_repository.find_one(pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number)
             if referral is None:
                 raise HTTPException(status_code=404)
 

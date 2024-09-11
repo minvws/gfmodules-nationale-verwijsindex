@@ -20,13 +20,12 @@ class ReferralRepository(RepositoryBase):
                 .where(ReferralEntity.pseudonym == str(pseudonym))
                 .where(ReferralEntity.data_domain == str(data_domain))
             )
-            result = self.db_session.execute(stmt)
-            referrals: Sequence[ReferralEntity] = result.scalars().all()
+            referrals: Sequence[ReferralEntity] = self.db_session.execute(stmt).scalars().all()
             return referrals
         except (SQLAlchemyError, TypeError, ValueError) as exc:
             raise exc
 
-    def find_one_referral(
+    def find_one(
         self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber
     ) -> ReferralEntity:
         try:
@@ -52,8 +51,7 @@ class ReferralRepository(RepositoryBase):
             if data_domain is not None:
                 stmt = stmt.where(ReferralEntity.data_domain == str(data_domain))
 
-            result = self.db_session.execute(stmt)
-            referrals: Sequence[ReferralEntity] = result.scalars().all()
+            referrals: Sequence[ReferralEntity] = self.db_session.execute(stmt).scalars().all()
             return referrals
 
         except (SQLAlchemyError, TypeError, ValueError) as exc:

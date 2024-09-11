@@ -19,7 +19,7 @@ class ReferralRequest(BaseModel):
         return DataDomain(val)
 
 
-class CreateDeleteReferralRequest(BaseModel):
+class CreateReferralRequest(BaseModel):
     pseudonym: Pseudonym
     data_domain: DataDomain
     ura_number: UraNumber
@@ -39,11 +39,14 @@ class CreateDeleteReferralRequest(BaseModel):
     def serialize_ura(cls, val: str) -> UraNumber:
         return UraNumber(val)
 
+class DeleteReferralRequest(CreateReferralRequest):
+    pass
+
 
 class ReferralEntry(BaseModel):
-    ura_number: UraNumber
     pseudonym: Pseudonym
     data_domain: DataDomain
+    ura_number: UraNumber
 
     @field_serializer('ura_number')
     def serialize_pi(self, ura_number: UraNumber) -> str:
