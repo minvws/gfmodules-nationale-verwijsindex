@@ -20,7 +20,6 @@ services:
     depends_on:
       localisation_db:
         condition: service_healthy
-        restart: true
     networks:
       zmodules:
         aliases:
