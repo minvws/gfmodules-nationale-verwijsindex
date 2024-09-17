@@ -58,6 +58,7 @@ def query_referrals(
     """
     span = trace.get_current_span()
     span.update_name(f"POST {router.prefix}/query pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)} ura_number={str(req.ura_number)}")
+    localisation_pseudonym = None
     if req.pseudonym is not None: 
         localisation_pseudonym = pseudonym_service.exchange(req.pseudonym, get_config().app.provider_id)
     referrals = referral_service.query_referrals(pseudonym=localisation_pseudonym, data_domain=req.data_domain, ura_number=req.ura_number)

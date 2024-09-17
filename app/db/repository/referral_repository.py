@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
@@ -13,38 +13,30 @@ from app.db.repository.respository_base import RepositoryBase
 class ReferralRepository(RepositoryBase):
     def find_one(
         self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber
-    ) -> ReferralEntity:
-        try:
-            stmt = select(ReferralEntity).where(
-                ReferralEntity.ura_number == str(ura_number),
-                ReferralEntity.data_domain == str(data_domain),
-                ReferralEntity.pseudonym == str(pseudonym),
-            )
-            result: ReferralEntity = self.db_session.execute(stmt).scalars().first()
-            return result
-        except (SQLAlchemyError, TypeError, ValueError) as exc:
-            raise exc
+    ) -> Any:
+        stmt = select(ReferralEntity).where(
+            ReferralEntity.ura_number == str(ura_number),
+            ReferralEntity.data_domain == str(data_domain),
+            ReferralEntity.pseudonym == str(pseudonym),
+        )
+        return self.db_session.execute(stmt).scalars().first()
 
     def query_referrals(self,
         pseudonym: Pseudonym | None, data_domain: DataDomain | None, ura_number: UraNumber | None
-        ) -> Sequence[ReferralEntity]:
-        try:
-            stmt = select(ReferralEntity)
+        ) -> Any:
+        stmt = select(ReferralEntity)
 
-            if ura_number is not None:
-                stmt = stmt.where(ReferralEntity.ura_number == str(ura_number))
+        if ura_number is not None:
+            stmt = stmt.where(ReferralEntity.ura_number == str(ura_number))
 
-            if pseudonym is not None:
-                stmt = stmt.where(ReferralEntity.pseudonym == str(pseudonym))
+        if pseudonym is not None:
+            stmt = stmt.where(ReferralEntity.pseudonym == str(pseudonym))
 
-            if data_domain is not None:
-                stmt = stmt.where(ReferralEntity.data_domain == str(data_domain))
+        if data_domain is not None:
+            stmt = stmt.where(ReferralEntity.data_domain == str(data_domain))
 
-            referrals: Sequence[ReferralEntity] = self.db_session.execute(stmt).scalars().all()
-            return referrals
+        return self.db_session.execute(stmt).scalars().all()
 
-        except (SQLAlchemyError, TypeError, ValueError) as exc:
-            raise exc
 
     def add_one(self, referral_entity: ReferralEntity) -> ReferralEntity:
         try:
