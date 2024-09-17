@@ -76,9 +76,7 @@ class ReferralQuery(BaseModel):
     @field_validator('data_domain', mode='before')
     @classmethod
     def serialize_dd(cls, val: Optional[str]) -> Optional[DataDomain]:
-        if val is None:
-            return None
-        return DataDomain(val)
+        return None if val is None else DataDomain(val)
 
     @field_validator('ura_number', mode='before')
     @classmethod
