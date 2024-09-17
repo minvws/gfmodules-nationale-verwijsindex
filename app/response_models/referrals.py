@@ -69,9 +69,7 @@ class ReferralQuery(BaseModel):
     @field_validator('pseudonym', mode='before')
     @classmethod
     def serialize_pseudo(cls, val: Optional[str]) -> Optional[Pseudonym]:
-        if val is None:
-            return None
-        return Pseudonym(val)
+        return None if val is None else Pseudonym(val) 
 
     @field_validator('data_domain', mode='before')
     @classmethod
