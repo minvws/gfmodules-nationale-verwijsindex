@@ -7,7 +7,9 @@ from starlette.responses import Response
 from app import container
 from app.authentication import authenticated_ura
 from app.data import UraNumber
+from app.config import get_config
 from app.services.referral_service import ReferralService
+from app.services.pseudonym_service import PseudonymService
 from app.response_models.referrals import ReferralEntry, CreateReferralRequest, ReferralQuery, DeleteReferralRequest
 
 logger = logging.getLogger(__name__)
@@ -24,6 +26,7 @@ router = APIRouter(
 def create_referral(
     req: CreateReferralRequest,
     referral_service: ReferralService = Depends(container.get_referral_service),
+    pseudonym_service: PseudonymService = Depends(container.get_pseudonym_service),
     _: UraNumber = Depends(authenticated_ura)
 ) -> ReferralEntry:
     """
@@ -31,9 +34,9 @@ def create_referral(
     """
     span = trace.get_current_span()
     span.update_name(f"POST {router.prefix}/ pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)}, ura_number={str(req.ura_number)}")
-
+    localisation_pseudonym = pseudonym_service.exchange(req.pseudonym, get_config().app.provider_id)
     referral: ReferralEntry = referral_service.add_one_referral(
-        pseudonym=req.pseudonym, data_domain=req.data_domain, ura_number=req.ura_number, uzi_number=req.requesting_uzi_number
+        pseudonym=localisation_pseudonym, data_domain=req.data_domain, ura_number=req.ura_number, uzi_number=req.requesting_uzi_number
     )
     span.set_attribute("data.referral", str(referral))
 
@@ -47,6 +50,7 @@ def create_referral(
 def query_referrals(
     req: ReferralQuery,
     referral_service: ReferralService = Depends(container.get_referral_service),
+    pseudonym_service: PseudonymService = Depends(container.get_pseudonym_service),
     _: UraNumber = Depends(authenticated_ura)
 ) -> List[ReferralEntry]:
     """
@@ -54,8 +58,8 @@ def query_referrals(
     """
     span = trace.get_current_span()
     span.update_name(f"POST {router.prefix}/query pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)} ura_number={str(req.ura_number)}")
-
-    referrals = referral_service.query_referrals(pseudonym=req.pseudonym, data_domain=req.data_domain, ura_number=req.ura_number)
+    if req.pseudonym is not None: localisation_pseudonym = pseudonym_service.exchange(req.pseudonym, get_config().app.provider_id)
+    referrals = referral_service.query_referrals(pseudonym=localisation_pseudonym, data_domain=req.data_domain, ura_number=req.ura_number)
     span.set_attribute("data.referrals_found", len(referrals))
     span.set_attribute("data.referrals", str(referrals))
 
@@ -68,6 +72,7 @@ def query_referrals(
 def delete_referral(
     req: DeleteReferralRequest,
     referral_service: ReferralService = Depends(container.get_referral_service),
+    pseudonym_service: PseudonymService = Depends(container.get_pseudonym_service),
     _: UraNumber = Depends(authenticated_ura)
 ) -> Response:
     """
@@ -75,5 +80,6 @@ def delete_referral(
     """
     span = trace.get_current_span()
     span.update_name(f"DELETE {router.prefix}/ pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)} ura_number={str(req.ura_number)}")
-    referral_service.delete_one_referral(pseudonym=req.pseudonym, data_domain=req.data_domain, ura_number=req.ura_number)
+    localisation_pseudonym = pseudonym_service.exchange(req.pseudonym, get_config().app.provider_id)
+    referral_service.delete_one_referral(pseudonym=localisation_pseudonym, data_domain=req.data_domain, ura_number=req.ura_number)
     return Response(status_code=204)
