@@ -1,4 +1,4 @@
-from typing import Any
+from typing import List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
@@ -13,17 +13,22 @@ from app.db.repository.respository_base import RepositoryBase
 class ReferralRepository(RepositoryBase):
     def find_one(
         self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber
-    ) -> Any:
+    ) -> Optional[ReferralEntity]:
         stmt = select(ReferralEntity).where(
             ReferralEntity.ura_number == str(ura_number),
             ReferralEntity.data_domain == str(data_domain),
             ReferralEntity.pseudonym == str(pseudonym),
         )
-        return self.db_session.execute(stmt).scalars().first()
+        result = self.db_session.execute(stmt).scalars().first()
+        if result is None:
+            return None
+        if isinstance(result, ReferralEntity):
+            return result
+        raise TypeError("Result not of type ReferralEntity")
 
     def query_referrals(self,
         pseudonym: Pseudonym | None, data_domain: DataDomain | None, ura_number: UraNumber | None
-        ) -> Any:
+        ) -> List[ReferralEntity]:
         stmt = select(ReferralEntity)
 
         if ura_number is not None:
@@ -35,8 +40,10 @@ class ReferralRepository(RepositoryBase):
         if data_domain is not None:
             stmt = stmt.where(ReferralEntity.data_domain == str(data_domain))
 
-        return self.db_session.execute(stmt).scalars().all()
-
+        result = self.db_session.execute(stmt).scalars().all()
+        if isinstance(result, List):
+            return result
+        raise TypeError("Result not of type ReferralEntity")
 
     def add_one(self, referral_entity: ReferralEntity) -> ReferralEntity:
         try:
