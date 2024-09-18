@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
@@ -13,7 +13,7 @@ from app.db.repository.respository_base import RepositoryBase
 class ReferralRepository(RepositoryBase):
     def find_one(
         self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber
-    ) -> Optional[ReferralEntity]:
+    ) -> ReferralEntity | None:
         stmt = select(ReferralEntity).where(
             ReferralEntity.ura_number == str(ura_number),
             ReferralEntity.data_domain == str(data_domain),
