@@ -3,14 +3,6 @@
 The National Referral Index (NRI) is responsible for the referral of the Health Data. The NRI contains a referral
 to the register that associates a Health Provider with pseudonym and data domain.
 
-```mermaid
-graph TD;
-    A-->B;
-    A-->C;
-    B-->D;
-    C-->D;
-```
-
 ## Usage
 
 The application is a FastAPI application, so you can use the FastAPI documentation to see how to use the application.

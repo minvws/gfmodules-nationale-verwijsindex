@@ -2,6 +2,14 @@
 
 ## Disclaimer
 
+```mermaid
+graph TD;
+    A-->B;
+    A-->C;
+    B-->D;
+    C-->D;
+```
+
 The GFModules project is currently under development. The information in this interface description is
 subject to change.
 
