@@ -6,14 +6,12 @@ license = "EUPL-1.2"
 authors = ["Ministerie van Volksgezondheid, Welzijn en Sport"]
 repository = "https://github.com/minvws/gfmodules-national-referral-index"
 readme = "README.md"
-packages = [
-    { include = "app" },
-]
+packages = [{ include = "app" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
 uvicorn = "0.31.1"
-fastapi = "^0.109.1"
+fastapi = "^0.115"
 mypy = "^1.8.0"
 pydantic-settings = "^2.1.0"
 inject = "^5.2.0"
@@ -27,7 +25,7 @@ opentelemetry-instrumentation-fastapi = "^0.45b0"
 opentelemetry-instrumentation-requests = "^0.45b0"
 requests = "^2.32.0"
 statsd = "^4.0.1"
-puzi = {git = "https://github.com/minvws/puzi-python" }
+puzi = { git = "https://github.com/minvws/puzi-python" }
 click = "^8.1.7"
 
 [tool.poetry.group.dev.dependencies]
@@ -45,11 +43,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 cache-dir = "~/.cache/ruff"
-include = [
-    "pyproject.toml",
-    "app/*.py",
-    "tests/*.py",
-]
+include = ["pyproject.toml", "app/*.py", "tests/*.py"]
 
 [tool.mypy]
 files = "app,tests"
@@ -66,6 +60,4 @@ disallow_untyped_defs = false
 
 [tool.pytest.ini_options]
 cache_dir = "~/.cache/pytest"
-testpaths = [
-    "tests",
-]
+testpaths = ["tests"]
