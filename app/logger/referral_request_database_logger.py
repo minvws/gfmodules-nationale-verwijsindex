@@ -4,7 +4,7 @@ from app.db.repository.referral_request_logging_repository import (
 from app.db.session import DbSession
 from app.referral_request_payload import ReferralLoggingPayload
 
-from .referral_request_logger import ReferralRequestLogger
+from app.referral_request_logger import ReferralRequestLogger
 
 
 class ReferralRequestDatabaseLogger(ReferralRequestLogger):
