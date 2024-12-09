@@ -94,9 +94,7 @@ def query_referrals(
     return referrals
 
 
-@router.delete(
-    "/", summary="Deletes a referral", status_code=status.HTTP_204_NO_CONTENT
-)
+@router.delete("/", summary="Deletes a referral", status_code=status.HTTP_204_NO_CONTENT)
 def delete_referral(
     request: Request,
     req: DeleteReferralRequest,

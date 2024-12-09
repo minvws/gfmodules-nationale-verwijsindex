@@ -57,9 +57,7 @@ class ReferralService:
             audit_logger.log(logging_payload)
 
             if (
-                referral_repository.find_one(
-                    pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number
-                )
+                referral_repository.find_one(pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number)
                 is None
             ):
                 referral_entity = ReferralEntity(
@@ -67,9 +65,7 @@ class ReferralService:
                     data_domain=str(data_domain),
                     ura_number=str(ura_number),
                 )
-                return self.hydrate_referral(
-                    referral_repository.add_one(referral_entity)
-                )
+                return self.hydrate_referral(referral_repository.add_one(referral_entity))
             raise HTTPException(status_code=409)
 
     def delete_one_referral(
@@ -96,9 +92,7 @@ class ReferralService:
             audit_logger.log(logging_payload)
 
             referral_repository = session.get_repository(ReferralRepository)
-            referral = referral_repository.find_one(
-                pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number
-            )
+            referral = referral_repository.find_one(pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number)
             if referral is None:
                 raise HTTPException(status_code=404)
 

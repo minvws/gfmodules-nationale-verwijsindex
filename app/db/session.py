@@ -66,9 +66,7 @@ class DbSession:
         """
         self.session.close()
 
-    def get_repository(
-        self, repository_class: Type[TRepositoryBase]
-    ) -> TRepositoryBase:
+    def get_repository(self, repository_class: Type[TRepositoryBase]) -> TRepositoryBase:
         """
         Returns an instantiated repository for the given model class
         """

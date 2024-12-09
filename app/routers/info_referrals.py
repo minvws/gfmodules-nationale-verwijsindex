@@ -31,9 +31,7 @@ def get_referral_info(
     Searches for referrals by pseudonym and data domain
     """
     span = trace.get_current_span()
-    span.update_name(
-        f"POST /info pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)}"
-    )
+    span.update_name(f"POST /info pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)}")
 
     localisation_pseudonym = pseudonym_service.exchange(req.pseudonym)
     referrals = referral_service.get_referrals_by_domain_and_pseudonym(

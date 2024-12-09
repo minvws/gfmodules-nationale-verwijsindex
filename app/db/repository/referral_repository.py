@@ -11,9 +11,7 @@ from app.db.repository.respository_base import RepositoryBase
 
 @repository(ReferralEntity)
 class ReferralRepository(RepositoryBase):
-    def find_one(
-        self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber
-    ) -> ReferralEntity | None:
+    def find_one(self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber) -> ReferralEntity | None:
         stmt = select(ReferralEntity).where(
             ReferralEntity.ura_number == str(ura_number),
             ReferralEntity.data_domain == str(data_domain),

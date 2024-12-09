@@ -12,4 +12,6 @@ class ReferralEntity(Base):
     data_domain: Mapped[str] = mapped_column("data_domain", String, primary_key=True)
 
     def __repr__(self) -> str:
-        return f"<ReferralEntity(ura_number={self.ura_number}, pseudonym={self.pseudonym}, data_domain={self.pseudonym})"
+        return (
+            f"<ReferralEntity(ura_number={self.ura_number}, pseudonym={self.pseudonym}, data_domain={self.pseudonym})"
+        )
