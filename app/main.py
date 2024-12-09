@@ -1,12 +1,13 @@
 from typing import Any
+
 import uvicorn
+
 from app.config import (
     DEFAULT_CONFIG_INI_FILE,
     ConfigUvicorn,
     load_default_uvicorn_config,
 )
 from app.logger.utils import get_uvicorn_logger
-
 
 logger = get_uvicorn_logger()
 

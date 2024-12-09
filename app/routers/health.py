@@ -3,8 +3,10 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 
-from app import container  # noqa: F401
-from app import dependencies
+from app import (
+    container,  # noqa: F401
+    dependencies,
+)
 from app.db.db import Database
 
 logger = logging.getLogger(__name__)

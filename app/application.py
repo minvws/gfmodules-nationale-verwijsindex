@@ -1,14 +1,15 @@
 import logging
+
 from fastapi import FastAPI
 
 from app import container
 from app.config import Config, load_default_config
-from app.stats import StatsdMiddleware, setup_stats
-from app.telemetry import setup_telemetry
 from app.routers.default import router as default_router
 from app.routers.health import router as health_router
-from app.routers.referrals import router as referral_router
 from app.routers.info_referrals import router as info_referral_router
+from app.routers.referrals import router as referral_router
+from app.stats import StatsdMiddleware, setup_stats
+from app.telemetry import setup_telemetry
 
 
 def create_fastapi_app(config: Config | None = None) -> FastAPI:

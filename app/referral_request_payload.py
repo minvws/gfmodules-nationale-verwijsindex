@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Any
+
 from app.data import UraNumber
 from app.referral_request_type import ReferralRequestType
 

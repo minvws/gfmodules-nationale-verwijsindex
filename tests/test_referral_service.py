@@ -3,10 +3,10 @@ from uuid import uuid4
 
 from fastapi import HTTPException
 
-from app.data import UraNumber, Pseudonym, DataDomain
+from app.data import DataDomain, Pseudonym, UraNumber
+from app.db.db import Database
 from app.response_models.referrals import ReferralEntry
 from app.services.referral_service import ReferralService
-from app.db.db import Database
 from tests.test_config import get_test_config
 
 

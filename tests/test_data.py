@@ -1,13 +1,22 @@
 import unittest
 
-from app.data import UraNumber, Pseudonym
+from app.data import Pseudonym, UraNumber
 
 
 class TestPseudonym(unittest.TestCase):
     def test_pseudonym(self) -> None:
-        self.assertEqual("79079133-8513-4ced-a21e-b7a41f0cf348", str(Pseudonym("79079133-8513-4ced-a21e-b7a41f0cf348")))
-        self.assertEqual("ea0b4ecf-8d46-4798-80a5-33252db21f1a", str(Pseudonym("ea0b4ecf-8d46-4798-80a5-33252db21f1a")))
-        self.assertEqual("ea0b4ecf-8d46-4798-80a5-33252db21f1a", str(Pseudonym("ea0b4ecf8d46479880a533252db21f1a")))
+        self.assertEqual(
+            "79079133-8513-4ced-a21e-b7a41f0cf348",
+            str(Pseudonym("79079133-8513-4ced-a21e-b7a41f0cf348")),
+        )
+        self.assertEqual(
+            "ea0b4ecf-8d46-4798-80a5-33252db21f1a",
+            str(Pseudonym("ea0b4ecf-8d46-4798-80a5-33252db21f1a")),
+        )
+        self.assertEqual(
+            "ea0b4ecf-8d46-4798-80a5-33252db21f1a",
+            str(Pseudonym("ea0b4ecf8d46479880a533252db21f1a")),
+        )
 
         with self.assertRaises(ValueError):
             Pseudonym("124")
@@ -15,6 +24,7 @@ class TestPseudonym(unittest.TestCase):
             Pseudonym("foobar")
         with self.assertRaises(ValueError):
             Pseudonym("")
+
 
 class TestUraNumber(unittest.TestCase):
     def test_ura_number(self) -> None:

@@ -1,22 +1,19 @@
 import argparse
 import logging
-from typing import Protocol, Any
+from typing import Any, Protocol
 
 import inject
 
 from app import application
 from app.config import Config
 
-
 logger = logging.getLogger(__name__)
 
 
 class CronCommand(Protocol):
-    def init_arguments(self, subparser: Any) -> None:
-        ...
+    def init_arguments(self, subparser: Any) -> None: ...
 
-    def run(self, args: argparse.Namespace) -> int:
-        ...
+    def run(self, args: argparse.Namespace) -> int: ...
 
 
 CRON_COMMANDS: dict[str, CronCommand] = {}

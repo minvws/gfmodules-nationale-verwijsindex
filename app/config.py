@@ -1,10 +1,9 @@
-from enum import Enum
 import configparser
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, ValidationError
-from pydantic import Field
+from pydantic import BaseModel, Field, ValidationError
 
 PROJECT_ROOT = Path(__file__).parent.parent
 DEFAULT_CONFIG_INI_FILE = PROJECT_ROOT / "app.conf"

@@ -1,17 +1,17 @@
 import uuid
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Any
+from typing import Any, Optional
 
 
 # DataDomain definitions
 class DataDomain(Enum):
-    Unknown = 'unknown'
-    BeeldBank = 'beeldbank'
-    Medicatie = 'medicatie'
+    Unknown = "unknown"
+    BeeldBank = "beeldbank"
+    Medicatie = "medicatie"
 
     @classmethod
-    def from_str(cls, label: str) -> Optional['DataDomain']:
+    def from_str(cls, label: str) -> Optional["DataDomain"]:
         try:
             return cls(label.lower())
         except ValueError:
@@ -19,9 +19,9 @@ class DataDomain(Enum):
 
     def to_fhir(self) -> str:
         if self == DataDomain.BeeldBank:
-            return 'ImagingStudy'
+            return "ImagingStudy"
         if self == DataDomain.Medicatie:
-            return 'MedicationRequest'
+            return "MedicationRequest"
         return ""
 
     def __str__(self) -> str:
@@ -31,7 +31,11 @@ class DataDomain(Enum):
 @dataclass
 class UraNumber:
     def __init__(self, value: Any) -> None:
-        if (isinstance(value, int) or isinstance(value, str)) and len(str(value)) <= 8 and str(value).isdigit():
+        if (
+            (isinstance(value, int) or isinstance(value, str))
+            and len(str(value)) <= 8
+            and str(value).isdigit()
+        ):
             self.value = str(value).zfill(8)
         else:
             raise ValueError("URA number must be 8 digits or less")

@@ -1,5 +1,7 @@
 from unittest import TestCase
 
+from sqlalchemy import func, select
+
 from app.data import UraNumber
 from app.db.db import Database
 from app.db.models.referral_request_log import ReferralRequestLogEntry
@@ -10,9 +12,6 @@ from app.db.session import DbSession
 from app.referral_request_payload import ReferralLoggingPayload
 from app.referral_request_type import ReferralRequestType
 from tests.test_config import get_test_config
-
-from sqlalchemy import select, func
-
 
 TESTING_URA = UraNumber(123)
 

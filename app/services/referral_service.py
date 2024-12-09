@@ -1,7 +1,8 @@
 from typing import List
 
 from fastapi.exceptions import HTTPException
-from app.data import Pseudonym, DataDomain, UraNumber
+
+from app.data import DataDomain, Pseudonym, UraNumber
 from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository

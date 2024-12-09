@@ -1,16 +1,16 @@
 import abc
 import textwrap
 
-from app.data import UraNumber
 from fastapi import HTTPException
 from starlette.requests import Request
 from uzireader.uziserver import UziServer
 
+from app.data import UraNumber
+
 
 class StarletteRequestURANumberFinder(abc.ABC):
     @abc.abstractmethod
-    def find(self, request: Request) -> UraNumber:
-        ...
+    def find(self, request: Request) -> UraNumber: ...
 
 
 class ConfigOverridenMockURANumberFinder(StarletteRequestURANumberFinder):

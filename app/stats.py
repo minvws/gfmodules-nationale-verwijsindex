@@ -1,5 +1,5 @@
 import time
-from typing import Callable, Awaitable
+from typing import Awaitable, Callable
 
 import statsd
 from starlette.middleware.base import BaseHTTPMiddleware

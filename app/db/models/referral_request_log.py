@@ -1,6 +1,7 @@
 from typing import Any
-from sqlalchemy.orm import mapped_column, Mapped
-from sqlalchemy import String, JSON
+
+from sqlalchemy import JSON, String
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.models.base import Base
 from app.referral_request_type import ReferralRequestType

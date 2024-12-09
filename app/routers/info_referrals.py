@@ -1,13 +1,14 @@
 import logging
 from typing import List
+
 from fastapi import APIRouter, Depends
 from opentelemetry import trace
 
 from app import dependencies
 from app.data import UraNumber
-from app.services.referral_service import ReferralService
-from app.response_models.referrals import ReferralRequest, ReferralEntry
+from app.response_models.referrals import ReferralEntry, ReferralRequest
 from app.services.pseudonym_service import PseudonymService
+from app.services.referral_service import ReferralService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(

@@ -1,16 +1,17 @@
 from pathlib import Path
+
 import inject
 from pydantic import ValidationError
-from app.db.db import Database
+
 from app.config import PROJECT_ROOT, Config, ConfigApp, read_ini_file
-from app.services.referral_service import ReferralService
+from app.db.db import Database
 from app.services.pseudonym_service import PseudonymService
+from app.services.referral_service import ReferralService
 from app.services.ura_number_finder import (
     ConfigOverridenMockURANumberFinder,
     RequestURANumberFinder,
     StarletteRequestURANumberFinder,
 )
-
 
 DEFAULT_CONFIG_INI_FILE = PROJECT_ROOT / "app.conf"
 
