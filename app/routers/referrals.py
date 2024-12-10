@@ -13,7 +13,6 @@ from app.response_models.referrals import (
     ReferralEntry,
     ReferralQuery,
 )
-
 from app.services.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 
@@ -95,9 +94,7 @@ def query_referrals(
     return referrals
 
 
-@router.delete(
-    "/", summary="Deletes a referral", status_code=status.HTTP_204_NO_CONTENT
-)
+@router.delete("/", summary="Deletes a referral", status_code=status.HTTP_204_NO_CONTENT)
 def delete_referral(
     request: Request,
     req: DeleteReferralRequest,

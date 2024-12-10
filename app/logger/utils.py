@@ -1,5 +1,6 @@
-import sys
 import logging
+import sys
+
 from uvicorn.logging import DefaultFormatter
 
 

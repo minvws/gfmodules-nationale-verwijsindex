@@ -1,16 +1,16 @@
 import abc
 import textwrap
 
-from app.data import UraNumber
 from fastapi import HTTPException
 from starlette.requests import Request
 from uzireader.uziserver import UziServer
 
+from app.data import UraNumber
+
 
 class StarletteRequestURANumberFinder(abc.ABC):
     @abc.abstractmethod
-    def find(self, request: Request) -> UraNumber:
-        ...
+    def find(self, request: Request) -> UraNumber: ...
 
 
 class ConfigOverridenMockURANumberFinder(StarletteRequestURANumberFinder):
@@ -31,9 +31,7 @@ class RequestURANumberFinder(StarletteRequestURANumberFinder):
     _cert: str
 
     def _enforce_cert_newlines(self, cert_data: str) -> str:
-        cert_data = (
-            cert_data.split(self._CERT_START)[-1].split(self._CERT_END)[0].strip()
-        )
+        cert_data = cert_data.split(self._CERT_START)[-1].split(self._CERT_END)[0].strip()
         result = self._CERT_START
         result += "\n"
         result += "\n".join(textwrap.wrap(cert_data.replace(" ", ""), 64))

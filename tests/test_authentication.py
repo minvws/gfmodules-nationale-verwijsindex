@@ -17,9 +17,7 @@ def test_authenticated_ura(mocker):
     dic = {"SubscriberNumber": 12345679}
     mock_class.__getitem__.side_effect = dic.__getitem__
 
-    uzi_server_creation_mock = mocker.patch.object(
-        UziServer, "__new__", return_value=mock_class
-    )
+    uzi_server_creation_mock = mocker.patch.object(UziServer, "__new__", return_value=mock_class)
 
     actual = RequestURANumberFinder().find(request)
 

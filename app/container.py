@@ -1,16 +1,17 @@
 from pathlib import Path
+
 import inject
 from pydantic import ValidationError
-from app.db.db import Database
+
 from app.config import PROJECT_ROOT, Config, ConfigApp, read_ini_file
-from app.services.referral_service import ReferralService
+from app.db.db import Database
 from app.services.pseudonym_service import PseudonymService
+from app.services.referral_service import ReferralService
 from app.services.ura_number_finder import (
     ConfigOverridenMockURANumberFinder,
     RequestURANumberFinder,
     StarletteRequestURANumberFinder,
 )
-
 
 DEFAULT_CONFIG_INI_FILE = PROJECT_ROOT / "app.conf"
 
@@ -22,13 +23,9 @@ def _load_default_config(path: Path) -> Config:
 
     try:
         # Convert database.retry_backoff to a list of floats
-        if "retry_backoff" in ini_data["database"] and isinstance(
-            ini_data["database"]["retry_backoff"], str
-        ):
+        if "retry_backoff" in ini_data["database"] and isinstance(ini_data["database"]["retry_backoff"], str):
             # convert the string to a list of floats
-            ini_data["database"]["retry_backoff"] = [
-                float(i) for i in ini_data["database"]["retry_backoff"].split(",")
-            ]
+            ini_data["database"]["retry_backoff"] = [float(i) for i in ini_data["database"]["retry_backoff"].split(",")]
 
         config = Config(**ini_data)
     except ValidationError as e:

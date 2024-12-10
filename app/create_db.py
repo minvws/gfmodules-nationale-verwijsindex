@@ -1,8 +1,7 @@
 import inject
-from app import application
-from app import container
+
+from app import application, container, dependencies
 from app.config import Config
-from app import dependencies
 
 if __name__ == "__main__":
     container.configure()

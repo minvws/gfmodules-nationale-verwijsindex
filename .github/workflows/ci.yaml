@@ -40,7 +40,7 @@ jobs:
                 python_version: "3.11"
 
             - name: Lint
-              run: poetry run $(make lint --just-print --silent)
+              run: make POETRY=true lint
 
     type-check:
         name: Check static types
@@ -57,7 +57,7 @@ jobs:
                 python_version: "3.11"
 
             - name: Check static types
-              run: poetry run $(make type-check --just-print --silent)
+              run: make POETRY=true type-check
 
     safety-check:
         name: Scan packages for vulnerabilities
@@ -74,7 +74,7 @@ jobs:
                 python_version: "3.11"
 
             - name: Scan packages for vulnerabilities
-              run: poetry run $(make safety-check --just-print --silent)
+              run: make POETRY=true safety-check
 
     spelling-check:
         name: Run spelling check
@@ -91,7 +91,7 @@ jobs:
                 python_version: "3.11"
 
             - name: Run spelling check
-              run: poetry run $(make spelling-check --just-print --silent)
+              run: make POETRY=true spelling-check
 
     test:
         name: Run the tests
@@ -108,8 +108,8 @@ jobs:
                 python_version: "3.11"
 
             - name: Run the tests
-              run: poetry run $(make test --just-print --silent)
-              
+              run: make POETRY=true test
+
             - name: Upload coverage report
               uses: actions/upload-artifact@v4
               with:

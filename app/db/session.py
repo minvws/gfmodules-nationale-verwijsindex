@@ -1,15 +1,15 @@
 import logging
 import random
 from time import sleep
-from typing import Callable, Any, TypeVar, Type
+from typing import Any, Callable, Type, TypeVar
 
 from sqlalchemy import Engine
-from sqlalchemy.exc import OperationalError, DatabaseError, PendingRollbackError
+from sqlalchemy.exc import DatabaseError, OperationalError, PendingRollbackError
 from sqlalchemy.orm import Session
 
 from app.config import Config
 from app.db.models.base import Base
-from app.db.repository.respository_base import TRepositoryBase, RepositoryBase
+from app.db.repository.respository_base import RepositoryBase, TRepositoryBase
 
 """
 This module contains the DbSession class, which is a context manager that provides a session to interact with
@@ -66,9 +66,7 @@ class DbSession:
         """
         self.session.close()
 
-    def get_repository(
-        self, repository_class: Type[TRepositoryBase]
-    ) -> TRepositoryBase:
+    def get_repository(self, repository_class: Type[TRepositoryBase]) -> TRepositoryBase:
         """
         Returns an instantiated repository for the given model class
         """

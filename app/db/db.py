@@ -1,11 +1,11 @@
 import logging
-from sqlalchemy import create_engine, text, StaticPool
-from sqlalchemy.orm import Session
 
-from app.db.session import DbSession
+from sqlalchemy import StaticPool, create_engine, text
+from sqlalchemy.orm import Session
 
 from app.config import Config
 from app.db.models.base import Base
+from app.db.session import DbSession
 
 logger = logging.getLogger(__name__)
 

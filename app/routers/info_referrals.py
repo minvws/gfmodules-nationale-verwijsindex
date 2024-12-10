@@ -1,13 +1,14 @@
 import logging
 from typing import List
+
 from fastapi import APIRouter, Depends
 from opentelemetry import trace
 
 from app import dependencies
 from app.data import UraNumber
-from app.services.referral_service import ReferralService
-from app.response_models.referrals import ReferralRequest, ReferralEntry
+from app.response_models.referrals import ReferralEntry, ReferralRequest
 from app.services.pseudonym_service import PseudonymService
+from app.services.referral_service import ReferralService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(
@@ -30,9 +31,7 @@ def get_referral_info(
     Searches for referrals by pseudonym and data domain
     """
     span = trace.get_current_span()
-    span.update_name(
-        f"POST /info pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)}"
-    )
+    span.update_name(f"POST /info pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)}")
 
     localisation_pseudonym = pseudonym_service.exchange(req.pseudonym)
     referrals = referral_service.get_referrals_by_domain_and_pseudonym(

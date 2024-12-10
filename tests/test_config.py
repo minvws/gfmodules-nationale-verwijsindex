@@ -1,11 +1,11 @@
 from app.config import (
     Config,
     ConfigApp,
-    LogLevel,
     ConfigDatabase,
-    ConfigTelemetry,
-    ConfigStats,
     ConfigPseudonymApi,
+    ConfigStats,
+    ConfigTelemetry,
+    LogLevel,
 )
 
 

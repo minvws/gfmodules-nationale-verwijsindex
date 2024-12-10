@@ -1,10 +1,11 @@
-from fastapi import Request
 import inject
+from fastapi import Request
+
+from app.config import Config
 from app.data import UraNumber
 from app.db.db import Database
-from app.config import Config
-from app.services.referral_service import ReferralService
 from app.services.pseudonym_service import PseudonymService
+from app.services.referral_service import ReferralService
 from app.services.ura_number_finder import (
     StarletteRequestURANumberFinder,
 )
