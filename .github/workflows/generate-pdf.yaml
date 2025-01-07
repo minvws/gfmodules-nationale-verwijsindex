@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Publish document
-        uses: baileyjm02/markdown-to-pdf@v1
+        uses: baileyjm02/markdown-to-pdf@v2
         with:
           input_path: "docs/interface-definitions"
           images_dir: ${{ matrix.directory }}/docs/images
