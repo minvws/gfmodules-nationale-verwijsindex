@@ -8,6 +8,7 @@ from typing import Any, Optional
 class DataDomain(Enum):
     Unknown = "unknown"
     BeeldBank = "beeldbank"
+    MedicatieVerklaring = "medicatie verklaring"
     Medicatie = "medicatie"
 
     @classmethod
@@ -17,11 +18,23 @@ class DataDomain(Enum):
         except ValueError:
             return None
 
+    @classmethod
+    def from_fhir(cls, label: str) -> Optional["DataDomain"]:
+        if label == "ImagingStudy":
+            return DataDomain.BeeldBank
+        if label == "MedicationStatement":
+            return DataDomain.MedicatieVerklaring
+        if label == "Medication":
+            return DataDomain.Medicatie
+        return None
+
     def to_fhir(self) -> str:
         if self == DataDomain.BeeldBank:
             return "ImagingStudy"
+        if self == DataDomain.MedicatieVerklaring:
+            return "MedicationStatement"
         if self == DataDomain.Medicatie:
-            return "MedicationRequest"
+            return "Medication"
         return ""
 
     def __str__(self) -> str:
