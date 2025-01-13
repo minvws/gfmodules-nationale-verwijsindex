@@ -28,7 +28,7 @@ class DataDomain(Enum):
             case "Medication":
                 return DataDomain.Medicatie
             case _:
-                return NotImplemented
+                return None
 
     def to_fhir(self) -> str:
         match self:
@@ -39,7 +39,7 @@ class DataDomain(Enum):
             case DataDomain.Medicatie:
                 return "Medication"
             case _:
-                return NotImplemented
+                return ""
 
     def __str__(self) -> str:
         return self.value
