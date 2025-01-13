@@ -20,22 +20,26 @@ class DataDomain(Enum):
 
     @classmethod
     def from_fhir(cls, label: str) -> Optional["DataDomain"]:
-        if label == "ImagingStudy":
-            return DataDomain.BeeldBank
-        if label == "MedicationStatement":
-            return DataDomain.MedicatieVerklaring
-        if label == "Medication":
-            return DataDomain.Medicatie
-        return None
+        match label:
+            case "ImagingStudy":
+                return DataDomain.BeeldBank
+            case "MedicationStatement":
+                return DataDomain.MedicatieVerklaring
+            case "Medication":
+                return DataDomain.Medicatie
+            case _:
+                return NotImplemented
 
     def to_fhir(self) -> str:
-        if self == DataDomain.BeeldBank:
-            return "ImagingStudy"
-        if self == DataDomain.MedicatieVerklaring:
-            return "MedicationStatement"
-        if self == DataDomain.Medicatie:
-            return "Medication"
-        return ""
+        match self:
+            case DataDomain.BeeldBank:
+                return "ImagingStudy"
+            case DataDomain.MedicatieVerklaring:
+                return "MedicationStatement"
+            case DataDomain.Medicatie:
+                return "Medication"
+            case _:
+                return NotImplemented
 
     def __str__(self) -> str:
         return self.value
