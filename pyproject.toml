@@ -13,7 +13,7 @@ python = "^3.11"
 uvicorn = "0.34.0"
 fastapi = "^0.115"
 mypy = "^1.14.1"
-pydantic-settings = "^2.1.0"
+pydantic-settings = "^2.7.1"
 inject = "^5.2.0"
 sqlalchemy = "^2.0.37"
 psycopg = { extras = ["binary", "pool"], version = "^3.2.4" }
