@@ -10,6 +10,7 @@ class DataDomain(Enum):
     BeeldBank = "beeldbank"
     MedicatieVerklaring = "medicatie verklaring"
     Medicatie = "medicatie"
+    ZorgPlan = "zorgplan"
 
     @classmethod
     def from_str(cls, label: str) -> Optional["DataDomain"]:
@@ -27,6 +28,8 @@ class DataDomain(Enum):
                 return DataDomain.MedicatieVerklaring
             case "Medication":
                 return DataDomain.Medicatie
+            case "CarePlan":
+                return DataDomain.ZorgPlan
             case _:
                 return None
 
@@ -38,6 +41,8 @@ class DataDomain(Enum):
                 return "MedicationStatement"
             case DataDomain.Medicatie:
                 return "Medication"
+            case DataDomain.ZorgPlan:
+                return "CarePlan"
             case _:
                 return ""
 
