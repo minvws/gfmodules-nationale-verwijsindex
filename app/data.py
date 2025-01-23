@@ -7,10 +7,10 @@ from typing import Any, Optional
 # DataDomain definitions
 class DataDomain(Enum):
     Unknown = "unknown"
-    BeeldBank = "beeldbank"
-    MedicatieVerklaring = "medicatie verklaring"
-    Medicatie = "medicatie"
-    ZorgPlan = "zorgplan"
+    ImagingStudy = "beeldbank"
+    MedicationStatement = "medicatie verklaring"
+    Medication = "medicatie"
+    CarePlan = "zorgplan"
 
     @classmethod
     def from_str(cls, label: str) -> Optional["DataDomain"]:
@@ -23,25 +23,25 @@ class DataDomain(Enum):
     def from_fhir(cls, label: str) -> Optional["DataDomain"]:
         match label:
             case "ImagingStudy":
-                return DataDomain.BeeldBank
+                return DataDomain.ImagingStudy
             case "MedicationStatement":
-                return DataDomain.MedicatieVerklaring
+                return DataDomain.MedicationStatement
             case "Medication":
-                return DataDomain.Medicatie
+                return DataDomain.Medication
             case "CarePlan":
-                return DataDomain.ZorgPlan
+                return DataDomain.CarePlan
             case _:
                 return None
 
     def to_fhir(self) -> str:
         match self:
-            case DataDomain.BeeldBank:
+            case DataDomain.ImagingStudy:
                 return "ImagingStudy"
-            case DataDomain.MedicatieVerklaring:
+            case DataDomain.MedicationStatement:
                 return "MedicationStatement"
-            case DataDomain.Medicatie:
+            case DataDomain.Medication:
                 return "Medication"
-            case DataDomain.ZorgPlan:
+            case DataDomain.CarePlan:
                 return "CarePlan"
             case _:
                 return ""

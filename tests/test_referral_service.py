@@ -28,7 +28,7 @@ class ReferralServiceTest(TestCase):
         mock_referral = ReferralEntry(
             ura_number=UraNumber("12345"),
             pseudonym=Pseudonym("6d87d96a-cb78-4f5c-823b-578095da2c4a"),
-            data_domain=DataDomain.BeeldBank,
+            data_domain=DataDomain.ImagingStudy,
         )
 
         self.referral_service.add_one_referral(
@@ -43,7 +43,7 @@ class ReferralServiceTest(TestCase):
         mock_referral = ReferralEntry(
             ura_number=UraNumber("12345"),
             pseudonym=Pseudonym("6d87d96a-cb78-4f5c-823b-578095da2c4a"),
-            data_domain=DataDomain.BeeldBank,
+            data_domain=DataDomain.ImagingStudy,
         )
 
         with self.assertRaises(HTTPException) as context:
@@ -61,7 +61,7 @@ class ReferralServiceTest(TestCase):
         mock_referral = ReferralEntry(
             ura_number=UraNumber("12345"),
             pseudonym=Pseudonym("6d87d96a-cb78-4f5c-823b-578095da2c4a"),
-            data_domain=DataDomain.BeeldBank,
+            data_domain=DataDomain.ImagingStudy,
         )
 
         self.referral_service.add_one_referral(
@@ -83,7 +83,7 @@ class ReferralServiceTest(TestCase):
     def test_get_referral_not_found(self) -> None:
         with self.assertRaises(HTTPException) as context:
             self.referral_service.get_referrals_by_domain_and_pseudonym(
-                pseudonym=Pseudonym(str(uuid4())), data_domain=DataDomain.BeeldBank
+                pseudonym=Pseudonym(str(uuid4())), data_domain=DataDomain.ImagingStudy
             )
         self.assertEqual(context.exception.status_code, 404)
 
@@ -91,7 +91,7 @@ class ReferralServiceTest(TestCase):
         mock_referral = ReferralEntry(
             ura_number=UraNumber("12345"),
             pseudonym=Pseudonym("6d87d96a-cb78-4f5c-823b-578095da2c4a"),
-            data_domain=DataDomain.BeeldBank,
+            data_domain=DataDomain.ImagingStudy,
         )
 
         self.referral_service.add_one_referral(
@@ -127,7 +127,7 @@ class ReferralServiceTest(TestCase):
         with self.assertRaises(HTTPException) as context:
             self.referral_service.delete_one_referral(
                 pseudonym=Pseudonym(str(uuid4())),
-                data_domain=DataDomain.BeeldBank,
+                data_domain=DataDomain.ImagingStudy,
                 ura_number=UraNumber("99999"),
                 request_url="https://test",
             )
@@ -137,7 +137,7 @@ class ReferralServiceTest(TestCase):
         mock_referral = ReferralEntry(
             ura_number=UraNumber("12345"),
             pseudonym=Pseudonym("6d87d96a-cb78-4f5c-823b-578095da2c4a"),
-            data_domain=DataDomain.BeeldBank,
+            data_domain=DataDomain.ImagingStudy,
         )
 
         self.referral_service.add_one_referral(
@@ -163,7 +163,7 @@ class ReferralServiceTest(TestCase):
         mock_referral = ReferralEntry(
             ura_number=UraNumber("12345"),
             pseudonym=Pseudonym("6d87d96a-cb78-4f5c-823b-578095da2c4a"),
-            data_domain=DataDomain.BeeldBank,
+            data_domain=DataDomain.ImagingStudy,
         )
 
         self.referral_service.add_one_referral(
@@ -211,7 +211,7 @@ class ReferralServiceTest(TestCase):
             _ = self.referral_service.query_referrals(
                 pseudonym=None,
                 ura_number=UraNumber("99999"),
-                data_domain=DataDomain.Medicatie,
+                data_domain=DataDomain.Medication,
                 request_url="http://test",
             )
         self.assertEqual(context.exception.status_code, 404)
