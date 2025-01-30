@@ -211,7 +211,7 @@ class ReferralServiceTest(TestCase):
             _ = self.referral_service.query_referrals(
                 pseudonym=None,
                 ura_number=UraNumber("99999"),
-                data_domain=DataDomain.Medication,
+                data_domain=DataDomain.MedicationStatement,
                 request_url="http://test",
             )
         self.assertEqual(context.exception.status_code, 404)
