@@ -1,10 +1,7 @@
 -- Mock: 950000012: 5afda8a1-dce9-43f8-b1af-c4dc765e7e17
 INSERT INTO public.referrals (pseudonym, ura_number, data_domain) VALUES ('5afda8a1-dce9-43f8-b1af-c4dc765e7e17', '23665292', 'beeldbank');
 INSERT INTO public.referrals (pseudonym, ura_number, data_domain) VALUES ('5afda8a1-dce9-43f8-b1af-c4dc765e7e17', '13873620', 'beeldbank');
-INSERT INTO public.referrals (pseudonym, ura_number, data_domain) VALUES ('5afda8a1-dce9-43f8-b1af-c4dc765e7e17', '23665292', 'medicatie');
 INSERT INTO public.referrals (pseudonym, ura_number, data_domain) VALUES ('5afda8a1-dce9-43f8-b1af-c4dc765e7e17', '23665292', 'medicatie verklaring');
-INSERT INTO public.referrals (pseudonym, ura_number, data_domain) VALUES ('5afda8a1-dce9-43f8-b1af-c4dc765e7e17', '23665292', 'medicatie verklaring');
-INSERT INTO public.referrals (pseudonym, ura_number, data_domain) VALUES ('5afda8a1-dce9-43f8-b1af-c4dc765e7e17', '23665292', 'zorgplan');
 INSERT INTO public.referrals (pseudonym, ura_number, data_domain) VALUES ('5afda8a1-dce9-43f8-b1af-c4dc765e7e17', '23665292', 'zorgplan');
 
 -- Mock: 950000024: cb5d785e-6710-4910-963f-39c85b39e491
