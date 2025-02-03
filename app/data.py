@@ -9,7 +9,6 @@ class DataDomain(Enum):
     Unknown = "unknown"
     ImagingStudy = "beeldbank"
     MedicationStatement = "medicatie verklaring"
-    Medication = "medicatie"
     CarePlan = "zorgplan"
 
     @classmethod
@@ -26,8 +25,6 @@ class DataDomain(Enum):
                 return DataDomain.ImagingStudy
             case "MedicationStatement":
                 return DataDomain.MedicationStatement
-            case "Medication":
-                return DataDomain.Medication
             case "CarePlan":
                 return DataDomain.CarePlan
             case _:
@@ -39,8 +36,6 @@ class DataDomain(Enum):
                 return "ImagingStudy"
             case DataDomain.MedicationStatement:
                 return "MedicationStatement"
-            case DataDomain.Medication:
-                return "Medication"
             case DataDomain.CarePlan:
                 return "CarePlan"
             case _:
