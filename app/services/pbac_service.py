@@ -29,7 +29,6 @@ class PbacService:
         input_json = {
             "input": {"uranumber": str(ura_number), "pseudonym": str(pseudonym), "datadomain": str(data_domain)}
         }
-        print(input_json)
 
         response = requests.post(f"{self.endpoint}/v1/data/example/authz", timeout=self.timeout, json=input_json)
 
