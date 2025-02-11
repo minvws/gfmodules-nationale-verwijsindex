@@ -10,18 +10,22 @@ from app.logger.referral_request_database_logger import ReferralRequestDatabaseL
 from app.referral_request_payload import ReferralLoggingPayload
 from app.referral_request_type import ReferralRequestType
 from app.response_models.referrals import ReferralEntry
+from app.services.pbac_service import PbacService
 
 
 class ReferralService:
-    def __init__(self, database: Database) -> None:
+    def __init__(self, database: Database, pbac_service: PbacService) -> None:
         self.database = database
+        self.pbac_service = pbac_service
 
     def get_referrals_by_domain_and_pseudonym(
-        self, pseudonym: Pseudonym, data_domain: DataDomain
+        self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber
     ) -> List[ReferralEntry]:
         """
         Method that gets all the referrals by pseudonym and data domain
         """
+        self.pbac_service.ura_number_is_authorized(ura_number=ura_number, pseudonym=pseudonym, data_domain=data_domain)
+
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)
             entities = referral_repository.query_referrals(

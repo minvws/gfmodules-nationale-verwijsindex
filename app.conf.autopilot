@@ -6,13 +6,6 @@ swagger_enabled = True
 docs_url = /docs
 redoc_url = /redocs
 
-[pseudonym_api]
-endpoint=http://pseudonym:8504
-timeout=10
-# mtls_cert=secrets/ssl/pseudonym_api.cert
-# mtls_key=secrets/ssl/pseudonym_api.key
-# mtls_ca=secrets/ssl/pseudonym_api_ca.cert
-
 [database]
 dsn=postgresql+psycopg://postgres:postgres@localisation_db:5432/postgres
 retry_backoff=0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 4.8, 6.4, 10.0
@@ -20,6 +13,18 @@ pool_size=5
 max_overflow: 10
 pool_pre_ping=False
 pool_recycle=1800
+
+[pbac_api]
+endpoint=http://pbac:8181
+timeout=10
+override_authorization_pbac = False
+
+[pseudonym_api]
+endpoint=http://pseudonym:8504
+timeout=10
+# mtls_cert=secrets/ssl/pseudonym_api.cert
+# mtls_key=secrets/ssl/pseudonym_api.key
+# mtls_ca=secrets/ssl/pseudonym_api_ca.cert
 
 [telemetry]
 enabled = True
