@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from app.data import DataDomain, Pseudonym, UraNumber
 from app.db.db import Database
 from app.response_models.referrals import ReferralEntry
+from app.services.pbac_service import PbacService
 from app.services.referral_service import ReferralService
 from tests.test_config import get_test_config
 
@@ -16,8 +17,9 @@ class ReferralServiceTest(TestCase):
         # setup db
         self.db = Database("sqlite:///:memory:", config)
         self.db.generate_tables()
+        self.pbac_service = PbacService(endpoint="http://example.com/", timeout=1, override_authorization_pbac=True)
         # setup service
-        self.referral_service = ReferralService(self.db)
+        self.referral_service = ReferralService(self.db, pbac_service=self.pbac_service)
 
     def test_db_connection(self) -> None:
         db_connection_valid = self.db.is_healthy()
@@ -72,7 +74,9 @@ class ReferralServiceTest(TestCase):
             request_url="https://test",
         )
         actual_referrals = self.referral_service.get_referrals_by_domain_and_pseudonym(
-            pseudonym=mock_referral.pseudonym, data_domain=mock_referral.data_domain
+            pseudonym=mock_referral.pseudonym,
+            data_domain=mock_referral.data_domain,
+            ura_number=mock_referral.ura_number,
         )
 
         for referral in actual_referrals:
@@ -83,7 +87,7 @@ class ReferralServiceTest(TestCase):
     def test_get_referral_not_found(self) -> None:
         with self.assertRaises(HTTPException) as context:
             self.referral_service.get_referrals_by_domain_and_pseudonym(
-                pseudonym=Pseudonym(str(uuid4())), data_domain=DataDomain.ImagingStudy
+                pseudonym=Pseudonym(str(uuid4())), data_domain=DataDomain.ImagingStudy, ura_number=UraNumber("99999")
             )
         self.assertEqual(context.exception.status_code, 404)
 
@@ -102,7 +106,9 @@ class ReferralServiceTest(TestCase):
             request_url="https://test",
         )
         actual_referrals = self.referral_service.get_referrals_by_domain_and_pseudonym(
-            pseudonym=mock_referral.pseudonym, data_domain=mock_referral.data_domain
+            pseudonym=mock_referral.pseudonym,
+            data_domain=mock_referral.data_domain,
+            ura_number=mock_referral.ura_number,
         )
 
         for referral in actual_referrals:
@@ -119,7 +125,9 @@ class ReferralServiceTest(TestCase):
 
         with self.assertRaises(HTTPException) as context:
             self.referral_service.get_referrals_by_domain_and_pseudonym(
-                pseudonym=mock_referral.pseudonym, data_domain=mock_referral.data_domain
+                pseudonym=mock_referral.pseudonym,
+                data_domain=mock_referral.data_domain,
+                ura_number=mock_referral.ura_number,
             )
         self.assertEqual(context.exception.status_code, 404)
 

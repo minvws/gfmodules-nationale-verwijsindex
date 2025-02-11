@@ -13,13 +13,6 @@ provider_id=dcc2217b-600e-4587-b74a-6b04bf3a882b
 override_authentication_ura=
 # override_authentication_ura=12345678
 
-[pseudonym_api]
-endpoint=http://localhost:8504
-timeout=10
-# mtls_cert=secrets/ssl/pseudonym_api.cert
-# mtls_key=secrets/ssl/pseudonym_api.key
-# mtls_ca=secrets/ssl/pseudonym_api_ca.cert
-
 [database]
 # Dsn for database connection
 dsn=postgresql+psycopg://postgres:postgres@localhost:5432/postgres
@@ -33,6 +26,21 @@ max_overflow=10
 pool_pre_ping=False
 # Recycle the connection after this time (in seconds)
 pool_recycle=1800
+
+[pbac_api]
+# Endpoint for the PBAC service
+endpoint=http://pbac:8181
+# Timeout for the PBAC service
+timeout=10
+# Override AuthorizationService PBAC for testing, or False when using the PBAC
+override_authorization_pbac= False
+
+[pseudonym_api]
+endpoint=http://localhost:8504
+timeout=10
+# mtls_cert=secrets/ssl/pseudonym_api.cert
+# mtls_key=secrets/ssl/pseudonym_api.key
+# mtls_ca=secrets/ssl/pseudonym_api_ca.cert
 
 [telemetry]
 # Telemetry is enabled or not

@@ -2,6 +2,7 @@ from app.config import (
     Config,
     ConfigApp,
     ConfigDatabase,
+    ConfigPbacApi,
     ConfigPseudonymApi,
     ConfigStats,
     ConfigTelemetry,
@@ -35,4 +36,9 @@ def get_test_config() -> Config:
             tracer_name=None,
         ),
         stats=ConfigStats(enabled=False, host=None, port=None, module_name=None),
+        pbac_api=ConfigPbacApi(
+            endpoint="http://pbac",
+            timeout=30,
+            override_authorization_pbac=True,
+        ),
     )

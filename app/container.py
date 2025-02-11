@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from app.config import PROJECT_ROOT, Config, ConfigApp, read_ini_file
 from app.db.db import Database
+from app.services.pbac_service import PbacService
 from app.services.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 from app.services.ura_number_finder import (
@@ -48,7 +49,14 @@ def container_config(binder: inject.Binder) -> None:
     db = Database(dsn=config.database.dsn, config=config)
     binder.bind(Database, db)
 
-    referral_service = ReferralService(database=db)
+    pbac_service = PbacService(
+        endpoint=config.pbac_api.endpoint,
+        timeout=config.pbac_api.timeout,
+        override_authorization_pbac=config.pbac_api.override_authorization_pbac,
+    )
+    binder.bind(PbacService, pbac_service)
+
+    referral_service = ReferralService(database=db, pbac_service=pbac_service)
     binder.bind(ReferralService, referral_service)
 
     pseudonym_service = PseudonymService(
@@ -59,6 +67,7 @@ def container_config(binder: inject.Binder) -> None:
         mtls_key=config.pseudonym_api.mtls_key,
         mtls_ca=config.pseudonym_api.mtls_ca,
     )
+
     binder.bind(PseudonymService, pseudonym_service)
     binder.bind(Config, config)
     binder.bind(StarletteRequestURANumberFinder, _resolve_ura_number_finder(config.app))
