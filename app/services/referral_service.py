@@ -24,15 +24,7 @@ class ReferralService:
         """
         Method that gets all the referrals by pseudonym and data domain
         """
-        try:
-            if not self.pbac_service.ura_number_is_authorized(
-                ura_number=ura_number, pseudonym=pseudonym, data_domain=data_domain
-            ):
-                raise HTTPException(
-                    status_code=403, detail="Unauthorized by policy, URA number is not authorized to access this data"
-                )
-        except Exception:
-            raise HTTPException(status_code=500, detail="Authorization check failed")
+        self.pbac_service.ura_number_is_authorized(ura_number=ura_number, pseudonym=pseudonym, data_domain=data_domain)
 
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)
