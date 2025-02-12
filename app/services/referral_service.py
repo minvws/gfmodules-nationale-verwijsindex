@@ -1,5 +1,7 @@
+import logging
 from typing import List
 
+import inject
 from fastapi.exceptions import HTTPException
 
 from app.data import DataDomain, Pseudonym, UraNumber
@@ -10,13 +12,16 @@ from app.logger.referral_request_database_logger import ReferralRequestDatabaseL
 from app.referral_request_payload import ReferralLoggingPayload
 from app.referral_request_type import ReferralRequestType
 from app.response_models.referrals import ReferralEntry
-from app.services.pbac_service import PbacService
+from app.services.authorization_services.authorization_service import BaseAuthService
 
 
 class ReferralService:
-    def __init__(self, database: Database, pbac_service: PbacService) -> None:
+    logger = logging.getLogger(__name__)
+
+    @inject.autoparams()
+    def __init__(self, database: Database, authorization_service: BaseAuthService) -> None:
         self.database = database
-        self.pbac_service = pbac_service
+        self.authorization_service = authorization_service
 
     def get_referrals_by_domain_and_pseudonym(
         self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber
@@ -24,7 +29,14 @@ class ReferralService:
         """
         Method that gets all the referrals by pseudonym and data domain
         """
-        self.pbac_service.ura_number_is_authorized(ura_number=ura_number, pseudonym=pseudonym, data_domain=data_domain)
+        allow = self.authorization_service.is_authorized(
+            ura_number=ura_number, pseudonym=pseudonym, data_domain=data_domain
+        )
+        if not allow:
+            self.logger.error(
+                f"Authorization denied for URA number {ura_number}, pseudonym {pseudonym} and data domain {data_domain}"
+            )
+            raise HTTPException(status_code=403, detail="Authorization denied, policy not satisfied")
 
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)

@@ -5,6 +5,7 @@ override_authentication_ura=
 swagger_enabled = True
 docs_url = /docs
 redoc_url = /redocs
+authorization_service = stub
 
 [database]
 dsn=postgresql+psycopg://postgres:postgres@localisation_db:5432/postgres
@@ -17,7 +18,6 @@ pool_recycle=1800
 [pbac_api]
 endpoint=http://pbac:8181
 timeout=10
-override_authorization_pbac = False
 
 [pseudonym_api]
 endpoint=http://pseudonym:8504

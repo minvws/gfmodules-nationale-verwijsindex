@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, Field, ValidationError
+from typing_extensions import Literal
 
 PROJECT_ROOT = Path(__file__).parent.parent
 DEFAULT_CONFIG_INI_FILE = PROJECT_ROOT / "app.conf"
@@ -27,6 +28,7 @@ class ConfigApp(BaseModel):
     swagger_enabled: bool = Field(default=False)
     docs_url: str = Field(default="/docs")
     redoc_url: str = Field(default="/redoc")
+    authorization_service: Literal["pbac", "stub"] = Field(default="stub")
 
 
 class ConfigDatabase(BaseModel):
@@ -42,7 +44,6 @@ class ConfigDatabase(BaseModel):
 class ConfigPbacApi(BaseModel):
     endpoint: str
     timeout: int = Field(default=30, gt=0)
-    override_authorization_pbac: bool = Field(default=False)
 
 
 class ConfigPseudonymApi(BaseModel):
