@@ -25,7 +25,7 @@ def get_referral_info(
     req: ReferralRequest,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
-    ura_number: UraNumber = Depends(dependencies.authenticated_ura),
+    _: UraNumber = Depends(dependencies.authenticated_ura),
 ) -> List[ReferralEntry]:
     """
     Searches for referrals by pseudonym and data domain
@@ -35,7 +35,7 @@ def get_referral_info(
 
     localisation_pseudonym = pseudonym_service.exchange(req.pseudonym)
     referrals = referral_service.get_referrals_by_domain_and_pseudonym(
-        pseudonym=localisation_pseudonym, data_domain=req.data_domain, ura_number=ura_number
+        pseudonym=localisation_pseudonym, data_domain=req.data_domain
     )
     span.set_attribute("data.referrals_found", len(referrals))
     span.set_attribute("data.referrals", str(referrals))
