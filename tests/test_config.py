@@ -16,6 +16,7 @@ def get_test_config() -> Config:
             loglevel=LogLevel.error,
             provider_id="84de3f9c-0113-4fbb-af4b-215715e631bd",
             override_authentication_ura=None,
+            authorization_service="stub",
         ),
         database=ConfigDatabase(
             dsn="sqlite:///:memory:",
@@ -39,6 +40,5 @@ def get_test_config() -> Config:
         pbac_api=ConfigPbacApi(
             endpoint="http://pbac",
             timeout=30,
-            override_authorization_pbac=True,
         ),
     )

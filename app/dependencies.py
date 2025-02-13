@@ -20,7 +20,7 @@ def get_database() -> Database:
 
 
 def get_referral_service() -> ReferralService:
-    return inject.instance(ReferralService)
+    return inject.instance(ReferralService)  # type: ignore
 
 
 def get_pseudonym_service() -> PseudonymService:

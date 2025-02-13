@@ -4,29 +4,24 @@ import requests
 from fastapi.exceptions import HTTPException
 
 from app.data import DataDomain, Pseudonym, UraNumber
+from app.services.authorization_services.authorization_service import BaseAuthService
 
 
-class PbacService:
+class PbacService(BaseAuthService):
     logger = logging.getLogger(__name__)
 
     def __init__(
         self,
         endpoint: str,
         timeout: int,
-        override_authorization_pbac: bool,
     ):
         self.endpoint = endpoint
         self.timeout = timeout
-        self.override_authorization_pbac = override_authorization_pbac
 
-    def ura_number_is_authorized(self, ura_number: UraNumber, pseudonym: Pseudonym, data_domain: DataDomain) -> None:
+    def is_authorized(self, ura_number: UraNumber, pseudonym: Pseudonym, data_domain: DataDomain) -> bool:
         """
         Method that checks through PBAC if a URA number is authorized
         """
-        if self.override_authorization_pbac:
-            self.logger.info("PBAC authorization is overridden, allowing access")
-            return
-
         input_json = {
             "input": {"uranumber": str(ura_number), "pseudonym": str(pseudonym), "datadomain": str(data_domain)}
         }
@@ -39,13 +34,21 @@ class PbacService:
             raise HTTPException(status_code=500, detail="Failed to reach authorization server") from e
 
         try:
-            allow = response.json()["result"]["allow"]
+            response_message = response.json()
+
+            if not isinstance(response_message, dict):
+                raise ValueError("Response is not a JSON object")
+
+            result = response_message.get("result")
+            if not isinstance(result, dict):
+                raise KeyError("Missing or invalid 'result' field in response")
+
+            allow = result.get("allow")
+            if not isinstance(allow, bool):
+                raise KeyError("'allow' field is missing or not a boolean")
+
+            return allow
+
         except (ValueError, KeyError) as e:
             self.logger.error(f"Failed to parse response: {e}")
             raise HTTPException(status_code=500, detail="Failed to parse response from authorization server") from e
-
-        if not allow:
-            self.logger.error(
-                f"Authorization denied for URA number {ura_number}, pseudonym {pseudonym} and data domain {data_domain}"
-            )
-            raise HTTPException(status_code=403, detail="Authorization denied, policy not satisfied")

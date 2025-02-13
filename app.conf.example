@@ -12,6 +12,9 @@ provider_id=dcc2217b-600e-4587-b74a-6b04bf3a882b
 # Override authentication URA for testing, or False when using the URA from the MTLS certificate
 override_authentication_ura=
 # override_authentication_ura=12345678
+# Authorization service to use: Either 'pbac' or 'stub' 
+authorization_service = stub
+
 
 [database]
 # Dsn for database connection
@@ -32,8 +35,6 @@ pool_recycle=1800
 endpoint=http://pbac:8181
 # Timeout for the PBAC service
 timeout=10
-# Override AuthorizationService PBAC for testing, or False when using the PBAC
-override_authorization_pbac= False
 
 [pseudonym_api]
 endpoint=http://localhost:8504

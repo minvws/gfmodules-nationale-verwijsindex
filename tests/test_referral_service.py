@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from app.data import DataDomain, Pseudonym, UraNumber
 from app.db.db import Database
 from app.response_models.referrals import ReferralEntry
-from app.services.pbac_service import PbacService
+from app.services.authorization_services.stub import StubAuthService
 from app.services.referral_service import ReferralService
 from tests.test_config import get_test_config
 
@@ -17,9 +17,9 @@ class ReferralServiceTest(TestCase):
         # setup db
         self.db = Database("sqlite:///:memory:", config)
         self.db.generate_tables()
-        self.pbac_service = PbacService(endpoint="http://example.com/", timeout=1, override_authorization_pbac=True)
+        self.auth_service = StubAuthService()
         # setup service
-        self.referral_service = ReferralService(self.db, pbac_service=self.pbac_service)
+        self.referral_service = ReferralService(self.db, authorization_service=self.auth_service)
 
     def test_db_connection(self) -> None:
         db_connection_valid = self.db.is_healthy()
