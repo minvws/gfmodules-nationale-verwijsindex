@@ -24,19 +24,11 @@ class ReferralService:
         self.authorization_service = authorization_service
 
     def get_referrals_by_domain_and_pseudonym(
-        self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber
+        self, pseudonym: Pseudonym, data_domain: DataDomain
     ) -> List[ReferralEntry]:
         """
         Method that gets all the referrals by pseudonym and data domain
         """
-        allow = self.authorization_service.is_authorized(
-            ura_number=ura_number, pseudonym=pseudonym, data_domain=data_domain
-        )
-        if not allow:
-            self.logger.error(
-                f"Authorization denied for URA number {ura_number}, pseudonym {pseudonym} and data domain {data_domain}"
-            )
-            raise HTTPException(status_code=403, detail="Authorization denied, policy not satisfied")
 
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)
@@ -45,7 +37,18 @@ class ReferralService:
             )
             if not entities:
                 raise HTTPException(status_code=404)
-            return [self.hydrate_referral(entity) for entity in entities]
+
+            allowed_entities: List[ReferralEntry] = []
+
+            for entity in entities:
+                # For each referral, check if the URA number is authorized
+                if self.authorization_service.is_authorized(
+                    ura_number=UraNumber(entity.ura_number), pseudonym=pseudonym, data_domain=data_domain
+                ):
+                    allowed_entities.append(self.hydrate_referral(entity))
+
+            # Returns a list of hydrated referral objects for entities where authorization is granted.
+            return allowed_entities
 
     def add_one_referral(
         self,
