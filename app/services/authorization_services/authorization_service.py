@@ -5,5 +5,7 @@ from app.data import DataDomain, Pseudonym, UraNumber
 
 class BaseAuthService(ABC):
     @abstractmethod
-    def is_authorized(self, ura_number: UraNumber, pseudonym: Pseudonym, data_domain: DataDomain) -> bool:
+    def is_authorized(
+        self, ura_number: UraNumber, pseudonym: Pseudonym, data_domain: DataDomain, authorization_token: str
+    ) -> bool:
         pass

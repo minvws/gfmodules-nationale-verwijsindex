@@ -8,6 +8,7 @@ from app.data import DataDomain, Pseudonym, UraNumber
 class ReferralRequest(BaseModel):
     pseudonym: Pseudonym
     data_domain: DataDomain
+    authorization_token: str
 
     @field_validator("pseudonym", mode="before")
     @classmethod

@@ -5,7 +5,7 @@ override_authentication_ura=
 swagger_enabled = True
 docs_url = /docs
 redoc_url = /redocs
-authorization_service = stub
+authorization_service = pbac
 
 [database]
 dsn=postgresql+psycopg://postgres:postgres@localisation_db:5432/postgres
