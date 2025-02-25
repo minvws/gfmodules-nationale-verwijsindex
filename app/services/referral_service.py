@@ -24,7 +24,7 @@ class ReferralService:
         self.authorization_service = authorization_service
 
     def get_referrals_by_domain_and_pseudonym(
-        self, pseudonym: Pseudonym, data_domain: DataDomain
+        self, pseudonym: Pseudonym, data_domain: DataDomain, authorization_token: str
     ) -> List[ReferralEntry]:
         """
         Method that gets all the referrals by pseudonym and data domain
@@ -43,7 +43,10 @@ class ReferralService:
             for entity in entities:
                 # For each referral, check if the URA number is authorized
                 if self.authorization_service.is_authorized(
-                    ura_number=UraNumber(entity.ura_number), pseudonym=pseudonym, data_domain=data_domain
+                    ura_number=UraNumber(entity.ura_number),
+                    pseudonym=pseudonym,
+                    data_domain=data_domain,
+                    authorization_token=authorization_token,
                 ):
                     allowed_entities.append(self.hydrate_referral(entity))
 

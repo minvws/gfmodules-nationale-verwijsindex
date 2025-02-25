@@ -76,6 +76,7 @@ class ReferralServiceTest(TestCase):
         actual_referrals = self.referral_service.get_referrals_by_domain_and_pseudonym(
             pseudonym=mock_referral.pseudonym,
             data_domain=mock_referral.data_domain,
+            authorization_token="test",
         )
 
         for referral in actual_referrals:
@@ -86,7 +87,9 @@ class ReferralServiceTest(TestCase):
     def test_get_referral_not_found(self) -> None:
         with self.assertRaises(HTTPException) as context:
             self.referral_service.get_referrals_by_domain_and_pseudonym(
-                pseudonym=Pseudonym(str(uuid4())), data_domain=DataDomain.ImagingStudy
+                pseudonym=Pseudonym(str(uuid4())),
+                data_domain=DataDomain.ImagingStudy,
+                authorization_token="test",
             )
         self.assertEqual(context.exception.status_code, 404)
 
@@ -107,6 +110,7 @@ class ReferralServiceTest(TestCase):
         actual_referrals = self.referral_service.get_referrals_by_domain_and_pseudonym(
             pseudonym=mock_referral.pseudonym,
             data_domain=mock_referral.data_domain,
+            authorization_token="test",
         )
 
         for referral in actual_referrals:
@@ -125,6 +129,7 @@ class ReferralServiceTest(TestCase):
             self.referral_service.get_referrals_by_domain_and_pseudonym(
                 pseudonym=mock_referral.pseudonym,
                 data_domain=mock_referral.data_domain,
+                authorization_token="test",
             )
         self.assertEqual(context.exception.status_code, 404)
 

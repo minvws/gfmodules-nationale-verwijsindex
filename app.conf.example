@@ -13,7 +13,7 @@ provider_id=dcc2217b-600e-4587-b74a-6b04bf3a882b
 override_authentication_ura=
 # override_authentication_ura=12345678
 # Authorization service to use: Either 'pbac' or 'stub' 
-authorization_service = stub
+authorization_service = pbac
 
 
 [database]

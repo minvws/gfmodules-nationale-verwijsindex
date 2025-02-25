@@ -35,7 +35,7 @@ def get_referral_info(
 
     localisation_pseudonym = pseudonym_service.exchange(req.pseudonym)
     referrals = referral_service.get_referrals_by_domain_and_pseudonym(
-        pseudonym=localisation_pseudonym, data_domain=req.data_domain
+        pseudonym=localisation_pseudonym, data_domain=req.data_domain, authorization_token=req.authorization_token
     )
     span.set_attribute("data.referrals_found", len(referrals))
     span.set_attribute("data.referrals", str(referrals))

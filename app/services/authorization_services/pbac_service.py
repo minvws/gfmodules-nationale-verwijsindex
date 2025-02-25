@@ -18,12 +18,19 @@ class PbacService(BaseAuthService):
         self.endpoint = endpoint
         self.timeout = timeout
 
-    def is_authorized(self, ura_number: UraNumber, pseudonym: Pseudonym, data_domain: DataDomain) -> bool:
+    def is_authorized(
+        self, ura_number: UraNumber, pseudonym: Pseudonym, data_domain: DataDomain, authorization_token: str
+    ) -> bool:
         """
         Method that checks through PBAC if a URA number is authorized
         """
         input_json = {
-            "input": {"uranumber": str(ura_number), "pseudonym": str(pseudonym), "datadomain": str(data_domain)}
+            "input": {
+                "uranumber": str(ura_number),
+                "pseudonym": str(pseudonym),
+                "datadomain": str(data_domain),
+                "authorization_token": authorization_token,
+            }
         }
 
         try:
