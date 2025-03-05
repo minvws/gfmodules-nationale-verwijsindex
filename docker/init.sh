@@ -19,8 +19,5 @@ fi
 echo "Migrating"
 tools/./migrate_db.sh $DB_HOST $DB_USER $DB_PASS $DB_NAME
 
-echo "Seeding"
-tools/./seed.sh $DB_HOST $DB_USER $DB_PASS $DB_NAME
-
 echo "Start main process"
 python -m app.main
