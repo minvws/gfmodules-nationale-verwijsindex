@@ -22,9 +22,6 @@ timeout=10
 [toestemming_stub_api]
 endpoint=http://toestemming-stub:8507
 timeout=10
-# mtls_cert=secrets/ssl/pseudonym_api.cert
-# mtls_key=secrets/ssl/pseudonym_api.key
-# mtls_ca=secrets/ssl/pseudonym_api_ca.cert
 
 [pseudonym_api]
 endpoint=http://pseudonym:8504

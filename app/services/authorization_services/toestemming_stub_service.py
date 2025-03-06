@@ -25,6 +25,9 @@ class ToestemmingStubService(BaseAuthService):
         ura_number = kwargs.get("ura_number")
         pseudonym = kwargs.get("pseudonym")
         category = kwargs.get("category")
+
+        category = "hospital"  # Hardcoded category for now
+
         if not all([ura_number, pseudonym, category]):
             raise ValueError("Missing required parameters")
         input_json = {"ura_number": ura_number, "pseudonym": pseudonym, "category": category}

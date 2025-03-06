@@ -18,9 +18,9 @@ class PbacService(BaseAuthService):
         self.timeout = timeout
 
     def is_authorized(self, **kwargs: bool | str) -> bool:
-        requesting_org_permission = kwargs.get("requesting_org_permission")
-        sharing_org_permission = kwargs.get("sharing_org_permission")
-        if not all([requesting_org_permission, sharing_org_permission]):
+        requesting_org_permission = kwargs.get("requesting_org_permission", None)
+        sharing_org_permission = kwargs.get("sharing_org_permission", None)
+        if requesting_org_permission is None or sharing_org_permission is None:
             raise ValueError("Missing required parameters")
         """
         Method that checks through PBAC if a URA number is authorized

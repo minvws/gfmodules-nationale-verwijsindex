@@ -14,10 +14,10 @@ from app.referral_request_type import ReferralRequestType
 from app.response_models.referrals import ReferralEntry
 from app.services.authorization_services.authorization_interface import BaseAuthService
 
+logger = logging.getLogger(__name__)
+
 
 class ReferralService:
-    logger = logging.getLogger(__name__)
-
     @inject.autoparams()
     def __init__(self, database: Database, pbac_service: BaseAuthService, toestemming_service: BaseAuthService) -> None:
         self.database = database
@@ -39,6 +39,8 @@ class ReferralService:
                 category=str(data_domain),  # TODO hardcode to hospital for now
             )
 
+            logger.info(f"Requesting org {str(ura_number)} has permission: {requesting_org_permission}")
+
             referral_repository = session.get_repository(ReferralRepository)
             entities: List[ReferralEntity] = referral_repository.query_referrals(
                 pseudonym=pseudonym, data_domain=data_domain, ura_number=None
@@ -55,10 +57,14 @@ class ReferralService:
                     pseudonym=str(pseudonym),
                     category=str(data_domain),  # TODO hardcode to hospital for now
                 )
+
+                logger.info(f"Sharing org {entity.ura_number} has permission: {sharing_org_permission}")
+
                 # For each referral, check in PBAC if data can be shared for both sharing org and requesting org
                 if self.pbac_service.is_authorized(
                     requesting_org_permission=requesting_org_permission, sharing_org_permission=sharing_org_permission
                 ):
+                    logger.info(f"PBAC authorization granted for referral {entity.ura_number}")
                     allowed_entities.append(self.hydrate_referral(entity))
 
             # Returns a list of hydrated referral objects for entities where authorization is granted.

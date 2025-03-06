@@ -41,10 +41,6 @@ timeout=10
 endpoint=http://toestemming-stub:8507
 # Timeout for toestemming stub
 timeout=10
-# mTLS certs if any
-# mtls_cert=secrets/ssl/pseudonym_api.cert
-# mtls_key=secrets/ssl/pseudonym_api.key
-# mtls_ca=secrets/ssl/pseudonym_api_ca.cert
 
 [pseudonym_api]
 endpoint=http://localhost:8504
