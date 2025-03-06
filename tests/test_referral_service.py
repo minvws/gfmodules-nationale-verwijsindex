@@ -19,7 +19,9 @@ class ReferralServiceTest(TestCase):
         self.db.generate_tables()
         self.auth_service = StubAuthService()
         # setup service
-        self.referral_service = ReferralService(self.db, authorization_service=self.auth_service)
+        self.referral_service = ReferralService(
+            self.db, pbac_service=self.auth_service, toestemming_service=self.auth_service
+        )
 
     def test_db_connection(self) -> None:
         db_connection_valid = self.db.is_healthy()
@@ -76,7 +78,7 @@ class ReferralServiceTest(TestCase):
         actual_referrals = self.referral_service.get_referrals_by_domain_and_pseudonym(
             pseudonym=mock_referral.pseudonym,
             data_domain=mock_referral.data_domain,
-            authorization_token="test",
+            ura_number=UraNumber("12341234"),
         )
 
         for referral in actual_referrals:
@@ -89,7 +91,7 @@ class ReferralServiceTest(TestCase):
             self.referral_service.get_referrals_by_domain_and_pseudonym(
                 pseudonym=Pseudonym(str(uuid4())),
                 data_domain=DataDomain.ImagingStudy,
-                authorization_token="test",
+                ura_number=UraNumber("12341234"),
             )
         self.assertEqual(context.exception.status_code, 404)
 
@@ -110,7 +112,7 @@ class ReferralServiceTest(TestCase):
         actual_referrals = self.referral_service.get_referrals_by_domain_and_pseudonym(
             pseudonym=mock_referral.pseudonym,
             data_domain=mock_referral.data_domain,
-            authorization_token="test",
+            ura_number=UraNumber("12341234"),
         )
 
         for referral in actual_referrals:
@@ -129,7 +131,7 @@ class ReferralServiceTest(TestCase):
             self.referral_service.get_referrals_by_domain_and_pseudonym(
                 pseudonym=mock_referral.pseudonym,
                 data_domain=mock_referral.data_domain,
-                authorization_token="test",
+                ura_number=UraNumber("12341234"),
             )
         self.assertEqual(context.exception.status_code, 404)
 

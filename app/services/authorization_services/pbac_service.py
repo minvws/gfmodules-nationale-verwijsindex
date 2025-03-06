@@ -3,13 +3,12 @@ import logging
 import requests
 from fastapi.exceptions import HTTPException
 
-from app.data import DataDomain, Pseudonym, UraNumber
-from app.services.authorization_services.authorization_service import BaseAuthService
+from app.services.authorization_services.authorization_interface import BaseAuthService
+
+logger = logging.getLogger(__name__)
 
 
 class PbacService(BaseAuthService):
-    logger = logging.getLogger(__name__)
-
     def __init__(
         self,
         endpoint: str,
@@ -18,26 +17,26 @@ class PbacService(BaseAuthService):
         self.endpoint = endpoint
         self.timeout = timeout
 
-    def is_authorized(
-        self, ura_number: UraNumber, pseudonym: Pseudonym, data_domain: DataDomain, authorization_token: str
-    ) -> bool:
+    def is_authorized(self, **kwargs: bool | str) -> bool:
+        requesting_org_permission = kwargs.get("requesting_org_permission")
+        sharing_org_permission = kwargs.get("sharing_org_permission")
+        if not all([requesting_org_permission, sharing_org_permission]):
+            raise ValueError("Missing required parameters")
         """
         Method that checks through PBAC if a URA number is authorized
         """
         input_json = {
             "input": {
-                "uranumber": str(ura_number),
-                "pseudonym": str(pseudonym),
-                "datadomain": str(data_domain),
-                "authorization_token": authorization_token,
+                "requesting_org_permission": requesting_org_permission,
+                "sharing_org_permission": sharing_org_permission,
             }
         }
 
         try:
             response = requests.post(f"{self.endpoint}/v1/data/example/authz", timeout=self.timeout, json=input_json)
             response.raise_for_status()
-        except requests.RequestException as e:
-            self.logger.error(f"Failed to reach authorization server: {e}")
+        except (requests.RequestException, requests.HTTPError) as e:
+            logger.error(f"Failed to reach authorization server: {e}")
             raise HTTPException(status_code=500, detail="Failed to reach authorization server") from e
 
         try:
@@ -57,5 +56,5 @@ class PbacService(BaseAuthService):
             return allow
 
         except (ValueError, KeyError) as e:
-            self.logger.error(f"Failed to parse response: {e}")
+            logger.error(f"Failed to parse response: {e}")
             raise HTTPException(status_code=500, detail="Failed to parse response from authorization server") from e
