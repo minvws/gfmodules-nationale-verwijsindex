@@ -12,8 +12,8 @@ provider_id=dcc2217b-600e-4587-b74a-6b04bf3a882b
 # Override authentication URA for testing, or False when using the URA from the MTLS certificate
 override_authentication_ura=
 # override_authentication_ura=12345678
-# Authorization service to use: Either 'pbac' or 'stub' 
-authorization_service = pbac
+# Authorization service to use: Either True to use external toestemming stub and pbac or False for a stub implementation
+authorization_service = False
 
 
 [database]
@@ -34,6 +34,12 @@ pool_recycle=1800
 # Endpoint for the PBAC service
 endpoint=http://pbac:8181
 # Timeout for the PBAC service
+timeout=10
+
+[toestemming_stub_api]
+# Endpoint for the toestemming stub
+endpoint=http://toestemming-stub:8507
+# Timeout for toestemming stub
 timeout=10
 
 [pseudonym_api]

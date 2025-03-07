@@ -12,27 +12,37 @@ from app.logger.referral_request_database_logger import ReferralRequestDatabaseL
 from app.referral_request_payload import ReferralLoggingPayload
 from app.referral_request_type import ReferralRequestType
 from app.response_models.referrals import ReferralEntry
-from app.services.authorization_services.authorization_service import BaseAuthService
+from app.services.authorization_services.authorization_interface import BaseAuthService
+
+logger = logging.getLogger(__name__)
 
 
 class ReferralService:
-    logger = logging.getLogger(__name__)
-
     @inject.autoparams()
-    def __init__(self, database: Database, authorization_service: BaseAuthService) -> None:
+    def __init__(self, database: Database, pbac_service: BaseAuthService, toestemming_service: BaseAuthService) -> None:
         self.database = database
-        self.authorization_service = authorization_service
+        self.pbac_service = pbac_service
+        self.toestemming_service = toestemming_service
 
     def get_referrals_by_domain_and_pseudonym(
-        self, pseudonym: Pseudonym, data_domain: DataDomain, authorization_token: str
+        self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber
     ) -> List[ReferralEntry]:
         """
         Method that gets all the referrals by pseudonym and data domain
         """
 
         with self.database.get_db_session() as session:
+            # Check toestemming if requesting organization has permission
+            requesting_org_permission = self.toestemming_service.is_authorized(
+                ura_number=str(ura_number),  # URA from viewer/user
+                pseudonym=str(pseudonym),
+                category=str(data_domain),  # TODO hardcode to hospital for now
+            )
+
+            logger.info(f"Requesting org {str(ura_number)} has permission: {requesting_org_permission}")
+
             referral_repository = session.get_repository(ReferralRepository)
-            entities = referral_repository.query_referrals(
+            entities: List[ReferralEntity] = referral_repository.query_referrals(
                 pseudonym=pseudonym, data_domain=data_domain, ura_number=None
             )
             if not entities:
@@ -41,13 +51,20 @@ class ReferralService:
             allowed_entities: List[ReferralEntry] = []
 
             for entity in entities:
-                # For each referral, check if the URA number is authorized
-                if self.authorization_service.is_authorized(
-                    ura_number=UraNumber(entity.ura_number),
-                    pseudonym=pseudonym,
-                    data_domain=data_domain,
-                    authorization_token=authorization_token,
+                # Check toestemming if sharing organization has permission
+                sharing_org_permission = self.toestemming_service.is_authorized(
+                    ura_number=entity.ura_number,  # Ura from retrieved referral
+                    pseudonym=str(pseudonym),
+                    category=str(data_domain),  # TODO hardcode to hospital for now
+                )
+
+                logger.info(f"Sharing org {entity.ura_number} has permission: {sharing_org_permission}")
+
+                # For each referral, check in PBAC if data can be shared for both sharing org and requesting org
+                if self.pbac_service.is_authorized(
+                    requesting_org_permission=requesting_org_permission, sharing_org_permission=sharing_org_permission
                 ):
+                    logger.info(f"PBAC authorization granted for referral {entity.ura_number}")
                     allowed_entities.append(self.hydrate_referral(entity))
 
             # Returns a list of hydrated referral objects for entities where authorization is granted.

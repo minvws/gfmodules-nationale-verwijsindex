@@ -6,6 +6,7 @@ from app.config import (
     ConfigPseudonymApi,
     ConfigStats,
     ConfigTelemetry,
+    ConfigToestemmingStubApi,
     LogLevel,
 )
 
@@ -16,7 +17,7 @@ def get_test_config() -> Config:
             loglevel=LogLevel.error,
             provider_id="84de3f9c-0113-4fbb-af4b-215715e631bd",
             override_authentication_ura=None,
-            authorization_service="stub",
+            authorization_service=False,
         ),
         database=ConfigDatabase(
             dsn="sqlite:///:memory:",
@@ -24,7 +25,14 @@ def get_test_config() -> Config:
         ),
         pseudonym_api=ConfigPseudonymApi(
             mock=True,
-            endpoint="http://pseudonym",
+            endpoint="http://example.com",
+            timeout=30,
+            mtls_cert=None,
+            mtls_key=None,
+            mtls_ca=None,
+        ),
+        toestemming_stub_api=ConfigToestemmingStubApi(
+            endpoint="http://example.com",
             timeout=30,
             mtls_cert=None,
             mtls_key=None,

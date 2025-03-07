@@ -5,10 +5,12 @@ from pydantic import ValidationError
 
 from app.config import PROJECT_ROOT, Config, ConfigApp, read_ini_file
 from app.db.db import Database
-from app.services.authorization_services.authorization_service import BaseAuthService
+from app.services.authorization_services.authorization_interface import BaseAuthService
 from app.services.authorization_services.pbac_service import PbacService
 from app.services.authorization_services.stub import StubAuthService
+from app.services.authorization_services.toestemming_stub_service import ToestemmingStubService
 from app.services.pseudonym_service import PseudonymService
+from app.services.referral_service import ReferralService
 from app.services.ura_number_finder import (
     ConfigOverridenMockURANumberFinder,
     RequestURANumberFinder,
@@ -50,19 +52,35 @@ def container_config(binder: inject.Binder) -> None:
     db = Database(dsn=config.database.dsn, config=config)
     binder.bind(Database, db)
 
-    match config.app.authorization_service:
-        case "pbac":
-            pbac_service = PbacService(
-                endpoint=config.pbac_api.endpoint,
-                timeout=config.pbac_api.timeout,
-            )
-            binder.bind(BaseAuthService, pbac_service)
+    if config.app.authorization_service:
+        pbac_service = PbacService(
+            endpoint=config.pbac_api.endpoint,
+            timeout=config.pbac_api.timeout,
+        )
+        toestemming_stub_service = ToestemmingStubService(
+            endpoint=config.toestemming_stub_api.endpoint,
+            timeout=config.toestemming_stub_api.timeout,
+        )
+        # Bind services to different identifiers
+        binder.bind(PbacService, pbac_service)
+        binder.bind(ToestemmingStubService, toestemming_stub_service)
 
-        case "stub":
-            stub_service = StubAuthService()
-            binder.bind(BaseAuthService, stub_service)
-        case _:
-            raise ValueError(f"Unknown authorization service: {config.app.authorization_service}")
+        referral_service = ReferralService(
+            database=db,
+            pbac_service=pbac_service,
+            toestemming_service=toestemming_stub_service,
+        )
+        binder.bind(ReferralService, referral_service)
+    else:
+        stub_service = StubAuthService()
+        binder.bind(BaseAuthService, stub_service)
+
+        referral_service = ReferralService(
+            database=db,
+            pbac_service=stub_service,
+            toestemming_service=stub_service,
+        )
+        binder.bind(ReferralService, referral_service)
 
     pseudonym_service = PseudonymService(
         endpoint=config.pseudonym_api.endpoint,
