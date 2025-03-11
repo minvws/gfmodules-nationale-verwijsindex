@@ -36,10 +36,11 @@ class ReferralService:
             requesting_org_permission = self.toestemming_service.is_authorized(
                 ura_number=str(ura_number),  # URA from viewer/user
                 pseudonym=str(pseudonym),
-                category=str(data_domain),  # TODO hardcode to hospital for now
+                category=str(data_domain),
+                read_share="read",
             )
 
-            logger.info(f"Requesting org {str(ura_number)} has permission: {requesting_org_permission}")
+            logger.info(f"Requesting org {str(ura_number)} has READ permission: {requesting_org_permission}")
 
             referral_repository = session.get_repository(ReferralRepository)
             entities: List[ReferralEntity] = referral_repository.query_referrals(
@@ -55,10 +56,10 @@ class ReferralService:
                 sharing_org_permission = self.toestemming_service.is_authorized(
                     ura_number=entity.ura_number,  # Ura from retrieved referral
                     pseudonym=str(pseudonym),
-                    category=str(data_domain),  # TODO hardcode to hospital for now
+                    read_share="share",
                 )
 
-                logger.info(f"Sharing org {entity.ura_number} has permission: {sharing_org_permission}")
+                logger.info(f"Sharing org {entity.ura_number} has SHARE permission: {sharing_org_permission}")
 
                 # For each referral, check in PBAC if data can be shared for both sharing org and requesting org
                 if self.pbac_service.is_authorized(
