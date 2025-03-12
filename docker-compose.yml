@@ -27,7 +27,6 @@ services:
 
   app_ssl:
     image: httpd
-    restart: "no"
     ports:
       - "8541:443"
     volumes:
@@ -52,7 +51,6 @@ services:
       test: ["CMD-SHELL", "pg_isready --user postgres"]
       start_period: 30s
       start_interval: 1s
-    restart: always
     ports:
       - 5401:5432
     networks:
