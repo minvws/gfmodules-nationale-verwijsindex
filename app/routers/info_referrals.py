@@ -1,13 +1,13 @@
 import logging
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from opentelemetry import trace
 
 from app import dependencies
 from app.data import UraNumber
 from app.response_models.referrals import ReferralEntry, ReferralRequest
-from app.services.pseudonym_service import PseudonymService
+from app.services.pseudonym_service import PseudonymError, PseudonymService
 from app.services.referral_service import ReferralService
 
 logger = logging.getLogger(__name__)
@@ -26,14 +26,19 @@ def get_referral_info(
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
     ura_number: UraNumber = Depends(dependencies.authenticated_ura),
-) -> List[ReferralEntry]:
+) -> List[ReferralEntry] | Response:
     """
     Searches for referrals by pseudonym and data domain
     """
     span = trace.get_current_span()
     span.update_name(f"POST /info pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)}")
 
-    localisation_pseudonym = pseudonym_service.exchange(req.pseudonym)
+    try:
+        localisation_pseudonym = pseudonym_service.exchange(req.pseudonym)
+    except PseudonymError as e:
+        logger.error(f"Failed to exchange pseudonym: {e}")
+        return Response(status_code=404)
+
     referrals = referral_service.get_referrals_by_domain_and_pseudonym(
         pseudonym=localisation_pseudonym, data_domain=req.data_domain, ura_number=ura_number
     )
