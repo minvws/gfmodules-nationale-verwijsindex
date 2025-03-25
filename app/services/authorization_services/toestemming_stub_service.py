@@ -18,7 +18,7 @@ class ToestemmingStubService(BaseAuthService):
         self.timeout = timeout
 
     def is_authorized(
-        # Toestemming stub needs: source_ura or source_category, and target_ura or target_Category and a pseudonym
+        # Toestemming stub needs: source_ura or source_category, and target_ura or target_category and a pseudonym
         self,
         **kwargs: bool | str,
     ) -> bool:
