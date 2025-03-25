@@ -38,9 +38,6 @@ class ToestemmingStubService(BaseAuthService):
         }
 
         input_json = {k: v for k, v in input_json.items() if v is not None}
-
-        print(input_json)
-
         try:
             response = requests.post(url, timeout=self.timeout, json=input_json)
             response.raise_for_status()
