@@ -33,11 +33,16 @@ class ReferralService:
 
         with self.database.get_db_session() as session:
             # Check toestemming if requesting organization has permission
+
+            source_category = "hospitals"  # TODO: Hardcoded category for now
+            target_category = "hospitals"  # TODO: Hardcoded category for now
+
             requesting_org_permission = self.toestemming_service.is_authorized(
-                ura_number=str(ura_number),  # URA from viewer/user
                 pseudonym=str(pseudonym),
-                category=str(data_domain),
-                read_share="read",
+                source_ura_number=str(ura_number),
+                source_category=source_category,
+                target_ura_number="12341234",
+                target_category=target_category,
             )
 
             logger.info(f"Requesting org {str(ura_number)} has READ permission: {requesting_org_permission}")
@@ -54,9 +59,11 @@ class ReferralService:
             for entity in entities:
                 # Check toestemming if sharing organization has permission
                 sharing_org_permission = self.toestemming_service.is_authorized(
-                    ura_number=entity.ura_number,  # Ura from retrieved referral
                     pseudonym=str(pseudonym),
-                    read_share="share",
+                    source_category=source_category,
+                    source_ura_number="12341234",
+                    target_ura_number=entity.ura_number,
+                    target_category=target_category,
                 )
 
                 logger.info(f"Sharing org {entity.ura_number} has SHARE permission: {sharing_org_permission}")

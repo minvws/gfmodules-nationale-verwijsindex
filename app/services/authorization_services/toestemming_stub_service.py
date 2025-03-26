@@ -1,5 +1,4 @@
 import logging
-from typing import Any, Dict
 
 import requests
 from fastapi import HTTPException
@@ -19,35 +18,28 @@ class ToestemmingStubService(BaseAuthService):
         self.timeout = timeout
 
     def is_authorized(
-        # Toestemming stub needs: Ura, Pseudonym, and Category (datadomain)
+        # Toestemming stub needs: source_ura or source_category, and target_ura or target_category and a pseudonym
         self,
         **kwargs: bool | str,
     ) -> bool:
-        read_share = kwargs.get("read_share")
-        ura_number = kwargs.get("ura_number")
         pseudonym = kwargs.get("pseudonym")
-        category = kwargs.get("category")
+        source_ura_number = kwargs.get("source_ura_number")
+        source_category = kwargs.get("source_category")
+        target_ura_number = kwargs.get("target_ura_number")
+        target_category = kwargs.get("target_category")
 
-        category = "hospital"  # TODO: Hardcoded category for now
+        url = f"{self.endpoint}/permission"
+        input_json = {
+            "pseudonym": pseudonym,
+            "source_ura_number": source_ura_number,
+            "source_category": source_category,
+            "target_ura_number": target_ura_number,
+            "target_category": target_category,
+        }
 
-        if read_share == "read":
-            if not all([ura_number, pseudonym, category]):
-                raise ValueError("Missing required parameters")
-            input_json = {"ura_number": ura_number, "pseudonym": pseudonym, "category": category}
-            url = f"{self.endpoint}/read-permission"
-        elif read_share == "share":
-            if not all([ura_number, pseudonym]):
-                raise ValueError("Missing required parameters")
-            input_json = {"ura_number": ura_number, "pseudonym": pseudonym}
-            url = f"{self.endpoint}/share-permission"
-        else:
-            raise ValueError("Invalid read_share parameter, must be 'read' or 'share")
-
-        return self.__request_permission(url, input_json)
-
-    def __request_permission(self, url: str, json: Dict[str, Any]) -> bool:
+        input_json = {k: v for k, v in input_json.items() if v is not None}
         try:
-            response = requests.post(url, timeout=self.timeout, json=json)
+            response = requests.post(url, timeout=self.timeout, json=input_json)
             response.raise_for_status()
         except (requests.RequestException, requests.HTTPError) as e:
             logger.error(f"Failed to reach authorization server: {e}")
