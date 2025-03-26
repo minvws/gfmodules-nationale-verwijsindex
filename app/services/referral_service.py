@@ -25,7 +25,7 @@ class ReferralService:
         self.toestemming_service = toestemming_service
 
     def get_referrals_by_domain_and_pseudonym(
-        self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber
+        self, pseudonym: Pseudonym, data_domain: DataDomain, client_ura_number: UraNumber
     ) -> List[ReferralEntry]:
         """
         Method that gets all the referrals by pseudonym and data domain
@@ -33,20 +33,6 @@ class ReferralService:
 
         with self.database.get_db_session() as session:
             # Check toestemming if requesting organization has permission
-
-            source_category = "hospitals"  # TODO: Hardcoded category for now
-            target_category = "hospitals"  # TODO: Hardcoded category for now
-
-            requesting_org_permission = self.toestemming_service.is_authorized(
-                pseudonym=str(pseudonym),
-                source_ura_number=str(ura_number),
-                source_category=source_category,
-                target_ura_number="12341234",
-                target_category=target_category,
-            )
-
-            logger.info(f"Requesting org {str(ura_number)} has READ permission: {requesting_org_permission}")
-
             referral_repository = session.get_repository(ReferralRepository)
             entities: List[ReferralEntity] = referral_repository.query_referrals(
                 pseudonym=pseudonym, data_domain=data_domain, ura_number=None
@@ -58,20 +44,18 @@ class ReferralService:
 
             for entity in entities:
                 # Check toestemming if sharing organization has permission
-                sharing_org_permission = self.toestemming_service.is_authorized(
+                toestemming_result = self.toestemming_service.is_authorized(
                     pseudonym=str(pseudonym),
-                    source_category=source_category,
-                    source_ura_number="12341234",
-                    target_ura_number=entity.ura_number,
-                    target_category=target_category,
+                    client_ura_number=str(client_ura_number),
+                    dossier_keeping_ura_number=entity.ura_number,
                 )
 
-                logger.info(f"Sharing org {entity.ura_number} has SHARE permission: {sharing_org_permission}")
+                logger.info(
+                    f"Can {entity.ura_number} share data with {client_ura_number}? Toestemming-stub says: {toestemming_result}"
+                )
 
                 # For each referral, check in PBAC if data can be shared for both sharing org and requesting org
-                if self.pbac_service.is_authorized(
-                    requesting_org_permission=requesting_org_permission, sharing_org_permission=sharing_org_permission
-                ):
+                if self.pbac_service.is_authorized(explicit_permission=toestemming_result):
                     logger.info(f"PBAC authorization granted for referral {entity.ura_number}")
                     allowed_entities.append(self.hydrate_referral(entity))
 
