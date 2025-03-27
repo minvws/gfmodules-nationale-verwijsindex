@@ -48,6 +48,7 @@ class ReferralService:
                     pseudonym=str(pseudonym),
                     client_ura_number=str(client_ura_number),
                     dossier_keeping_ura_number=entity.ura_number,
+                    dossier_keeping_org_category="hospitals",  # TODO hardcoded for now
                 )
 
                 logger.info(
