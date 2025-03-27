@@ -19,17 +19,15 @@ class PbacService(BaseAuthService):
         self.timeout = timeout
 
     def is_authorized(self, **kwargs: bool | str) -> bool:
-        requesting_org_permission = kwargs.get("requesting_org_permission", None)
-        sharing_org_permission = kwargs.get("sharing_org_permission", None)
-        if requesting_org_permission is None or sharing_org_permission is None:
-            raise ValueError("Missing required parameters")
+        explicit_permission = kwargs.get("explicit_permission", None)
+        if explicit_permission is None:
+            raise HTTPException(status_code=500, detail="Missing explicit permission parameter")
         """
         Method that checks through PBAC if a URA number is authorized
         """
         input_json = {
             "input": {
-                "requesting_org_permission": requesting_org_permission,
-                "sharing_org_permission": sharing_org_permission,
+                "explicit_permission": explicit_permission,
             }
         }
         with get_tracer().start_as_current_span("PBAC") as span:  # type: ignore

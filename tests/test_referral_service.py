@@ -78,7 +78,7 @@ class ReferralServiceTest(TestCase):
         actual_referrals = self.referral_service.get_referrals_by_domain_and_pseudonym(
             pseudonym=mock_referral.pseudonym,
             data_domain=mock_referral.data_domain,
-            ura_number=UraNumber("12341234"),
+            client_ura_number=UraNumber("12341234"),
         )
 
         for referral in actual_referrals:
@@ -91,7 +91,7 @@ class ReferralServiceTest(TestCase):
             self.referral_service.get_referrals_by_domain_and_pseudonym(
                 pseudonym=Pseudonym(str(uuid4())),
                 data_domain=DataDomain.ImagingStudy,
-                ura_number=UraNumber("12341234"),
+                client_ura_number=UraNumber("12341234"),
             )
         self.assertEqual(context.exception.status_code, 404)
 
@@ -112,7 +112,7 @@ class ReferralServiceTest(TestCase):
         actual_referrals = self.referral_service.get_referrals_by_domain_and_pseudonym(
             pseudonym=mock_referral.pseudonym,
             data_domain=mock_referral.data_domain,
-            ura_number=UraNumber("12341234"),
+            client_ura_number=UraNumber("12341234"),
         )
 
         for referral in actual_referrals:
@@ -131,7 +131,7 @@ class ReferralServiceTest(TestCase):
             self.referral_service.get_referrals_by_domain_and_pseudonym(
                 pseudonym=mock_referral.pseudonym,
                 data_domain=mock_referral.data_domain,
-                ura_number=UraNumber("12341234"),
+                client_ura_number=UraNumber("12341234"),
             )
         self.assertEqual(context.exception.status_code, 404)
 

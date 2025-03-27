@@ -23,21 +23,22 @@ class ToestemmingStubService(BaseAuthService):
         **kwargs: bool | str,
     ) -> bool:
         pseudonym = kwargs.get("pseudonym")
-        source_ura_number = kwargs.get("source_ura_number")
-        source_category = kwargs.get("source_category")
-        target_ura_number = kwargs.get("target_ura_number")
-        target_category = kwargs.get("target_category")
+        client_ura_number = kwargs.get("client_ura_number")
+        dossier_keeping_ura_number = kwargs.get("dossier_keeping_ura_number")
+        if pseudonym is None or client_ura_number is None or dossier_keeping_ura_number is None:
+            raise HTTPException(status_code=400, detail="Missing required parameters")
 
         url = f"{self.endpoint}/permission"
         input_json = {
-            "pseudonym": pseudonym,
-            "source_ura_number": source_ura_number,
-            "source_category": source_category,
-            "target_ura_number": target_ura_number,
-            "target_category": target_category,
+            "resource": {
+                "pseudonym": pseudonym,
+                "org_ura": dossier_keeping_ura_number,
+            },
+            "subject": {
+                "org_ura": client_ura_number,
+            },
         }
 
-        input_json = {k: v for k, v in input_json.items() if v is not None}
         try:
             response = requests.post(url, timeout=self.timeout, json=input_json)
             response.raise_for_status()
