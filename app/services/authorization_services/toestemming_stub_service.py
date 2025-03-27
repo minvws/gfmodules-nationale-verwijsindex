@@ -25,6 +25,7 @@ class ToestemmingStubService(BaseAuthService):
         pseudonym = kwargs.get("pseudonym")
         client_ura_number = kwargs.get("client_ura_number")
         dossier_keeping_ura_number = kwargs.get("dossier_keeping_ura_number")
+        dossier_keeping_org_category = kwargs.get("dossier_keeping_org_category")
         if pseudonym is None or client_ura_number is None or dossier_keeping_ura_number is None:
             raise HTTPException(status_code=400, detail="Missing required parameters")
 
@@ -33,6 +34,7 @@ class ToestemmingStubService(BaseAuthService):
             "resource": {
                 "pseudonym": pseudonym,
                 "org_ura": dossier_keeping_ura_number,
+                "org_category": dossier_keeping_org_category,
             },
             "subject": {
                 "org_ura": client_ura_number,
