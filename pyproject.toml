@@ -15,7 +15,7 @@ fastapi = "^0.115"
 mypy = "^1.15.0"
 pydantic-settings = "^2.8.1"
 inject = "^5.2.0"
-sqlalchemy = "^2.0.39"
+sqlalchemy = "^2.0.40"
 psycopg = { extras = ["binary", "pool"], version = "^3.2.6" }
 types-requests = "^2.32.0.20250306"
 opentelemetry-sdk = "^1.24.0"
