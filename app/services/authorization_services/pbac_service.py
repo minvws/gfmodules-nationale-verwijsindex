@@ -19,15 +19,15 @@ class PbacService(BaseAuthService):
         self.timeout = timeout
 
     def is_authorized(self, **kwargs: bool | str) -> bool:
-        explicit_permission = kwargs.get("explicit_permission", None)
-        if explicit_permission is None:
-            raise HTTPException(status_code=500, detail="Missing explicit permission parameter")
+        otv_permission = kwargs.get("otv_permission", None)
+        if otv_permission is None:
+            raise HTTPException(status_code=500, detail="Missing otv permission parameter")
         """
         Method that checks through PBAC if a URA number is authorized
         """
         input_json = {
             "input": {
-                "explicit_permission": explicit_permission,
+                "otv_permission": otv_permission,
             }
         }
         with get_tracer().start_as_current_span("PBAC") as span:  # type: ignore
