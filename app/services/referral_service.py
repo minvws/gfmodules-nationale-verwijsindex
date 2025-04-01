@@ -44,7 +44,7 @@ class ReferralService:
 
             for entity in entities:
                 # Check toestemming if sharing organization has permission
-                toestemming_result = self.toestemming_service.is_authorized(
+                otv_permission = self.toestemming_service.is_authorized(
                     pseudonym=str(pseudonym),
                     client_ura_number=str(client_ura_number),
                     dossier_keeping_ura_number=entity.ura_number,
@@ -52,11 +52,11 @@ class ReferralService:
                 )
 
                 logger.info(
-                    f"Can {entity.ura_number} share data with {client_ura_number}? Toestemming-stub says: {toestemming_result}"
+                    f"Can {entity.ura_number} share data with {client_ura_number}? Toestemming-stub says: {otv_permission}"
                 )
 
                 # For each referral, check in PBAC if data can be shared for both sharing org and requesting org
-                if self.pbac_service.is_authorized(explicit_permission=toestemming_result):
+                if self.pbac_service.is_authorized(otv_permission=otv_permission):
                     logger.info(f"PBAC authorization granted for referral {entity.ura_number}")
                     allowed_entities.append(self.hydrate_referral(entity))
 
