@@ -55,3 +55,23 @@ outside the repository. For this, create an local `.gitignore` file and configur
 ```bash
 git config --global core.excludesfile ~/.gitignore
 ```
+
+## Docker container builds
+
+There are two ways to build a docker container from this application. The first is the default mode created with:
+
+```bash
+    make container-build
+```
+
+This will build a docker container that will run its migrations to the database specified in app.conf.
+
+The second mode is a "standalone" mode, where it will not run migrations, and where you must explicitly specify
+an app.conf mount.
+
+```bash
+    make container-build-standalone
+```
+
+Both containers only differ in their init script and the default version usually will mount its own local src directory
+into the container's /src dir.
