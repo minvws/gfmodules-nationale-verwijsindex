@@ -70,7 +70,7 @@ The second mode is a "standalone" mode, where it will not run migrations, and wh
 an app.conf mount.
 
 ```bash
-    make container-build-standalone
+    make container-build-sa
 ```
 
 Both containers only differ in their init script and the default version usually will mount its own local src directory
