@@ -68,4 +68,4 @@ WORKDIR ${PROJECT_DIR}
 
 ENV PYTHONPATH=${PROJECT_DIR}
 
-CMD docker/./init.sh localisation_db
+CMD ["docker/./init.sh", "localisation_db"]
