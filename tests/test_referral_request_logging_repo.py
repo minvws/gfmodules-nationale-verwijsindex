@@ -22,7 +22,7 @@ class ReferralRequestLoggingRepositoryTest(TestCase):
 
     def setUp(self) -> None:
         config = get_test_config()
-        self._db = Database("sqlite:///:memory:", config)
+        self._db = Database(config.database)
         self._db.generate_tables()
 
         with self._db.get_db_session() as session:

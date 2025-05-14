@@ -3,7 +3,7 @@ import logging
 from sqlalchemy import StaticPool, create_engine, text
 from sqlalchemy.orm import Session
 
-from app.config import Config
+from app.config import ConfigDatabase
 from app.db.models.base import Base
 from app.db.session import DbSession
 
@@ -11,15 +11,15 @@ logger = logging.getLogger(__name__)
 
 
 class Database:
-    _config: Config
+    _config_database: ConfigDatabase
 
-    def __init__(self, dsn: str, config: Config):
-        self._config = config
+    def __init__(self, config_database: ConfigDatabase):
+        self._config_database = config_database
 
         try:
-            if "sqlite://" in dsn:
+            if "sqlite://" in config_database.dsn:
                 self.engine = create_engine(
-                    dsn,
+                    config_database.dsn,
                     connect_args={
                         "check_same_thread": False
                     },  # This + static pool is needed for sqlite in-memory tables
@@ -27,12 +27,12 @@ class Database:
                 )
             else:
                 self.engine = create_engine(
-                    dsn,
+                    config_database.dsn,
                     echo=False,
-                    pool_pre_ping=config.database.pool_pre_ping,
-                    pool_recycle=config.database.pool_recycle,
-                    pool_size=config.database.pool_size,
-                    max_overflow=config.database.max_overflow,
+                    pool_pre_ping=config_database.pool_pre_ping,
+                    pool_recycle=config_database.pool_recycle,
+                    pool_size=config_database.pool_size,
+                    max_overflow=config_database.max_overflow,
                 )
         except BaseException as e:
             logger.error("Error while connecting to database: %s", e)
@@ -57,4 +57,4 @@ class Database:
             return False
 
     def get_db_session(self) -> DbSession:
-        return DbSession(self.engine, self._config)
+        return DbSession(self.engine, self._config_database.retry_backoff)

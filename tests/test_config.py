@@ -7,6 +7,7 @@ from app.config import (
     ConfigStats,
     ConfigTelemetry,
     ConfigToestemmingStubApi,
+    ConfigUraMiddleware,
     LogLevel,
 )
 
@@ -16,7 +17,6 @@ def get_test_config() -> Config:
         app=ConfigApp(
             loglevel=LogLevel.error,
             provider_id="84de3f9c-0113-4fbb-af4b-215715e631bd",
-            override_authentication_ura=None,
             authorization_service=False,
         ),
         database=ConfigDatabase(
@@ -48,5 +48,8 @@ def get_test_config() -> Config:
         pbac_api=ConfigPbacApi(
             endpoint="http://pbac",
             timeout=30,
+        ),
+        ura_middleware=ConfigUraMiddleware(
+            override_authentication_ura=None, use_authentication_ura_whitelist=False, whitelist_cache_in_seconds=40
         ),
     )

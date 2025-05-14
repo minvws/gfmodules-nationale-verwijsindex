@@ -4,9 +4,7 @@ from starlette.requests import Request
 from uzireader.uziserver import UziServer
 
 from app.data import UraNumber
-from app.services.ura_number_finder import (
-    RequestURANumberFinder,
-)
+from app.middleware.ura_middleware.request_ura_middleware import RequestUraMiddleware
 
 
 def test_authenticated_ura(mocker):
@@ -19,7 +17,7 @@ def test_authenticated_ura(mocker):
 
     uzi_server_creation_mock = mocker.patch.object(UziServer, "__new__", return_value=mock_class)
 
-    actual = RequestURANumberFinder().find(request)
+    actual = RequestUraMiddleware().authenticated_ura(request)
 
     assert actual == UraNumber(12345679)
 
@@ -36,7 +34,7 @@ def test_authenticated_ura_when_header_not_present(mocker):
     request.headers = {}
 
     with pytest.raises(HTTPException):
-        RequestURANumberFinder().find(request)
+        RequestUraMiddleware().authenticated_ura(request)
 
 
 def test_enforce_cert_newlines_with_headers(mocker):
@@ -46,8 +44,8 @@ def test_enforce_cert_newlines_with_headers(mocker):
     cert = "-----BEGIN CERTIFICATE-----000102030405060708091011121314151617181920212223242526272829303132333435363738394041424344454647484950-----END CERTIFICATE-----"
     expected = "-----BEGIN CERTIFICATE-----\n0001020304050607080910111213141516171819202122232425262728293031\n32333435363738394041424344454647484950\n-----END CERTIFICATE-----"
 
-    finder = RequestURANumberFinder()
-    actual = finder._enforce_cert_newlines(cert)
+    ura_middleware = RequestUraMiddleware()
+    actual = ura_middleware._enforce_cert_newlines(cert)
     assert actual == expected
 
 
@@ -58,6 +56,6 @@ def test_enforce_cert_newlines_without_headers(mocker):
     cert = "000102030405060708091011121314151617181920212223242526272829303132333435363738394041424344454647484950"
     expected = "-----BEGIN CERTIFICATE-----\n0001020304050607080910111213141516171819202122232425262728293031\n32333435363738394041424344454647484950\n-----END CERTIFICATE-----"
 
-    finder = RequestURANumberFinder()
-    actual = finder._enforce_cert_newlines(cert)
+    ura_middleware = RequestUraMiddleware()
+    actual = ura_middleware._enforce_cert_newlines(cert)
     assert actual == expected

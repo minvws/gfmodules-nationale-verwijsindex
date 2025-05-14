@@ -15,7 +15,7 @@ class ReferralServiceTest(TestCase):
     def setUp(self) -> None:
         config = get_test_config()
         # setup db
-        self.db = Database("sqlite:///:memory:", config)
+        self.db = Database(config.database)
         self.db.generate_tables()
         self.auth_service = StubAuthService()
         # setup service

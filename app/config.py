@@ -23,11 +23,16 @@ class LogLevel(str, Enum):
 class ConfigApp(BaseModel):
     loglevel: LogLevel = Field(default=LogLevel.info)
     provider_id: str
-    override_authentication_ura: str | None
     swagger_enabled: bool = Field(default=False)
     docs_url: str = Field(default="/docs")
     redoc_url: str = Field(default="/redoc")
     authorization_service: bool = Field(default=True)
+
+
+class ConfigUraMiddleware(BaseModel):
+    override_authentication_ura: str | None
+    use_authentication_ura_whitelist: bool = Field(default=True)
+    whitelist_cache_in_seconds: int = Field(default=30)
 
 
 class ConfigDatabase(BaseModel):
@@ -96,6 +101,7 @@ class Config(BaseModel):
     telemetry: ConfigTelemetry
     stats: ConfigStats
     toestemming_stub_api: ConfigToestemmingStubApi
+    ura_middleware: ConfigUraMiddleware
 
 
 def read_ini_file(path: Path) -> Any:
