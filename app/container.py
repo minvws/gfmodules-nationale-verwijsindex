@@ -3,19 +3,19 @@ from pathlib import Path
 import inject
 from pydantic import ValidationError
 
-from app.config import PROJECT_ROOT, Config, ConfigApp, read_ini_file
+from app.config import PROJECT_ROOT, Config, ConfigUraMiddleware, read_ini_file
+from app.data import UraNumber
 from app.db.db import Database
+from app.middleware.ura_middleware.config_based_ura_middleware import ConfigBasedUraMiddleware
+from app.middleware.ura_middleware.request_ura_middleware import RequestUraMiddleware
+from app.middleware.ura_middleware.ura_middleware import UraMiddleware
+from app.middleware.ura_middleware.whitelisted_ura_middleware import WhitelistedUraMiddleware
 from app.services.authorization_services.authorization_interface import BaseAuthService
 from app.services.authorization_services.pbac_service import PbacService
 from app.services.authorization_services.stub import StubAuthService
 from app.services.authorization_services.toestemming_stub_service import ToestemmingStubService
 from app.services.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
-from app.services.ura_number_finder import (
-    ConfigOverridenMockURANumberFinder,
-    RequestURANumberFinder,
-    StarletteRequestURANumberFinder,
-)
 
 DEFAULT_CONFIG_INI_FILE = PROJECT_ROOT / "app.conf"
 
@@ -38,18 +38,22 @@ def _load_default_config(path: Path) -> Config:
     return config
 
 
-def _resolve_ura_number_finder(config: ConfigApp) -> StarletteRequestURANumberFinder:
+def _ura_middleware(config: ConfigUraMiddleware, db: Database) -> UraMiddleware:
+    ura_middleware: UraMiddleware
     if config.override_authentication_ura:
-        return ConfigOverridenMockURANumberFinder(config.override_authentication_ura)
-
-    return RequestURANumberFinder()
+        ura_middleware = ConfigBasedUraMiddleware(UraNumber(config.override_authentication_ura))
+    else:
+        ura_middleware = RequestUraMiddleware()
+    if config.use_authentication_ura_whitelist:
+        return WhitelistedUraMiddleware(db, ura_middleware, config.whitelist_cache_in_seconds)
+    return ura_middleware
 
 
 def container_config(binder: inject.Binder) -> None:
     config = _load_default_config(DEFAULT_CONFIG_INI_FILE)
     provider_id = config.app.provider_id
 
-    db = Database(dsn=config.database.dsn, config=config)
+    db = Database(config_database=config.database)
     binder.bind(Database, db)
 
     if config.app.authorization_service:
@@ -93,7 +97,7 @@ def container_config(binder: inject.Binder) -> None:
 
     binder.bind(PseudonymService, pseudonym_service)
     binder.bind(Config, config)
-    binder.bind(StarletteRequestURANumberFinder, _resolve_ura_number_finder(config.app))
+    binder.bind(UraMiddleware, _ura_middleware(config.ura_middleware, db))
 
 
 def configure() -> None:

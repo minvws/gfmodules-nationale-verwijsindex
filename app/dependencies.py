@@ -1,14 +1,14 @@
+from typing import cast
+
 import inject
 from fastapi import Request
 
 from app.config import Config
 from app.data import UraNumber
 from app.db.db import Database
+from app.middleware.ura_middleware.ura_middleware import UraMiddleware
 from app.services.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
-from app.services.ura_number_finder import (
-    StarletteRequestURANumberFinder,
-)
 
 
 def get_default_config() -> Config:
@@ -27,11 +27,9 @@ def get_pseudonym_service() -> PseudonymService:
     return inject.instance(PseudonymService)
 
 
-def authenticated_ura(request: Request) -> UraNumber:
-    finder = inject.instance(StarletteRequestURANumberFinder)
+def get_ura_middleware() -> UraMiddleware:
+    return cast(UraMiddleware, inject.instance(UraMiddleware))
 
-    if not isinstance(finder, StarletteRequestURANumberFinder):
-        raise RuntimeError(
-            "URA number finder should implement the interface!",
-        )
-    return finder.find(request)
+
+def authenticated_ura(request: Request) -> UraNumber:
+    return get_ura_middleware().authenticated_ura(request)

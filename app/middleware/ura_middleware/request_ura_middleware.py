@@ -1,4 +1,3 @@
-import abc
 import textwrap
 
 from fastapi import HTTPException
@@ -6,24 +5,10 @@ from starlette.requests import Request
 from uzireader.uziserver import UziServer
 
 from app.data import UraNumber
+from app.middleware.ura_middleware.ura_middleware import UraMiddleware
 
 
-class StarletteRequestURANumberFinder(abc.ABC):
-    @abc.abstractmethod
-    def find(self, request: Request) -> UraNumber: ...
-
-
-class ConfigOverridenMockURANumberFinder(StarletteRequestURANumberFinder):
-    _config_value: str
-
-    def __init__(self, config_value: str) -> None:
-        self._config_value = config_value
-
-    def find(self, request: Request) -> UraNumber:
-        return UraNumber(self._config_value)
-
-
-class RequestURANumberFinder(StarletteRequestURANumberFinder):
+class RequestUraMiddleware(UraMiddleware):
     _CERT_START = "-----BEGIN CERTIFICATE-----"
     _CERT_END = "-----END CERTIFICATE-----"
 
@@ -40,7 +25,7 @@ class RequestURANumberFinder(StarletteRequestURANumberFinder):
 
         return result
 
-    def find(self, request: Request) -> UraNumber:
+    def authenticated_ura(self, request: Request) -> UraNumber:
         if self._SSL_CLIENT_CERT_HEADER_NAME not in request.headers:
             raise HTTPException(
                 status_code=401,

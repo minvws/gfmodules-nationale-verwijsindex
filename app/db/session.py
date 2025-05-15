@@ -1,13 +1,12 @@
 import logging
 import random
 from time import sleep
-from typing import Any, Callable, Type, TypeVar
+from typing import Any, Callable, List, Type, TypeVar
 
 from sqlalchemy import Engine
 from sqlalchemy.exc import DatabaseError, OperationalError, PendingRollbackError
 from sqlalchemy.orm import Session
 
-from app.config import Config
 from app.db.models.base import Base
 from app.db.repository.respository_base import RepositoryBase, TRepositoryBase
 
@@ -47,11 +46,11 @@ T = TypeVar("T")
 
 class DbSession:
     _engine: Engine
-    _config: Config
+    _retry_backoff: List[float]
 
-    def __init__(self, engine: Engine, config: Config) -> None:
+    def __init__(self, engine: Engine, retry_backoff: List[float]) -> None:
         self._engine = engine
-        self._config = config
+        self._retry_backoff = retry_backoff
 
     def __enter__(self) -> "DbSession":
         """
@@ -130,7 +129,7 @@ class DbSession:
         """
         Retry a function call in case of database errors
         """
-        backoff = self._config.database.retry_backoff
+        backoff = self._retry_backoff
 
         while True:
             try:
