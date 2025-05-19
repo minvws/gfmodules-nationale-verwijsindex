@@ -1,11 +1,14 @@
 [app]
 loglevel=debug
 provider_id=dcc2217b-600e-4587-b74a-6b04bf3a882b
-override_authentication_ura=
 swagger_enabled = True
 docs_url = /docs
 redoc_url = /redocs
 authorization_service = True
+
+[ura_middleware]
+override_authentication_ura=
+use_authentication_ura_whitelist=False
 
 [database]
 dsn=postgresql+psycopg://postgres:postgres@localisation_db:5432/postgres
