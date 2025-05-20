@@ -50,6 +50,6 @@ def get_test_config() -> Config:
             timeout=30,
         ),
         ura_middleware=ConfigUraMiddleware(
-            override_authentication_ura=None, use_authentication_ura_whitelist=False, whitelist_cache_in_seconds=40
+            override_authentication_ura=None, use_authentication_ura_allowlist=False, allowlist_cache_in_seconds=40
         ),
     )

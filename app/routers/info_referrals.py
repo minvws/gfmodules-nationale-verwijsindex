@@ -38,7 +38,6 @@ def get_referral_info(
     except PseudonymError as e:
         logger.error(f"Failed to exchange pseudonym: {e}")
         return Response(status_code=404)
-
     referrals = referral_service.get_referrals_by_domain_and_pseudonym(
         pseudonym=localisation_pseudonym, data_domain=req.data_domain, client_ura_number=client_ura_number
     )

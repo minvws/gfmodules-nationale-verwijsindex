@@ -6,10 +6,10 @@ from pydantic import ValidationError
 from app.config import PROJECT_ROOT, Config, ConfigUraMiddleware, read_ini_file
 from app.data import UraNumber
 from app.db.db import Database
+from app.middleware.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
 from app.middleware.ura_middleware.config_based_ura_middleware import ConfigBasedUraMiddleware
 from app.middleware.ura_middleware.request_ura_middleware import RequestUraMiddleware
 from app.middleware.ura_middleware.ura_middleware import UraMiddleware
-from app.middleware.ura_middleware.whitelisted_ura_middleware import WhitelistedUraMiddleware
 from app.services.authorization_services.authorization_interface import BaseAuthService
 from app.services.authorization_services.pbac_service import PbacService
 from app.services.authorization_services.stub import StubAuthService
@@ -44,8 +44,8 @@ def _ura_middleware(config: ConfigUraMiddleware, db: Database) -> UraMiddleware:
         ura_middleware = ConfigBasedUraMiddleware(UraNumber(config.override_authentication_ura))
     else:
         ura_middleware = RequestUraMiddleware()
-    if config.use_authentication_ura_whitelist:
-        return WhitelistedUraMiddleware(db, ura_middleware, config.whitelist_cache_in_seconds)
+    if config.use_authentication_ura_allowlist:
+        return AllowlistedUraMiddleware(db, ura_middleware, config.allowlist_cache_in_seconds)
     return ura_middleware
 
 

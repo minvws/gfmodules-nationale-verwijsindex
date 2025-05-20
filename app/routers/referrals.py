@@ -81,7 +81,6 @@ def query_referrals(
         f"POST {router.prefix}/query pseudonym={str(payload.pseudonym)} data_domain={str(payload.data_domain)} ura_number={str(payload.ura_number)}"
     )
     request_url = str(request.url)
-
     localisation_pseudonym = None
     if payload.pseudonym is not None:
         try:

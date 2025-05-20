@@ -31,8 +31,8 @@ class ConfigApp(BaseModel):
 
 class ConfigUraMiddleware(BaseModel):
     override_authentication_ura: str | None
-    use_authentication_ura_whitelist: bool = Field(default=True)
-    whitelist_cache_in_seconds: int = Field(default=30)
+    use_authentication_ura_allowlist: bool = Field(default=True)
+    allowlist_cache_in_seconds: int = Field(default=30)
 
 
 class ConfigDatabase(BaseModel):
