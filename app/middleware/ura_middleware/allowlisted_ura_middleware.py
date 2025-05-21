@@ -34,7 +34,7 @@ class AllowlistedUraMiddleware(UraMiddleware):
         allowlist = self.__allowlist
         if time.time() - self._cached > self._allowlist_cache_in_seconds:
             logger.debug("Allowlist expired. Clear allowlist and reinitialize")
-            del self.__dict__["__allowlist"]
+            del self.__dict__["_AllowlistedUraMiddleware__allowlist"]
             allowlist = self.__allowlist
         return allowlist
 
