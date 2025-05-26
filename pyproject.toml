@@ -26,14 +26,14 @@ opentelemetry-instrumentation-requests = "^0.45b0"
 requests = "^2.32.0"
 statsd = "^4.0.1"
 puzi = { git = "https://github.com/minvws/puzi-python" }
-click = "^8.2.0"
+click = "^8.2.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
 pytest-cov = "^6.1.1"
 pytest-mock = "^3.14.0"
 httpx = "^0.28.1"
-ruff = "0.11.10"
+ruff = "0.11.11"
 safety = "^3.3.0"
 codespell = "^2.4.1"
 
