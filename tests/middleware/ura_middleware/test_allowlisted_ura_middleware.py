@@ -1,5 +1,7 @@
 import random
+import time
 from typing import Any
+from unittest import mock
 from unittest.mock import Mock
 
 import pytest
@@ -35,6 +37,31 @@ def test_allowlist(allowlisted_ura_middleware: AllowlistedUraMiddleware, databas
         session.commit()
     actual = allowlisted_ura_middleware.allowlist
     assert actual == [ura_number]
+
+
+def test_expire_allowlist(
+    allowlisted_ura_middleware: AllowlistedUraMiddleware, database: Database, mocker: MockerFixture
+) -> None:
+    start_time = time.time()
+    assert allowlisted_ura_middleware.allowlist == []
+
+    ura_number_1 = UraNumber(random.randint(0, 99999999))
+    with database.get_db_session() as session:
+        session.add(UraNumberAllowlistEntity(ura_number_1))
+        session.commit()
+
+    assert allowlisted_ura_middleware.allowlist == []
+    mocker.patch("time.time", mock.Mock(return_value=start_time + 31))
+    assert allowlisted_ura_middleware.allowlist == [ura_number_1]
+
+    ura_number_2 = UraNumber(random.randint(0, 99999999))
+    with database.get_db_session() as session:
+        session.add(UraNumberAllowlistEntity(ura_number_2))
+        session.commit()
+
+    assert allowlisted_ura_middleware.allowlist == [ura_number_1]
+    mocker.patch("time.time", mock.Mock(return_value=start_time + 62))
+    assert allowlisted_ura_middleware.allowlist == [ura_number_1, ura_number_2]
 
 
 def test_validate(allowlisted_ura_middleware: AllowlistedUraMiddleware, database: Database) -> None:
