@@ -23,7 +23,7 @@ opentelemetry-exporter-otlp-proto-grpc = "^1.24.0"
 opentelemetry-instrumentation = "^0.45b0"
 opentelemetry-instrumentation-fastapi = "^0.45b0"
 opentelemetry-instrumentation-requests = "^0.45b0"
-requests = "^2.32.0"
+requests = "^2.32.4"
 statsd = "^4.0.1"
 puzi = { git = "https://github.com/minvws/puzi-python" }
 click = "^8.2.1"
