@@ -57,6 +57,6 @@ def setup_fastapi(config: Config) -> FastAPI:
         fastapi.include_router(router)
 
     if config.stats.enabled:
-        fastapi.add_middleware(StatsdMiddleware, module_name=config.stats.module_name)
+        fastapi.add_middleware(StatsdMiddleware, module_name=config.stats.module_name or "default")
 
     return fastapi
