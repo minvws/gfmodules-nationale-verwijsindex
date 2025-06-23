@@ -12,9 +12,9 @@ packages = [{ include = "app" }]
 python = "^3.11"
 uvicorn = "0.34.3"
 fastapi = "^0.115"
-mypy = "^1.16.0"
-pydantic-settings = "^2.9.1"
-inject = "^5.2.0"
+mypy = "^1.16.1"
+pydantic-settings = "^2.10.0"
+inject = "^5.3.0"
 sqlalchemy = "^2.0.41"
 psycopg = { extras = ["binary", "pool"], version = "^3.2.9" }
 types-requests = "^2.32.4.20250611"
@@ -29,11 +29,11 @@ puzi = { git = "https://github.com/minvws/puzi-python" }
 click = "^8.2.1"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.4.0"
+pytest = "^8.4.1"
 pytest-cov = "^6.2.1"
 pytest-mock = "^3.14.1"
 httpx = "^0.28.1"
-ruff = "0.11.13"
+ruff = "0.12.0"
 safety = "^3.3.0"
 codespell = "^2.4.1"
 
