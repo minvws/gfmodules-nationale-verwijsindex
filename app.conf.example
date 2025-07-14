@@ -9,7 +9,7 @@ redoc_url = /redocs
 loglevel=debug
 # Provider ID of this service
 provider_id=dcc2217b-600e-4587-b74a-6b04bf3a882b
-# Authorization service to use: Either True to use external toestemming stub and pbac or False for a stub implementation
+# Authorization service to use: Either True to use external toestemming stub or False for a stub implementation
 authorization_service = False
 
 [ura_middleware]
@@ -32,12 +32,6 @@ max_overflow=10
 pool_pre_ping=False
 # Recycle the connection after this time (in seconds)
 pool_recycle=1800
-
-[pbac_api]
-# Endpoint for the PBAC service
-endpoint=http://pbac:8181
-# Timeout for the PBAC service
-timeout=10
 
 [toestemming_stub_api]
 # Endpoint for the toestemming stub
