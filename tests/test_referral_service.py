@@ -19,9 +19,7 @@ class ReferralServiceTest(TestCase):
         self.db.generate_tables()
         self.auth_service = StubAuthService()
         # setup service
-        self.referral_service = ReferralService(
-            self.db, pbac_service=self.auth_service, toestemming_service=self.auth_service
-        )
+        self.referral_service = ReferralService(self.db, toestemming_service=self.auth_service)
 
     def test_db_connection(self) -> None:
         db_connection_valid = self.db.is_healthy()

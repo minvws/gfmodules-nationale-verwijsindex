@@ -19,9 +19,8 @@ logger = logging.getLogger(__name__)
 
 class ReferralService:
     @inject.autoparams()
-    def __init__(self, database: Database, pbac_service: BaseAuthService, toestemming_service: BaseAuthService) -> None:
+    def __init__(self, database: Database, toestemming_service: BaseAuthService) -> None:
         self.database = database
-        self.pbac_service = pbac_service
         self.toestemming_service = toestemming_service
 
     def get_referrals_by_domain_and_pseudonym(
@@ -55,10 +54,7 @@ class ReferralService:
                     f"Can {entity.ura_number} share data with {client_ura_number}? Toestemming-stub says: {otv_permission}"
                 )
 
-                # For each referral, check in PBAC if data can be shared for both sharing org and requesting org
-                if self.pbac_service.is_authorized(otv_permission=otv_permission):
-                    logger.info(f"PBAC authorization granted for referral {entity.ura_number}")
-                    allowed_entities.append(self.hydrate_referral(entity))
+                allowed_entities.append(self.hydrate_referral(entity))
 
             # Returns a list of hydrated referral objects for entities where authorization is granted.
             return allowed_entities

@@ -45,11 +45,6 @@ class ConfigDatabase(BaseModel):
     pool_recycle: int = Field(default=3600, ge=0)
 
 
-class ConfigPbacApi(BaseModel):
-    endpoint: str
-    timeout: int = Field(default=30, gt=0)
-
-
 class ConfigToestemmingStubApi(BaseModel):
     endpoint: str
     timeout: int = Field(default=30, gt=0)
@@ -96,7 +91,6 @@ class ConfigStats(BaseModel):
 class Config(BaseModel):
     app: ConfigApp
     database: ConfigDatabase
-    pbac_api: ConfigPbacApi
     pseudonym_api: ConfigPseudonymApi
     telemetry: ConfigTelemetry
     stats: ConfigStats
