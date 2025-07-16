@@ -53,8 +53,8 @@ class ReferralService:
                 logger.info(
                     f"Can {entity.ura_number} share data with {client_ura_number}? Toestemming-stub says: {otv_permission}"
                 )
-
-                allowed_entities.append(self.hydrate_referral(entity))
+                if otv_permission:
+                    allowed_entities.append(self.hydrate_referral(entity))
 
             # Returns a list of hydrated referral objects for entities where authorization is granted.
             return allowed_entities
