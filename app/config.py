@@ -30,7 +30,7 @@ class ConfigApp(BaseModel):
 
 
 class ConfigUraMiddleware(BaseModel):
-    override_authentication_ura: str | None
+    override_authentication_ura: str | None = Field(default=None)
     use_authentication_ura_allowlist: bool = Field(default=True)
     allowlist_cache_in_seconds: int = Field(default=30)
 
@@ -105,8 +105,15 @@ def read_ini_file(path: Path) -> Any:
     ret = {}
     for section in ini_data.sections():
         ret[section] = dict(ini_data[section])
+        remove_empty_values(ret[section])
 
     return ret
+
+
+def remove_empty_values(section: dict[str, Any]) -> None:
+    for key in list(section.keys()):
+        if section[key] == "":
+            del section[key]
 
 
 def load_default_config(path: Path = DEFAULT_CONFIG_INI_FILE) -> Config:

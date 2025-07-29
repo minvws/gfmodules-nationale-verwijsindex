@@ -21,7 +21,7 @@ use_authentication_ura_allowlist=
 
 [database]
 # Dsn for database connection
-dsn=postgresql+psycopg://postgres:postgres@localhost:5432/postgres
+dsn=postgresql+psycopg://postgres:postgres@postgres:5432/postgres
 # Retry backoff (in seconds) for database connection
 retry_backoff=0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 4.8, 6.4, 10.0
 # Connection pool size, use 0 for unlimited connections
