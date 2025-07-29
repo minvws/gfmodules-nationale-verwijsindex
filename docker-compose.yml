@@ -18,12 +18,8 @@ services:
       retries: 5
       start_period: 5s
     depends_on:
-      localisation_db:
+      postgres:
         condition: service_healthy
-    networks:
-      zmodules:
-        aliases:
-          - localization-app
 
   app_ssl:
     image: httpd
@@ -36,12 +32,8 @@ services:
     depends_on:
       app:
         condition: service_healthy
-    networks:
-      zmodules:
-        aliases:
-          - localization
 
-  localisation_db:
+  postgres:
     image: postgres:15
     environment:
       POSTGRES_DB: postgres
@@ -53,14 +45,3 @@ services:
       start_interval: 1s
     ports:
       - 5401:5432
-    networks:
-      - zmodules
-
-networks:
-  zmodules:
-    driver: bridge
-    name: zmodules
-
-volumes:
-  secrets:
-    name: secrets2
