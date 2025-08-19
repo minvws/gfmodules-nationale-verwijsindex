@@ -30,7 +30,7 @@ RUN apt update && \
         git \
         gnupg2 \
         make \
-        postgresql-client-15 \
+        postgresql-client \
         postgresql-client-common \
         curl
 
