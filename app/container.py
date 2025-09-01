@@ -1,11 +1,16 @@
+import base64
 from pathlib import Path
 
 import inject
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec, ed448, ed25519, rsa
 from pydantic import ValidationError
 
 from app.config import PROJECT_ROOT, Config, ConfigUraMiddleware, read_ini_file
 from app.data import UraNumber
 from app.db.db import Database
+from app.jwt_validator import DeziSigningCert, JwtValidator
 from app.middleware.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
 from app.middleware.ura_middleware.config_based_ura_middleware import ConfigBasedUraMiddleware
 from app.middleware.ura_middleware.request_ura_middleware import RequestUraMiddleware
@@ -19,10 +24,10 @@ from app.services.referral_service import ReferralService
 DEFAULT_CONFIG_INI_FILE = PROJECT_ROOT / "app.conf"
 
 
-def _load_default_config(path: Path) -> Config:
+def _load_default_config(config_path: Path) -> Config:
     # To be inline with other python code, we use INI-type files for configuration. Since this isn't
     # a standard format for pydantic, we need to do some manual parsing first.
-    ini_data = read_ini_file(path)
+    ini_data = read_ini_file(config_path)
 
     try:
         # Convert database.retry_backoff to a list of floats
@@ -35,6 +40,56 @@ def _load_default_config(path: Path) -> Config:
         raise e
 
     return config
+
+
+def _load_certificate(cert_path: str) -> x509.Certificate:
+    """Load and parse CA certificate from file path."""
+    file_path = Path(cert_path)
+    if not file_path.exists():
+        raise FileNotFoundError(f"File not found at: {file_path}")
+    with open(file_path, "r", encoding="utf-8") as file:
+        cert_data = file.read()
+        try:
+            return x509.load_pem_x509_certificate(cert_data.encode())
+        except Exception as e:
+            raise ValueError(f"Failed to parse CA certificate from path {file_path} with error: {e}")
+
+
+def _load_dezi_signing_certificates(cert_store_path: str) -> list[DeziSigningCert]:
+    """
+    Load the DEZI signing certificates from the given directory path and return them as a list of DeziSigningCert objects.
+    The certificates are expected to be in PEM format.
+    """
+    if not cert_store_path:
+        raise ValueError("DEZI signing certificate path is required")
+
+    dir_path = Path(cert_store_path)
+    if not dir_path.exists():
+        raise FileNotFoundError(f"DEZI signing certificates not found at: {dir_path}")
+
+    certificates = []
+    for cert_file in dir_path.iterdir():
+        certificate = _load_certificate(str(cert_file))
+
+        # Generate x5t (X.509 certificate SHA-1 thumbprint)
+        sha1_fingerprint = certificate.fingerprint(hashes.SHA1())  # NOSONAR
+        x5t = base64.urlsafe_b64encode(sha1_fingerprint).decode("utf-8")
+        x5t = x5t.rstrip("=")  # Remove padding for x5t
+
+        public_key = certificate.public_key()
+        if not isinstance(
+            public_key, (rsa.RSAPublicKey, ec.EllipticCurvePublicKey, ed25519.Ed25519PublicKey, ed448.Ed448PublicKey)
+        ):
+            raise TypeError(f"Unsupported public key type in DEZI certificate: {type(public_key)}")
+
+        certificates.append(
+            DeziSigningCert(
+                certificate=certificate,
+                public_key=public_key,
+                x5t=x5t,
+            )
+        )
+    return certificates
 
 
 def _ura_middleware(config: ConfigUraMiddleware, db: Database) -> UraMiddleware:
@@ -88,6 +143,18 @@ def container_config(binder: inject.Binder) -> None:
     )
 
     binder.bind(PseudonymService, pseudonym_service)
+
+    # JWT validator for NVI
+    ca_certificate = _load_certificate(config.dezi_register.uzi_server_certificate_ca_cert_path)
+    dezi_signing_certificates = _load_dezi_signing_certificates(
+        config.dezi_register.dezi_register_trusted_signing_certs_store_path
+    )
+    jwt_validator = JwtValidator(
+        ca_certificate=ca_certificate,
+        dezi_register_signing_certificates=dezi_signing_certificates,
+    )
+    binder.bind(JwtValidator, jwt_validator)
+
     binder.bind(Config, config)
     binder.bind(UraMiddleware, _ura_middleware(config.ura_middleware, db))
 

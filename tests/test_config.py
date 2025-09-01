@@ -2,6 +2,7 @@ from app.config import (
     Config,
     ConfigApp,
     ConfigDatabase,
+    ConfigDeziRegister,
     ConfigPseudonymApi,
     ConfigStats,
     ConfigTelemetry,
@@ -46,5 +47,9 @@ def get_test_config() -> Config:
         stats=ConfigStats(enabled=False, host=None, port=None, module_name=None),
         ura_middleware=ConfigUraMiddleware(
             override_authentication_ura=None, use_authentication_ura_allowlist=False, allowlist_cache_in_seconds=40
+        ),
+        dezi_register=ConfigDeziRegister(
+            uzi_server_certificate_ca_cert_path="/test/secrets/ca.crt",
+            dezi_register_trusted_signing_certs_store_path="/test/secrets/nvi/",
         ),
     )
