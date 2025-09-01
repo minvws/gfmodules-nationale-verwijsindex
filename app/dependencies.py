@@ -6,6 +6,7 @@ from fastapi import Request
 from app.config import Config
 from app.data import UraNumber
 from app.db.db import Database
+from app.jwt_validator import JwtValidator
 from app.middleware.ura_middleware.ura_middleware import UraMiddleware
 from app.services.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
@@ -29,6 +30,10 @@ def get_pseudonym_service() -> PseudonymService:
 
 def get_ura_middleware() -> UraMiddleware:
     return cast(UraMiddleware, inject.instance(UraMiddleware))
+
+
+def get_jwt_validator() -> JwtValidator:
+    return inject.instance(JwtValidator)
 
 
 def authenticated_ura(request: Request) -> UraNumber:

@@ -27,6 +27,7 @@ requests = "^2.32.5"
 statsd = "^4.0.1"
 puzi = { git = "https://github.com/minvws/puzi-python" }
 click = "^8.2.1"
+pyjwt = "^2.10.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.1"

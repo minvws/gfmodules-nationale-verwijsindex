@@ -20,6 +20,10 @@ class ReferralRequest(BaseModel):
         return DataDomain(val)
 
 
+class ReferralRequestHeader(BaseModel):
+    authorization: str
+
+
 class CreateReferralRequest(BaseModel):
     pseudonym: Pseudonym
     data_domain: DataDomain

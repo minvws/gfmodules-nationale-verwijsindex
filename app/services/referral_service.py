@@ -24,7 +24,7 @@ class ReferralService:
         self.toestemming_service = toestemming_service
 
     def get_referrals_by_domain_and_pseudonym(
-        self, pseudonym: Pseudonym, data_domain: DataDomain, client_ura_number: UraNumber
+        self, pseudonym: Pseudonym, data_domain: DataDomain, client_ura_number: UraNumber, breaking_glass: bool = False
     ) -> List[ReferralEntry]:
         """
         Method that gets all the referrals by pseudonym and data domain
@@ -41,20 +41,27 @@ class ReferralService:
 
             allowed_entities: List[ReferralEntry] = []
 
-            for entity in entities:
-                # Check toestemming if sharing organization has permission
-                otv_permission = self.toestemming_service.is_authorized(
-                    pseudonym=str(pseudonym),
-                    client_ura_number=str(client_ura_number),
-                    dossier_keeping_ura_number=entity.ura_number,
-                    dossier_keeping_org_category="V6",  # TODO hardcoded for now
-                )
+            if breaking_glass:
+                # If JWT is provided an Break the Glass scenario is assumed
+                logger.info(f"JWT provided, assuming Break the Glass scenario for pseudonym {pseudonym}")
+                # In this case, we assume all entities are allowed as we could not ask for toestemming
+                allowed_entities = [self.hydrate_referral(entity) for entity in entities]
+            else:
+                for entity in entities:
+                    # Check toestemming if sharing organization has permission
+                    otv_permission = self.toestemming_service.is_authorized(
+                        pseudonym=str(pseudonym),
+                        client_ura_number=str(client_ura_number),
+                        dossier_keeping_ura_number=entity.ura_number,
+                        dossier_keeping_org_category="V6",  # TODO hardcoded for now
+                    )
 
-                logger.info(
-                    f"Can {entity.ura_number} share data with {client_ura_number}? Toestemming-stub says: {otv_permission}"
-                )
-                if otv_permission:
-                    allowed_entities.append(self.hydrate_referral(entity))
+                    logger.info(
+                        f"Can {entity.ura_number} share data with {client_ura_number}? Toestemming-stub says: {otv_permission}"
+                    )
+
+                    if otv_permission:
+                        allowed_entities.append(self.hydrate_referral(entity))
 
             # Returns a list of hydrated referral objects for entities where authorization is granted.
             return allowed_entities

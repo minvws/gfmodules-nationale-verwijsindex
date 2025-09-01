@@ -29,6 +29,11 @@ class ConfigApp(BaseModel):
     authorization_service: bool = Field(default=True)
 
 
+class ConfigDeziRegister(BaseModel):
+    uzi_server_certificate_ca_cert_path: str
+    dezi_register_trusted_signing_certs_store_path: str
+
+
 class ConfigUraMiddleware(BaseModel):
     override_authentication_ura: str | None = Field(default=None)
     use_authentication_ura_allowlist: bool = Field(default=True)
@@ -96,6 +101,7 @@ class Config(BaseModel):
     stats: ConfigStats
     toestemming_stub_api: ConfigToestemmingStubApi
     ura_middleware: ConfigUraMiddleware
+    dezi_register: ConfigDeziRegister
 
 
 def read_ini_file(path: Path) -> Any:

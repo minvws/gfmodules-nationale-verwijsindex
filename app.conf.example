@@ -12,6 +12,13 @@ provider_id=dcc2217b-600e-4587-b74a-6b04bf3a882b
 # Authorization service to use: Either True to use external toestemming stub or False for a stub implementation
 authorization_service = False
 
+[dezi_register]
+# Path to the CA certificate for NVI JWT validation
+uzi_server_certificate_ca_cert_path = /secrets/uzi-server-ca.crt
+# Directory of trusted signing certificates from DEZI for JWT validation.
+# For mock implementation the signing certificates of the Viewer needs to be placed here.
+dezi_register_trusted_signing_certs_store_path=/secrets/trusted-dezi-certs
+
 [ura_middleware]
 # Override authentication URA for testing, or False when using the URA from the MTLS certificate
 override_authentication_ura=
