@@ -13,7 +13,7 @@ provider_id=dcc2217b-600e-4587-b74a-6b04bf3a882b
 authorization_service = False
 
 [dezi_register]
-# The Viewer sends a Dezi JWT or a Mock JWT to the LRS.
+# The Viewer sends the Dezi JWT or a Mock JWT of the authenticated user to the LRS.
 # The LRS wraps this JWT in another JWT and sends it to the NVI.
 # The WRAP JWT is signed with the UZI Server certificate of the relevant healthcare organization.
 # This WRAP JWT can be validated by the NVI using the Uzi Server CA.
