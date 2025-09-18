@@ -24,7 +24,7 @@ uzi_server_certificate_ca_cert_path=
 # The Dezi JWT (Inside the wrapped JWT), needs to be signed with a Dezi Register certificate.
 # These are the certificates that are also used to build the JWKS from Max (certificates_directory = secrets/jwks-certs).
 
-# This config set the directory of trusted signing certificates from DEZI for JWT validation.
+# This config set the directory of trusted signing certificates for JWT validation of the DEZI register for Healthcare professional identities.
 # For mock implementation the signing certificates of the Viewer needs to be placed here.
 dezi_register_trusted_signing_certs_store_path=
 
