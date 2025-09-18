@@ -189,7 +189,7 @@ class JwtValidator:
             f"Client URA number '{client_ura_number}' does not match any URA in DEZI JWT relations: {available_uras}"
         )
 
-    def __retrieve_leaf_cert_from_x5t(self, token: str) -> Certificate:
+    def __retrieve_leaf_cert_from_x5c(self, token: str) -> Certificate:
         """Parse header and extract leaf cert from x5c"""
         unverified_header = jwt.get_unverified_header(token)
         x5c = unverified_header.get("x5c")
@@ -225,7 +225,7 @@ class JwtValidator:
         """
         try:
             # Get leaf cert from x5c from LRS jwt header
-            leaf_cert = self.__retrieve_leaf_cert_from_x5t(token)
+            leaf_cert = self.__retrieve_leaf_cert_from_x5c(token)
             public_key = self.__get_pub_key_from_cert(leaf_cert)
 
             # Get public key from leaf cert
