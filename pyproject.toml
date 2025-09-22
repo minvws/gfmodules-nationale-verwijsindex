@@ -10,9 +10,9 @@ packages = [{ include = "app" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-uvicorn = "0.35.0"
-fastapi = "^0.116"
-mypy = "^1.18.1"
+uvicorn = "0.36.0"
+fastapi = "^0.117"
+mypy = "^1.18.2"
 pydantic-settings = "^2.10.1"
 inject = "^5.3.0"
 sqlalchemy = "^2.0.43"
@@ -26,7 +26,7 @@ opentelemetry-instrumentation-requests = "^0.45b0"
 requests = "^2.32.5"
 statsd = "^4.0.1"
 puzi = { git = "https://github.com/minvws/puzi-python" }
-click = "^8.2.1"
+click = "^8.3.0"
 pyjwt = "^2.10.1"
 
 [tool.poetry.group.dev.dependencies]
@@ -34,7 +34,7 @@ pytest = "^8.4.2"
 pytest-cov = "^7.0.0"
 pytest-mock = "^3.15.0"
 httpx = "^0.28.1"
-ruff = "0.13.0"
+ruff = "0.13.1"
 codespell = "^2.4.1"
 pip-audit = "^2.9.0"
 
