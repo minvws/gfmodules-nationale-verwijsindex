@@ -82,35 +82,42 @@ class JwtValidator:
             if claim not in decoded_token:
                 raise JwtValidationError(f"JWT token is missing '{claim}' claim")
 
-    def __decode_cert(
+    def __decode_jwt(
         self,
         public_key: (rsa.RSAPublicKey | ec.EllipticCurvePublicKey | ed25519.Ed25519PublicKey | ed448.Ed448PublicKey),
         jwt_token: str,
+        override_verify_options: Dict[str, Any] | None = None,
     ) -> Dict[str, Any]:
-        """Try decoding JWT with a given public key, return payload if valid."""
-        decode_options = {
+        """Try decoding JWT with a given public key, return payload if valid. Raises JwtValidationError if invalid."""
+        verify_options = {
             "verify_signature": True,
             "verify_exp": True,
             "verify_iat": True,
             "verify_nbf": True,
-            "verify_aud": False,
+            "verify_aud": True,
         }
+        if override_verify_options:
+            verify_options.update(override_verify_options)
 
         # Use the certificate’s public key to check the JWT signature.
-        decoded = jwt.decode(
-            jwt_token,
-            key=public_key,
-            options=decode_options,
-            algorithms=["RS256"],
-        )
-        if not isinstance(decoded, dict):
-            raise JwtValidationError(f"Invalid JWT decode result type: {type(decoded)}")
-        return decoded
+        try:
+            verified = jwt.decode(
+                jwt_token,
+                key=public_key,
+                options=verify_options,
+                algorithms=["RS256"],
+            )
+        except Exception as e:
+            raise JwtValidationError(f"JWT signature verification failed or token is invalid: {e}")
+        if not isinstance(verified, dict):
+            raise JwtValidationError(f"Invalid JWT decode result type: {type(verified)}")
+        return verified
 
     def _find_cert_and_decode_dezi_jwt(self, dezi_jwt_token: str) -> Dict[str, Any]:
         """
         Decode the DEZI JWT token.
         Retrieve x5t if present, find matching certificate and decode with its public key.
+        FIXME/NOTE: We do/cannot NOT validate the audience and expiration claim here.
         """
         header = jwt.get_unverified_header(dezi_jwt_token)
         x5t = header.get("x5t")
@@ -124,17 +131,21 @@ class JwtValidator:
                 raise JwtValidationError(
                     f"Dezi signing certificate with x5t '{x5t}' not in configured `dezi_register_trusted_signing_certs_store_path`."
                 )
-
-            result = self.__decode_cert(cert.public_key, dezi_jwt_token)
+            result = self.__decode_jwt(
+                cert.public_key, dezi_jwt_token, override_verify_options={"verify_exp": False, "verify_aud": False}
+            )
             if not result:
                 raise JwtValidationError(f"Failed to validate DEZI JWT with certificate from x5t: {x5t}")
             return result
 
-        # If x5t validation fails, try to decode using brute force with known certs
+        # If no x5t validation, try to decode using brute force with known certs
         for cert in self.dezi_register_signing_certificates:
-            result = self.__decode_cert(cert.public_key, dezi_jwt_token)
-            if result:
-                return result
+            try:
+                return self.__decode_jwt(
+                    cert.public_key, dezi_jwt_token, override_verify_options={"verify_exp": False, "verify_aud": False}
+                )
+            except JwtValidationError:
+                continue
         raise JwtValidationError(
             "Failed to validate DEZI JWT with any of the configured certificates in `dezi_register_trusted_signing_certs_store_path`."
         )
@@ -142,7 +153,6 @@ class JwtValidator:
     def _validate_dezi_jwt_claims(self, decoded_dezi_jwt: Dict[str, Any]) -> None:
         """
         Validate required claims in the DEZI JWT token.
-        NOTE: We do NOT validate the audience claim here.
             Currently it is not possible to check the audience claim as the value is normally the OIDC client ID and that is unknown in the NVI.
             Note that there is a possibility that the LRS puts in a different DEZI JWT and we do not know if that DEZI JWT was intended for that LRS/system in front of the LRS.
             We do check that a relationship claim (URA) in the DEZI JWT matches the URA of the LRS (Middleware cert check)
@@ -227,12 +237,11 @@ class JwtValidator:
         try:
             # Get leaf cert from x5c from LRS jwt header
             leaf_cert = self.__retrieve_leaf_cert_from_x5c(token)
+            # Get public key from leaf cert
             public_key = self.__get_pub_key_from_cert(leaf_cert)
 
-            # Get public key from leaf cert
-            decoded_token = self.__decode_cert(public_key, token)
-
-            # Validate main JWT claims
+            # Decode and validate main JWT claims
+            decoded_token = self.__decode_jwt(public_key, token)
             self.__validate_lrs_jwt_claims(decoded_token)
 
             # Decode and validate DEZI JWT
@@ -244,12 +253,5 @@ class JwtValidator:
 
             logger.info("JWT validation successful")
             return decoded_token
-
-        except jwt.ExpiredSignatureError:
-            raise JwtValidationError("JWT token has expired")
-        except jwt.InvalidSignatureError:
-            raise JwtValidationError("JWT signature is invalid")
-        except jwt.InvalidTokenError as e:
-            raise JwtValidationError(f"JWT token is invalid: {e}")
         except Exception as e:
             raise JwtValidationError(f"JWT validation failed: {e}")
