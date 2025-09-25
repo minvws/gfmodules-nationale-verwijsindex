@@ -93,6 +93,7 @@ class JwtValidator:
             "verify_exp": True,
             "verify_iat": True,
             "verify_nbf": True,
+            "verify_aud": False,
         }
 
         # Use the certificate’s public key to check the JWT signature.
