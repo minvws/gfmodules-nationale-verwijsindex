@@ -258,7 +258,9 @@ def test_expired_jwt_token(rsa_private_key, leaf_certificate, jwt_with_x5c, jwt_
     payload = {"sub": "test", "iat": 1234567890, "exp": 1234567891}
     token = jwt_with_x5c(payload, rsa_private_key, [leaf_certificate])
 
-    with pytest.raises(JwtValidationError, match="JWT token has expired"):
+    with pytest.raises(
+        JwtValidationError, match="JWT signature verification failed or token is invalid: Signature has expired"
+    ):
         jwt_validator.validate_lrs_jwt(token, "12341234")
 
 
@@ -274,7 +276,7 @@ def test_invalid_signature(leaf_certificate, jwt_validator):
         headers={"x5c": [base64.b64encode(leaf_certificate.public_bytes(serialization.Encoding.DER)).decode("utf-8")]},
     )
 
-    with pytest.raises(JwtValidationError, match="JWT signature is invalid"):
+    with pytest.raises(JwtValidationError, match="Signature verification failed"):
         jwt_validator.validate_lrs_jwt(token, "12341234")
 
 
@@ -331,12 +333,12 @@ def test_happy_flow_with_dezi_signature_validation(
     token = jwt_with_x5c(payload, rsa_private_key, [leaf_certificate])
 
     # Should not raise any exception
-    decoded_payload = validator.validate_lrs_jwt(token, "12341234")
+    verified_payload = validator.validate_lrs_jwt(token, "12341234")
 
-    assert decoded_payload["sub"] == "test-subject"
-    assert decoded_payload["custom_claim"] == "test_value"
-    assert decoded_payload["iat"] == 1234567890
-    assert decoded_payload["exp"] == 9999999999
+    assert verified_payload["sub"] == "test-subject"
+    assert verified_payload["custom_claim"] == "test_value"
+    assert verified_payload["iat"] == 1234567890
+    assert verified_payload["exp"] == 9999999999
 
 
 def test_unhappy_flow_wrong_dezi_public_key(
@@ -384,7 +386,7 @@ def test_unhappy_flow_wrong_dezi_public_key(
     token = jwt_with_x5c(payload, rsa_private_key, [leaf_certificate])
 
     # Should raise JwtValidationError due to signature mismatch
-    with pytest.raises(JwtValidationError, match="JWT signature is invalid"):
+    with pytest.raises(JwtValidationError, match="Signature verification failed"):
         validator.validate_lrs_jwt(token, "12341234")
 
 
@@ -427,7 +429,7 @@ def test_dezi_jwt_unknown_x5t(rsa_private_key, leaf_certificate, jwt_with_x5c, j
     token = jwt_with_x5c(payload, rsa_private_key, [leaf_certificate])
     with pytest.raises(
         JwtValidationError,
-        match="JWT validation failed: Dezi signing certificate with x5t 'unknown-x5t' not in configured `dezi_register_trusted_signing_certs_store_path`.",
+        match="Dezi signing certificate with x5t 'unknown-x5t' not in configured `dezi_register_trusted_signing_certs_store_path`.",
     ):
         jwt_validator.validate_lrs_jwt(token, "12341234")
 
@@ -459,8 +461,8 @@ def test_dezi_jwt_missing_x5t_fallback_success(
     payload = standard_jwt_payload(dezi_jwt_token=dezi_jwt_token)
     token = jwt_with_x5c(payload, rsa_private_key, [leaf_certificate])
 
-    decoded_payload = validator.validate_lrs_jwt(token, "12341234")
-    assert decoded_payload["sub"] == "test-subject"
+    verified_payload = validator.validate_lrs_jwt(token, "12341234")
+    assert verified_payload["sub"] == "test-subject"
 
 
 def test_dezi_jwt_missing_x5t_fallback_failure(
@@ -493,7 +495,10 @@ def test_dezi_jwt_missing_x5t_fallback_failure(
     payload = standard_jwt_payload(dezi_jwt_token=dezi_jwt_token)
     token = jwt_with_x5c(payload, rsa_private_key, [leaf_certificate])
 
-    with pytest.raises(JwtValidationError, match="JWT signature is invalid"):
+    with pytest.raises(
+        JwtValidationError,
+        match="Failed to validate DEZI JWT with any of the configured certificates in `dezi_register_trusted_signing_certs_store_path`.",
+    ):
         validator.validate_lrs_jwt(token, "12341234")
 
 
