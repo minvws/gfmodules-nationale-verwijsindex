@@ -88,7 +88,7 @@ class JwtValidator:
         jwt_token: str,
         override_verify_options: Dict[str, Any] | None = None,
     ) -> Dict[str, Any]:
-        """Try decoding JWT with a given public key, return payload if valid. Raises JwtValidationError if invalid."""
+        """Validate JWT signature with a given public key, return payload if valid. Raises JwtValidationError if invalid."""
         verify_options = {
             "verify_signature": True,
             "verify_exp": True,
