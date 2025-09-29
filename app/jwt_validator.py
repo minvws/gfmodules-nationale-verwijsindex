@@ -138,7 +138,7 @@ class JwtValidator:
                 raise JwtValidationError(f"Failed to validate DEZI JWT with certificate from x5t: {x5t}")
             return result
 
-        # If no x5t validation, try to decode using brute force with known certs
+        # If no x5t set in JWT header, try to validate JWT with known certs
         for cert in self.dezi_register_signing_certificates:
             try:
                 return self.__decode_jwt(
