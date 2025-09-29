@@ -63,9 +63,9 @@ RUN if [ "$standalone" = "true" ] ; then \
 
 USER ${APP_USER}
 
-EXPOSE 8502:8502
+EXPOSE 8502
 WORKDIR ${PROJECT_DIR}
 
 ENV PYTHONPATH=${PROJECT_DIR}
 
-CMD ["docker/./init.sh", "localisation_db"]
+CMD ["/docker-entrypoint.sh"]
