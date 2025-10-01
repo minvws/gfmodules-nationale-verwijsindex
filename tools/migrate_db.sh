@@ -7,9 +7,11 @@ YELLOW="\033[33m"
 BLUE="\033[34m"
 NC="\033[0m"
 
+APP_PATH="${FASTAPI_CONFIG_PATH:-app.conf}"
+
 echo -e "${GREEN}👀 Checking migrations ${NC}"
 
-source <(grep dsn app.conf | sed -r 's/\+psycopg//')
+source <(grep dsn $APP_PATH | sed -r 's/\+psycopg//')
 
 # check if the migration table exists
 if
@@ -18,7 +20,7 @@ if
 then
   echo -e "${YELLOW}⚠️ Migration table does not exists. Creating migrations table.${NC}"
 
-  # create the migration table
+  # create the migration table
   echo "CREATE TABLE migrations (id serial PRIMARY KEY, name VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);" | psql $dsn -q -o /dev/null
 fi
 
