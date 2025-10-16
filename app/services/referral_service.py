@@ -4,7 +4,7 @@ from typing import List
 import inject
 from fastapi.exceptions import HTTPException
 
-from app.data import DataDomain, Pseudonym, UraNumber
+from app.data import Pseudonym, UraNumber
 from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
@@ -24,7 +24,11 @@ class ReferralService:
         self.toestemming_service = toestemming_service
 
     def get_referrals_by_domain_and_pseudonym(
-        self, pseudonym: Pseudonym, data_domain: DataDomain, client_ura_number: UraNumber, breaking_glass: bool = False
+        self,
+        pseudonym: Pseudonym,
+        data_domain: str,
+        client_ura_number: UraNumber,
+        breaking_glass: bool = False,
     ) -> List[ReferralEntry]:
         """
         Method that gets all the referrals by pseudonym and data domain
@@ -69,7 +73,7 @@ class ReferralService:
     def add_one_referral(
         self,
         pseudonym: Pseudonym,
-        data_domain: DataDomain,
+        data_domain: str,
         ura_number: UraNumber,
         uzi_number: str,
         request_url: str,
@@ -84,10 +88,9 @@ class ReferralService:
                 requesting_uzi_number=uzi_number,
                 endpoint=request_url,
                 request_type=ReferralRequestType.CREATE,
-                payload={"pseudonym": str(pseudonym), "data_domain": str(data_domain)},
+                payload={"pseudonym": str(pseudonym), "data_domain": data_domain},
             )
 
-            # Inject interface with DI when shared package is used (https://github.com/minvws/gfmodules-national-referral-index/issues/42)
             audit_logger = ReferralRequestDatabaseLogger(session)
             audit_logger.log(logging_payload)
 
@@ -97,7 +100,7 @@ class ReferralService:
             ):
                 referral_entity = ReferralEntity(
                     pseudonym=str(pseudonym),
-                    data_domain=str(data_domain),
+                    data_domain=data_domain,
                     ura_number=str(ura_number),
                 )
                 return self.hydrate_referral(referral_repository.add_one(referral_entity))
@@ -106,7 +109,7 @@ class ReferralService:
     def delete_one_referral(
         self,
         pseudonym: Pseudonym,
-        data_domain: DataDomain,
+        data_domain: str,
         ura_number: UraNumber,
         request_url: str,
     ) -> None:
@@ -119,7 +122,7 @@ class ReferralService:
                 requesting_uzi_number="000000",
                 endpoint=request_url,
                 request_type=ReferralRequestType.DELETE,
-                payload={"pseudonym": str(pseudonym), "data_domain": str(data_domain)},
+                payload={"pseudonym": str(pseudonym), "data_domain": data_domain},
             )
 
             # Inject interface with DI when shared package is used (https://github.com/minvws/gfmodules-national-referral-index/issues/42)
@@ -136,7 +139,7 @@ class ReferralService:
     def query_referrals(
         self,
         pseudonym: Pseudonym | None,
-        data_domain: DataDomain | None,
+        data_domain: str | None,
         ura_number: UraNumber,
         request_url: str,
     ) -> List[ReferralEntry]:
@@ -150,7 +153,7 @@ class ReferralService:
                 requesting_uzi_number="000000",
                 endpoint=request_url,
                 request_type=ReferralRequestType.QUERY,
-                payload={"pseudonym": str(pseudonym), "data_domain": str(data_domain)},
+                payload={"pseudonym": str(pseudonym), "data_domain": data_domain},
             )
             # Inject interface with DI when shared package is used (https://github.com/minvws/gfmodules-national-referral-index/issues/42)
             audit_logger = ReferralRequestDatabaseLogger(session)
@@ -165,7 +168,7 @@ class ReferralService:
 
     @staticmethod
     def hydrate_referral(entity: ReferralEntity) -> ReferralEntry:
-        data_domain = DataDomain.from_str(entity.data_domain)
+        data_domain = entity.data_domain
         if data_domain is None:
             raise ValueError("Invalid data domain")
 
