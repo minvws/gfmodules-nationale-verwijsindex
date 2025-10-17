@@ -3,7 +3,7 @@ from typing import List
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.data import DataDomain, Pseudonym, UraNumber
+from app.data import Pseudonym, UraNumber
 from app.db.decorator import repository
 from app.db.models.referral import ReferralEntity
 from app.db.repository.respository_base import RepositoryBase
@@ -11,10 +11,10 @@ from app.db.repository.respository_base import RepositoryBase
 
 @repository(ReferralEntity)
 class ReferralRepository(RepositoryBase):
-    def find_one(self, pseudonym: Pseudonym, data_domain: DataDomain, ura_number: UraNumber) -> ReferralEntity | None:
+    def find_one(self, pseudonym: Pseudonym, data_domain: str, ura_number: UraNumber) -> ReferralEntity | None:
         stmt = select(ReferralEntity).where(
             ReferralEntity.ura_number == str(ura_number),
-            ReferralEntity.data_domain == str(data_domain),
+            ReferralEntity.data_domain == data_domain,
             ReferralEntity.pseudonym == str(pseudonym),
         )
         result = self.db_session.execute(stmt).scalars().first()
@@ -27,7 +27,7 @@ class ReferralRepository(RepositoryBase):
     def query_referrals(
         self,
         pseudonym: Pseudonym | None,
-        data_domain: DataDomain | None,
+        data_domain: str | None,
         ura_number: UraNumber | None,
     ) -> List[ReferralEntity]:
         stmt = select(ReferralEntity)

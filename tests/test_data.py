@@ -1,13 +1,6 @@
 import unittest
 
-from app.data import DataDomain, Pseudonym, UraNumber
-
-
-class TestDataDomain(unittest.TestCase):
-    def test_careplan(self) -> None:
-        self.assertEqual("zorgplan", str(DataDomain.CarePlan))
-        self.assertEqual(DataDomain.CarePlan, DataDomain.from_fhir("CarePlan"))
-        self.assertEqual("CarePlan", DataDomain.CarePlan.to_fhir())
+from app.data import Pseudonym, UraNumber
 
 
 class TestPseudonym(unittest.TestCase):
