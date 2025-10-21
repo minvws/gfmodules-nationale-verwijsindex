@@ -13,5 +13,5 @@ class ReferralEntity(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<ReferralEntity(ura_number={self.ura_number}, pseudonym={self.pseudonym}, data_domain={self.pseudonym})"
+            f"<ReferralEntity(ura_number={self.ura_number}, pseudonym={self.pseudonym}, data_domain={self.data_domain})"
         )

@@ -13,7 +13,7 @@ from app.response_models.referrals import (
     ReferralEntry,
     ReferralQuery,
 )
-from app.services.pseudonym_service import PseudonymError, PseudonymService
+from app.services.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 
 logger = logging.getLogger(__name__)
@@ -43,8 +43,9 @@ def create_referral(
         f"POST {router.prefix}/ pseudonym={str(payload.pseudonym)} data_domain={str(payload.data_domain)}, ura_number={str(payload.ura_number)}"
     )
     try:
-        localisation_pseudonym = pseudonym_service.exchange(payload.pseudonym)
-    except PseudonymError as e:
+        # FIXME Will be handled later when implementing referral creating PRS flow
+        localisation_pseudonym = pseudonym_service.exchange(payload.pseudonym)  # type: ignore
+    except Exception as e:
         logger.error(f"Failed to exchange pseudonym: {e}")
         return Response(status_code=404)
 
@@ -84,8 +85,9 @@ def query_referrals(
     localisation_pseudonym = None
     if payload.pseudonym is not None:
         try:
-            localisation_pseudonym = pseudonym_service.exchange(payload.pseudonym)
-        except PseudonymError as e:
+            # FIXME Will be handled later when implementing referral creating PRS flow
+            localisation_pseudonym = pseudonym_service.exchange(payload.pseudonym)  # type: ignore
+        except Exception as e:
             logger.error(f"Failed to exchange pseudonym: {e}")
             return Response(status_code=404)
 
@@ -118,8 +120,9 @@ def delete_referral(
     )
     request_url = str(request.url)
     try:
-        localisation_pseudonym = pseudonym_service.exchange(req.pseudonym)
-    except PseudonymError as e:
+        # FIXME Will be handled later when implementing referral creating PRS flow
+        localisation_pseudonym = pseudonym_service.exchange(req.pseudonym)  # type: ignore
+    except Exception as e:
         logger.error(f"Failed to exchange pseudonym: {e}")
         return Response(status_code=404)
 

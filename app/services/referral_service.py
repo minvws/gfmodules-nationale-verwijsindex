@@ -41,6 +41,7 @@ class ReferralService:
                 pseudonym=pseudonym, data_domain=data_domain, ura_number=None
             )
             if not entities:
+                logger.info(f"No referrals found for pseudonym {str(pseudonym)} and data domain {str(data_domain)}")
                 raise HTTPException(status_code=404)
 
             allowed_entities: List[ReferralEntry] = []

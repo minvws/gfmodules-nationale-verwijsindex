@@ -28,6 +28,8 @@ statsd = "^4.0.1"
 puzi = { git = "https://github.com/minvws/puzi-python" }
 click = "^8.3.0"
 pyjwt = "^2.10.1"
+pyoprf = "0.8.0"
+jwcrypto = "^1.5.6"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.2"

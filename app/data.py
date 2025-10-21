@@ -1,4 +1,3 @@
-import uuid
 from dataclasses import dataclass
 from typing import Any
 
@@ -27,7 +26,7 @@ class UraNumber:
 @dataclass
 class Pseudonym:
     def __init__(self, value: Any) -> None:
-        self.value = uuid.UUID(str(value))
+        self.value = value
 
     def __str__(self) -> str:
         return str(self.value)

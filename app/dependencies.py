@@ -7,9 +7,9 @@ from app.config import Config
 from app.data import UraNumber
 from app.db.db import Database
 from app.jwt_validator import JwtValidator
-from app.middleware.ura_middleware.ura_middleware import UraMiddleware
 from app.services.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
+from app.ura.ura_middleware.ura_middleware import UraMiddleware
 
 
 def get_default_config() -> Config:

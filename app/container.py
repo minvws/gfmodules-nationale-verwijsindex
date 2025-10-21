@@ -5,21 +5,22 @@ import inject
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec, ed448, ed25519, rsa
+from jwcrypto import jwk
 from pydantic import ValidationError
 
 from app.config import PROJECT_ROOT, Config, ConfigUraMiddleware, read_ini_file
 from app.data import UraNumber
 from app.db.db import Database
 from app.jwt_validator import DeziSigningCert, JwtValidator
-from app.middleware.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
-from app.middleware.ura_middleware.config_based_ura_middleware import ConfigBasedUraMiddleware
-from app.middleware.ura_middleware.request_ura_middleware import RequestUraMiddleware
-from app.middleware.ura_middleware.ura_middleware import UraMiddleware
 from app.services.authorization_services.authorization_interface import BaseAuthService
 from app.services.authorization_services.stub import StubAuthService
 from app.services.authorization_services.toestemming_stub_service import ToestemmingStubService
 from app.services.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
+from app.ura.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
+from app.ura.ura_middleware.config_based_ura_middleware import ConfigBasedUraMiddleware
+from app.ura.ura_middleware.request_ura_middleware import RequestUraMiddleware
+from app.ura.ura_middleware.ura_middleware import UraMiddleware
 
 DEFAULT_CONFIG_INI_FILE = PROJECT_ROOT / "app.conf"
 
@@ -133,6 +134,10 @@ def container_config(binder: inject.Binder) -> None:
         )
         binder.bind(ReferralService, referral_service)
 
+    with open(config.pseudonym_api.mtls_key, "rb") as key_file:
+        private_key_pem = key_file.read()
+    jwk_data = jwk.JWK.from_pem(private_key_pem)
+
     pseudonym_service = PseudonymService(
         endpoint=config.pseudonym_api.endpoint,
         timeout=config.pseudonym_api.timeout,
@@ -140,6 +145,8 @@ def container_config(binder: inject.Binder) -> None:
         mtls_cert=config.pseudonym_api.mtls_cert,
         mtls_key=config.pseudonym_api.mtls_key,
         mtls_ca=config.pseudonym_api.mtls_ca,
+        jwkey=jwk_data,
+        public_key=jwk_data.public(),
     )
 
     binder.bind(PseudonymService, pseudonym_service)
