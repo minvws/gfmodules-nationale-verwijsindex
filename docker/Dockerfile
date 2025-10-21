@@ -32,10 +32,22 @@ RUN apt update && \
         make \
         postgresql-client \
         postgresql-client-common \
-        curl
+        curl \
+        pkg-config \
+        openssl \
+        libssl-dev \
+        libsodium-dev \
+        build-essential
+
+# We need to compile liboprf from source as the current distributed versions are outdated.
+RUN git clone https://github.com/stef/liboprf.git && cd liboprf/src && make
 
 RUN pip3 install --upgrade pip && \
     pip3 install poetry --no-cache-dir
+
+RUN chown -R ${APP_USER}:${APP_GROUP} /usr/local/lib/python3.11/site-packages/setup*
+RUN chown -R ${APP_USER}:${APP_GROUP} /usr/local/lib/python3.11/site-packages/pkg_resources*
+RUN chown -R ${APP_USER}:${APP_GROUP} /usr/local/lib/python3.11/site-packages/packaging*
 
 WORKDIR ${PROJECT_DIR}
 
@@ -46,9 +58,15 @@ RUN --mount=type=cache,target=${POETRY_CACHE_DIR} poetry install --no-root --no-
 
 FROM base AS final
 
+# We need to copy the compiled shared libraries from the builder stage to the correct location so they can be found.
+RUN mkdir -p /usr/lib/x86_64-linux-gnu/
+COPY --from=builder liboprf/src/noise_xk/lib*.so /usr/lib/x86_64-linux-gnu/
+COPY --from=builder liboprf/src/lib*.so /usr/lib/x86_64-linux-gnu/
+RUN ldconfig
+
 COPY --from=builder /usr/local /usr/local
 RUN chown -R ${APP_USER}:${APP_GROUP} /usr/local/lib/python3.11
-ADD . /src
+COPY . /src
 
 COPY ./docker/init-standalone.sh /usr/local/bin
 COPY ./docker/init.sh /usr/local/bin

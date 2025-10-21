@@ -4,7 +4,8 @@ from starlette.requests import Request
 from uzireader.uziserver import UziServer
 
 from app.data import UraNumber
-from app.middleware.ura_middleware.request_ura_middleware import RequestUraMiddleware
+from app.ura.ura_middleware.request_ura_middleware import RequestUraMiddleware
+from app.ura.uzi_cert_common import _enforce_cert_newlines
 
 
 def test_authenticated_ura(mocker):
@@ -44,8 +45,7 @@ def test_enforce_cert_newlines_with_headers(mocker):
     cert = "-----BEGIN CERTIFICATE-----000102030405060708091011121314151617181920212223242526272829303132333435363738394041424344454647484950-----END CERTIFICATE-----"
     expected = "-----BEGIN CERTIFICATE-----\n0001020304050607080910111213141516171819202122232425262728293031\n32333435363738394041424344454647484950\n-----END CERTIFICATE-----"
 
-    ura_middleware = RequestUraMiddleware()
-    actual = ura_middleware._enforce_cert_newlines(cert)
+    actual = _enforce_cert_newlines(cert)
     assert actual == expected
 
 
@@ -56,6 +56,5 @@ def test_enforce_cert_newlines_without_headers(mocker):
     cert = "000102030405060708091011121314151617181920212223242526272829303132333435363738394041424344454647484950"
     expected = "-----BEGIN CERTIFICATE-----\n0001020304050607080910111213141516171819202122232425262728293031\n32333435363738394041424344454647484950\n-----END CERTIFICATE-----"
 
-    ura_middleware = RequestUraMiddleware()
-    actual = ura_middleware._enforce_cert_newlines(cert)
+    actual = _enforce_cert_newlines(cert)
     assert actual == expected

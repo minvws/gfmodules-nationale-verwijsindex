@@ -6,13 +6,9 @@ from app.data import Pseudonym, UraNumber
 
 
 class ReferralRequest(BaseModel):
-    pseudonym: Pseudonym
+    oprf_jwe: str
     data_domain: str
-
-    @field_validator("pseudonym", mode="before")
-    @classmethod
-    def serialize_pseudonym(cls, val: str) -> Pseudonym:
-        return Pseudonym(val)
+    blind_factor: str
 
 
 class ReferralRequestHeader(BaseModel):

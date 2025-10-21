@@ -12,8 +12,8 @@ from starlette.requests import Request
 from app.data import UraNumber
 from app.db.db import Database
 from app.db.models.ura_number_allowlist import UraNumberAllowlistEntity
-from app.middleware.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
-from app.middleware.ura_middleware.request_ura_middleware import RequestUraMiddleware
+from app.ura.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
+from app.ura.ura_middleware.request_ura_middleware import RequestUraMiddleware
 
 
 @pytest.fixture()
