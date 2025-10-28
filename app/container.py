@@ -1,4 +1,5 @@
 import base64
+import logging
 from pathlib import Path
 
 import inject
@@ -11,15 +12,23 @@ from app.config import PROJECT_ROOT, Config, ConfigUraMiddleware, read_ini_file
 from app.data import UraNumber
 from app.db.db import Database
 from app.jwt_validator import DeziSigningCert, JwtValidator
-from app.middleware.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
-from app.middleware.ura_middleware.config_based_ura_middleware import ConfigBasedUraMiddleware
+from app.middleware.ura_middleware.allowlisted_ura_middleware import (
+    AllowlistedUraMiddleware,
+)
+from app.middleware.ura_middleware.config_based_ura_middleware import (
+    ConfigBasedUraMiddleware,
+)
 from app.middleware.ura_middleware.request_ura_middleware import RequestUraMiddleware
 from app.middleware.ura_middleware.ura_middleware import UraMiddleware
 from app.services.authorization_services.authorization_interface import BaseAuthService
 from app.services.authorization_services.stub import StubAuthService
-from app.services.authorization_services.toestemming_stub_service import ToestemmingStubService
+from app.services.authorization_services.toestemming_stub_service import (
+    ToestemmingStubService,
+)
 from app.services.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_CONFIG_INI_FILE = PROJECT_ROOT / "app.conf"
 
@@ -69,7 +78,12 @@ def _load_dezi_signing_certificates(cert_store_path: str) -> list[DeziSigningCer
 
     certificates = []
     for cert_file in dir_path.iterdir():
-        certificate = _load_certificate(str(cert_file))
+        certificate: x509.Certificate
+        try:
+            certificate = _load_certificate(str(cert_file))
+        except ValueError as e:
+            logger.warning(e)
+            continue
 
         # Generate x5t (X.509 certificate SHA-1 thumbprint)
         sha1_fingerprint = certificate.fingerprint(hashes.SHA1())  # NOSONAR
@@ -78,7 +92,13 @@ def _load_dezi_signing_certificates(cert_store_path: str) -> list[DeziSigningCer
 
         public_key = certificate.public_key()
         if not isinstance(
-            public_key, (rsa.RSAPublicKey, ec.EllipticCurvePublicKey, ed25519.Ed25519PublicKey, ed448.Ed448PublicKey)
+            public_key,
+            (
+                rsa.RSAPublicKey,
+                ec.EllipticCurvePublicKey,
+                ed25519.Ed25519PublicKey,
+                ed448.Ed448PublicKey,
+            ),
         ):
             raise TypeError(f"Unsupported public key type in DEZI certificate: {type(public_key)}")
 
