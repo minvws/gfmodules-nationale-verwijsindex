@@ -7,9 +7,6 @@ from app.config import (
     ConfigUvicorn,
     load_default_uvicorn_config,
 )
-from app.logger.utils import get_uvicorn_logger
-
-logger = get_uvicorn_logger()
 
 
 def _format_uvicorn_params(config: ConfigUvicorn) -> dict[str, Any]:

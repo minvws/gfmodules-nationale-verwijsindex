@@ -26,9 +26,11 @@ class ReferralRepository(RepositoryBase):
 
     def query_referrals(
         self,
-        pseudonym: Pseudonym | None,
-        data_domain: DataDomain | None,
-        ura_number: UraNumber | None,
+        pseudonym: Pseudonym | None = None,
+        data_domain: DataDomain | None = None,
+        ura_number: UraNumber | None = None,
+        lmr_endpoint: str | None = None,
+        encrypted_lmr_id: str | None = None,
     ) -> List[ReferralEntity]:
         stmt = select(ReferralEntity)
 
@@ -40,6 +42,12 @@ class ReferralRepository(RepositoryBase):
 
         if data_domain is not None:
             stmt = stmt.where(ReferralEntity.data_domain == str(data_domain))
+
+        if lmr_endpoint is not None:
+            stmt = stmt.where(ReferralEntity.lmr_endpoint == lmr_endpoint)
+
+        if encrypted_lmr_id is not None:
+            stmt = stmt.where(ReferralEntity.encrypted_lmr_id == encrypted_lmr_id)
 
         result = self.db_session.execute(stmt).scalars().all()
         if isinstance(result, List):

@@ -5,6 +5,7 @@ import pyoprf
 import requests
 
 from app.data import Pseudonym
+from app.services.api_service import HttpService
 from app.services.decrypt_service import DecryptService
 from app.ura.uzi_cert_common import verify_and_get_uzi_cert
 
@@ -20,20 +21,12 @@ class PseudonymError(Exception):
 class PseudonymService:
     def __init__(
         self,
-        endpoint: str,
-        timeout: int,
-        provider_id: str,
         mtls_cert: str,
-        mtls_key: str,
-        mtls_ca: str,
         decrypt_service: DecryptService,
+        api_service: HttpService,
     ):
-        self._endpoint = endpoint
-        self._timeout = timeout
+        self._api_service = api_service
         self._mtls_cert = mtls_cert
-        self._mtls_key = mtls_key
-        self._mtls_ca = mtls_ca
-        self._provider_id = provider_id
         self._decrypt_service = decrypt_service
 
         # Pre-register NVI organization and certificate at PRS on service initialization
@@ -79,18 +72,16 @@ class PseudonymService:
         ura_number = verify_and_get_uzi_cert(cert=cert_data).value
 
         try:
-            request = requests.post(
-                url=f"{self._endpoint}/orgs",
+            response = self._api_service.do_request(
+                method="POST",
                 json={
                     "ura": ura_number,
                     "name": "nvi",
                     "max_key_usage": "bsn",
                 },
-                timeout=self._timeout,
-                cert=(self._mtls_cert, self._mtls_key),
-                verify=self._mtls_ca,
+                sub_route="orgs",
             )
-            request.raise_for_status()
+            response.raise_for_status()
         except requests.RequestException as e:
             if hasattr(e, "response") and e.response is not None and e.response.status_code == 409:
                 logger.info("Organization already registered at PRS")
@@ -103,16 +94,14 @@ class PseudonymService:
         Register the NVI certificate at the PRS.
         """
         try:
-            request = requests.post(
-                url=f"{self._endpoint}/register/certificate",
+            response = self._api_service.do_request(
+                method="POST",
                 json={
                     "scope": ["nvi"],
                 },
-                timeout=self._timeout,
-                cert=(self._mtls_cert, self._mtls_key),
-                verify=self._mtls_ca,
+                sub_route="register/certificate",
             )
-            request.raise_for_status()
+            response.raise_for_status()
         except requests.RequestException as e:
             if hasattr(e, "response") and e.response is not None and e.response.status_code == 409:
                 logger.info("Organization already registered at PRS")

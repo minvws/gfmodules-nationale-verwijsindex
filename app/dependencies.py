@@ -6,8 +6,7 @@ from fastapi import Request
 from app.config import Config
 from app.data import UraNumber
 from app.db.db import Database
-from app.jwt_validator import JwtValidator
-from app.services.pseudonym_service import PseudonymService
+from app.services.jwt_validator import JwtValidator
 from app.services.referral_service import ReferralService
 from app.ura.ura_middleware.ura_middleware import UraMiddleware
 
@@ -21,11 +20,7 @@ def get_database() -> Database:
 
 
 def get_referral_service() -> ReferralService:
-    return inject.instance(ReferralService)  # type: ignore
-
-
-def get_pseudonym_service() -> PseudonymService:
-    return inject.instance(PseudonymService)
+    return inject.instance(ReferralService)
 
 
 def get_ura_middleware() -> UraMiddleware:

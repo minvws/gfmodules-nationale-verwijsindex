@@ -3,10 +3,10 @@ from app.config import (
     ConfigApp,
     ConfigDatabase,
     ConfigDeziRegister,
+    ConfigLmrApi,
     ConfigPseudonymApi,
     ConfigStats,
     ConfigTelemetry,
-    ConfigToestemmingStubApi,
     ConfigUraMiddleware,
     LogLevel,
 )
@@ -30,9 +30,10 @@ def get_test_config() -> Config:
             mtls_key="",
             mtls_ca="",
         ),
-        toestemming_stub_api=ConfigToestemmingStubApi(
-            endpoint="http://example.com",
+        lmr_api=ConfigLmrApi(
             timeout=30,
+            retry_backoff=2,
+            retries=3,
             mtls_cert="",
             mtls_key="",
             mtls_ca="",

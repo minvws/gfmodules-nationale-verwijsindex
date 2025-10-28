@@ -1,6 +1,7 @@
 import base64
 from datetime import datetime, timedelta
 from typing import Any, Callable, Dict, List
+from unittest.mock import patch
 
 import jwt
 import pytest
@@ -9,7 +10,8 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, ed448, ed25519, rsa
 from cryptography.x509 import Certificate
 
-from app.jwt_validator import DeziSigningCert, JwtValidationError, JwtValidator
+from app.data import UraNumber
+from app.services.jwt_validator import DeziSigningCert, JwtValidationError, JwtValidator
 
 
 def _generate_rsa_private_key() -> rsa.RSAPrivateKey:
@@ -92,14 +94,25 @@ def leaf_certificate(rsa_private_key, ca_private_key):
     )
 
 
+def helper_create_jwt_validator(ca_certificate: Certificate, simple_dezi_signing_cert: DeziSigningCert) -> JwtValidator:
+    """Create JWT validator for testing."""
+    with (
+        patch("app.services.jwt_validator.JwtValidator._load_certificate") as mock_load_cert,
+        patch("app.services.jwt_validator.JwtValidator._load_dezi_signing_certificates") as mock_load_dezi_certs,
+    ):
+        mock_load_cert.return_value = ca_certificate
+        mock_load_dezi_certs.return_value = [simple_dezi_signing_cert]
+        return JwtValidator(
+            uzi_server_certificate_ca_cert_path="dummy_path",
+            dezi_register_trusted_signing_certs_store_path="dummy_dezi_path",
+        )
+
+
 @pytest.fixture
 def jwt_validator(ca_certificate, simple_dezi_signing_cert):
-    """Create JWT validator for testing."""
-    dezi_cert_with_x5t, _ = simple_dezi_signing_cert
-    return JwtValidator(
-        ca_certificate=ca_certificate,
-        dezi_register_signing_certificates=[dezi_cert_with_x5t],
-    )
+    """Fixture to create JWT validator for testing."""
+    dezi_cert, _ = simple_dezi_signing_cert
+    return helper_create_jwt_validator(ca_certificate, dezi_cert)
 
 
 @pytest.fixture
@@ -198,15 +211,16 @@ def simple_dezi_signing_cert() -> tuple[DeziSigningCert, rsa.RSAPrivateKey]:
     ), dezi_private_key
 
 
-def test_cert_chain_does_not_exist(rsa_private_key, jwt_validator):
+def test_cert_chain_does_not_exist(rsa_private_key, ca_certificate, simple_dezi_signing_cert):
     """Test scenario: x5c certificate chain does not exist in JWT header."""
     payload = {"sub": "test", "iat": 1234567890, "exp": 9999999999}
+    jwt_validator = helper_create_jwt_validator(ca_certificate, simple_dezi_signing_cert)
 
     # Create JWT without x5c header
     token = jwt.encode(payload, rsa_private_key, algorithm="RS256")
 
     with pytest.raises(JwtValidationError, match="JWT is missing 'x5c' certificate chain"):
-        jwt_validator.validate_lrs_jwt(token, "12341234")
+        jwt_validator.validate_lrs_jwt(token, UraNumber("12341234"))
 
 
 def test_cert_chain_failed_to_parse(rsa_private_key, jwt_validator):
@@ -315,13 +329,10 @@ def test_happy_flow_with_dezi_signature_validation(
 ):
     """Test scenario: Happy flow with DEZI JWT signature"""
     # Generate DEZI private key and certificate
-    dezi_cert_with_x5t, dezi_private_key = simple_dezi_signing_cert
+    dezi_cert, dezi_private_key = simple_dezi_signing_cert
 
     # Create validator with DEZI signature certificates
-    validator = JwtValidator(
-        ca_certificate=ca_certificate,
-        dezi_register_signing_certificates=[dezi_cert_with_x5t],
-    )
+    validator = helper_create_jwt_validator(ca_certificate, dezi_cert)
 
     dezi_payload = dezi_payload_factory()
 
@@ -333,7 +344,7 @@ def test_happy_flow_with_dezi_signature_validation(
     token = jwt_with_x5c(payload, rsa_private_key, [leaf_certificate])
 
     # Should not raise any exception
-    verified_payload = validator.validate_lrs_jwt(token, "12341234")
+    verified_payload = validator.validate_lrs_jwt(token, UraNumber("12341234"))
 
     assert verified_payload["sub"] == "test-subject"
     assert verified_payload["custom_claim"] == "test_value"
@@ -371,10 +382,7 @@ def test_unhappy_flow_wrong_dezi_public_key(
     )
 
     # Create validator with wrong certificate
-    validator = JwtValidator(
-        ca_certificate=ca_certificate,
-        dezi_register_signing_certificates=[wrong_dezi_cert_with_x5t],
-    )
+    validator = helper_create_jwt_validator(ca_certificate, wrong_dezi_cert_with_x5t)
 
     dezi_payload = dezi_payload_factory()
 
@@ -387,7 +395,7 @@ def test_unhappy_flow_wrong_dezi_public_key(
 
     # Should raise JwtValidationError due to signature mismatch
     with pytest.raises(JwtValidationError, match="Signature verification failed"):
-        validator.validate_lrs_jwt(token, "12341234")
+        validator.validate_lrs_jwt(token, UraNumber("12341234"))
 
 
 @pytest.mark.parametrize(
@@ -448,10 +456,7 @@ def test_dezi_jwt_missing_x5t_fallback_success(
     dezi_cert_with_x5t, dezi_private_key = simple_dezi_signing_cert
     dezi_cert_with_x5t.x5t = "test-x5t"
 
-    validator = JwtValidator(
-        ca_certificate=ca_certificate,
-        dezi_register_signing_certificates=[dezi_cert_with_x5t],
-    )
+    validator = helper_create_jwt_validator(ca_certificate, dezi_cert_with_x5t)
 
     dezi_payload = dezi_payload_factory()
 
@@ -461,7 +466,7 @@ def test_dezi_jwt_missing_x5t_fallback_success(
     payload = standard_jwt_payload(dezi_jwt_token=dezi_jwt_token)
     token = jwt_with_x5c(payload, rsa_private_key, [leaf_certificate])
 
-    verified_payload = validator.validate_lrs_jwt(token, "12341234")
+    verified_payload = validator.validate_lrs_jwt(token, UraNumber("12341234"))
     assert verified_payload["sub"] == "test-subject"
 
 
@@ -479,13 +484,10 @@ def test_dezi_jwt_missing_x5t_fallback_failure(
     dezi_private_key = _generate_rsa_private_key()
 
     # Create a different certificate for the validator (wrong key)
-    wrong_dezi_cert_with_x5t, _wrong_dezi_private_key = simple_dezi_signing_cert
+    wrong_dezi_cert_with_x5t, _ = simple_dezi_signing_cert
     wrong_dezi_cert_with_x5t.x5t = "test-x5t"
 
-    validator = JwtValidator(
-        ca_certificate=ca_certificate,
-        dezi_register_signing_certificates=[wrong_dezi_cert_with_x5t],
-    )
+    validator = helper_create_jwt_validator(ca_certificate, wrong_dezi_cert_with_x5t)
 
     dezi_payload = dezi_payload_factory()
 
@@ -499,7 +501,7 @@ def test_dezi_jwt_missing_x5t_fallback_failure(
         JwtValidationError,
         match="Failed to validate DEZI JWT with any of the configured certificates in `dezi_register_trusted_signing_certs_store_path`.",
     ):
-        validator.validate_lrs_jwt(token, "12341234")
+        validator.validate_lrs_jwt(token, UraNumber("12341234"))
 
 
 @pytest.mark.parametrize(
@@ -534,10 +536,7 @@ def test_dezi_jwt_missing_required_claims(
     dezi_cert_with_x5t, dezi_private_key = simple_dezi_signing_cert
     dezi_cert_with_x5t.x5t = "test-x5t"
 
-    validator = JwtValidator(
-        ca_certificate=ca_certificate,
-        dezi_register_signing_certificates=[dezi_cert_with_x5t],
-    )
+    validator = helper_create_jwt_validator(ca_certificate, dezi_cert_with_x5t)
 
     # Create base payload and remove the specific claim
     dezi_payload = dezi_payload_factory()
@@ -549,7 +548,7 @@ def test_dezi_jwt_missing_required_claims(
 
     token = jwt_with_x5c(payload, rsa_private_key, [leaf_certificate])
     with pytest.raises(JwtValidationError, match=f"DEZI JWT token is missing '{missing_claim}' claim"):
-        validator.validate_lrs_jwt(token, "12341234")
+        validator.validate_lrs_jwt(token, UraNumber("12341234"))
 
 
 @pytest.mark.parametrize("missing_key", ["entity_name", "roles", "ura"])
@@ -570,10 +569,7 @@ def test_dezi_jwt_missing_relation_keys(
     dezi_cert_with_x5t, dezi_private_key = simple_dezi_signing_cert
     dezi_cert_with_x5t.x5t = "test-x5t"
 
-    validator = JwtValidator(
-        ca_certificate=ca_certificate,
-        dezi_register_signing_certificates=[dezi_cert_with_x5t],
-    )
+    validator = helper_create_jwt_validator(ca_certificate, dezi_cert_with_x5t)
 
     # Create relation and remove the specific key
     relation = base_relation_factory()
@@ -587,7 +583,7 @@ def test_dezi_jwt_missing_relation_keys(
 
     token = jwt_with_x5c(payload, rsa_private_key, [leaf_certificate])
     with pytest.raises(JwtValidationError, match=f"DEZI JWT token is missing '{missing_key}' claim in 'relations'"):
-        validator.validate_lrs_jwt(token, "12341234")
+        validator.validate_lrs_jwt(token, UraNumber("12341234"))
 
 
 def test_ura_number_mismatch(
@@ -606,10 +602,7 @@ def test_ura_number_mismatch(
     dezi_cert_with_x5t, dezi_private_key = simple_dezi_signing_cert
     dezi_cert_with_x5t.x5t = "test-x5t"
 
-    validator = JwtValidator(
-        ca_certificate=ca_certificate,
-        dezi_register_signing_certificates=[dezi_cert_with_x5t],
-    )
+    validator = helper_create_jwt_validator(ca_certificate, dezi_cert_with_x5t)
 
     # Create multiple relations with different URAs
     relations = [
@@ -630,4 +623,4 @@ def test_ura_number_mismatch(
         JwtValidationError,
         match="Client URA number '99999999' does not match any URA in DEZI JWT relations: \\['11111111', '22222222'\\]",
     ):
-        validator.validate_lrs_jwt(token, "99999999")
+        validator.validate_lrs_jwt(token, UraNumber("99999999"))
