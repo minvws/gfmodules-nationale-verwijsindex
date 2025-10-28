@@ -1,0 +1,1 @@
+ALTER TABLE referrals ADD COLUMN encrypted_lmr_id VARCHAR(255) NOT NULL DEFAULT '';

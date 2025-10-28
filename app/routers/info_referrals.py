@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Header, Response
 from opentelemetry import trace
 
 from app import dependencies
-from app.data import UraNumber
+from app.data import DataDomain, UraNumber
 from app.jwt_validator import JwtValidationError, JwtValidator
 from app.response_models.referrals import ReferralEntry, ReferralRequest, ReferralRequestHeader
 from app.services.pseudonym_service import PseudonymService
@@ -53,7 +53,7 @@ def get_referral_info(
 
     referrals = referral_service.get_referrals_by_domain_and_pseudonym(
         pseudonym=localisation_pseudonym,
-        data_domain=req.data_domain,
+        data_domain=DataDomain(value=req.data_domain),
         client_ura_number=client_ura_number,
         breaking_glass=decoded_token["breaking_glass"],
     )
