@@ -4,7 +4,7 @@ from typing import List
 import inject
 from fastapi.exceptions import HTTPException
 
-from app.data import Pseudonym, UraNumber
+from app.data import DataDomain, Pseudonym, UraNumber
 from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
@@ -26,7 +26,7 @@ class ReferralService:
     def get_referrals_by_domain_and_pseudonym(
         self,
         pseudonym: Pseudonym,
-        data_domain: str,
+        data_domain: DataDomain,
         client_ura_number: UraNumber,
         breaking_glass: bool = False,
     ) -> List[ReferralEntry]:
@@ -48,7 +48,9 @@ class ReferralService:
 
             if breaking_glass:
                 # If JWT is provided an Break the Glass scenario is assumed
-                logger.info(f"JWT provided, assuming Break the Glass scenario for pseudonym {pseudonym}")
+                logger.info(
+                    f"Break the Glass scenario for pseudonym {str(pseudonym)} and data domain {str(data_domain)}"
+                )
                 # In this case, we assume all entities are allowed as we could not ask for toestemming
                 allowed_entities = [self.hydrate_referral(entity) for entity in entities]
             else:
@@ -74,10 +76,11 @@ class ReferralService:
     def add_one_referral(
         self,
         pseudonym: Pseudonym,
-        data_domain: str,
+        data_domain: DataDomain,
         ura_number: UraNumber,
         uzi_number: str,
         request_url: str,
+        encrypted_lmr_id: str,
     ) -> ReferralEntry:
         """
         Method that adds a referral to the database
@@ -89,7 +92,11 @@ class ReferralService:
                 requesting_uzi_number=uzi_number,
                 endpoint=request_url,
                 request_type=ReferralRequestType.CREATE,
-                payload={"pseudonym": str(pseudonym), "data_domain": data_domain},
+                payload={
+                    "pseudonym": str(pseudonym),
+                    "data_domain": str(data_domain),
+                    "encrypted_lmr_id": encrypted_lmr_id,
+                },
             )
 
             audit_logger = ReferralRequestDatabaseLogger(session)
@@ -101,8 +108,9 @@ class ReferralService:
             ):
                 referral_entity = ReferralEntity(
                     pseudonym=str(pseudonym),
-                    data_domain=data_domain,
+                    data_domain=str(data_domain),
                     ura_number=str(ura_number),
+                    encrypted_lmr_id=encrypted_lmr_id,
                 )
                 return self.hydrate_referral(referral_repository.add_one(referral_entity))
             raise HTTPException(status_code=409)
@@ -110,10 +118,10 @@ class ReferralService:
     def delete_one_referral(
         self,
         pseudonym: Pseudonym,
-        data_domain: str,
+        data_domain: DataDomain,
         ura_number: UraNumber,
         request_url: str,
-    ) -> None:
+    ) -> bool:
         """
         Method that removes a referral from the database
         """
@@ -123,7 +131,7 @@ class ReferralService:
                 requesting_uzi_number="000000",
                 endpoint=request_url,
                 request_type=ReferralRequestType.DELETE,
-                payload={"pseudonym": str(pseudonym), "data_domain": data_domain},
+                payload={"pseudonym": str(pseudonym), "data_domain": str(data_domain), "ura_number": str(ura_number)},
             )
 
             # Inject interface with DI when shared package is used (https://github.com/minvws/gfmodules-national-referral-index/issues/42)
@@ -135,17 +143,18 @@ class ReferralService:
             if referral is None:
                 raise HTTPException(status_code=404)
 
-            return referral_repository.delete_one(referral)
+            referral_repository.delete_one(referral)
+            return True
 
     def query_referrals(
         self,
         pseudonym: Pseudonym | None,
-        data_domain: str | None,
+        data_domain: DataDomain | None,
         ura_number: UraNumber,
         request_url: str,
     ) -> List[ReferralEntry]:
         """
-        Method that removes a referral from the database
+        Method that queries referrals from the database
         """
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)
@@ -154,7 +163,11 @@ class ReferralService:
                 requesting_uzi_number="000000",
                 endpoint=request_url,
                 request_type=ReferralRequestType.QUERY,
-                payload={"pseudonym": str(pseudonym), "data_domain": data_domain},
+                payload={
+                    "pseudonym": str(pseudonym) if pseudonym else None,
+                    "data_domain": str(data_domain) if data_domain else None,
+                    "ura_number": str(ura_number),
+                },
             )
             # Inject interface with DI when shared package is used (https://github.com/minvws/gfmodules-national-referral-index/issues/42)
             audit_logger = ReferralRequestDatabaseLogger(session)
@@ -175,6 +188,7 @@ class ReferralService:
 
         return ReferralEntry(
             ura_number=UraNumber(entity.ura_number),
-            pseudonym=Pseudonym(entity.pseudonym),
-            data_domain=data_domain,
+            pseudonym=Pseudonym(value=entity.pseudonym),
+            data_domain=DataDomain(value=data_domain),
+            encrypted_lmr_id=entity.encrypted_lmr_id,
         )

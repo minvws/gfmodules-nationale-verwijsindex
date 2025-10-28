@@ -60,7 +60,7 @@ class PseudonymService:
 
         logger.info(f"Pseudonym exchange completed: {pseudonym}")
 
-        return Pseudonym(pseudonym)
+        return Pseudonym(value=pseudonym)
 
     def register_nvi_at_prs(self) -> None:
         """

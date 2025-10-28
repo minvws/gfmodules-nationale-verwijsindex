@@ -2,29 +2,28 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, field_serializer, field_validator
 
-from app.data import Pseudonym, UraNumber
+from app.data import DataDomain, Pseudonym, UraNumber
 
 
 class ReferralRequest(BaseModel):
     oprf_jwe: str
-    data_domain: str
     blind_factor: str
+    data_domain: DataDomain
+
+    @field_validator("data_domain", mode="before")
+    @classmethod
+    def serialize_data_domain(cls, val: str) -> DataDomain:
+        return DataDomain(value=val)
 
 
 class ReferralRequestHeader(BaseModel):
     authorization: str
 
 
-class CreateReferralRequest(BaseModel):
-    pseudonym: Pseudonym
-    data_domain: str
+class CreateReferralRequest(ReferralRequest):
     ura_number: UraNumber
     requesting_uzi_number: str
-
-    @field_validator("pseudonym", mode="before")
-    @classmethod
-    def serialize_pseudo(cls, val: str) -> Pseudonym:
-        return Pseudonym(val)
+    encrypted_lmr_id: str
 
     @field_validator("ura_number", mode="before")
     @classmethod
@@ -38,27 +37,44 @@ class DeleteReferralRequest(CreateReferralRequest):
 
 class ReferralEntry(BaseModel):
     pseudonym: Pseudonym
-    data_domain: str
+    data_domain: DataDomain
     ura_number: UraNumber
+    encrypted_lmr_id: str
 
     @field_serializer("ura_number")
     def serialize_pi(self, ura_number: UraNumber) -> str:
         return str(ura_number)
 
     @field_serializer("pseudonym")
-    def serialize_ps(self, pseudonym: Pseudonym, _info: Any) -> str:
+    def serialize_pseudonym(self, pseudonym: Pseudonym) -> str:
         return str(pseudonym)
+
+    @field_serializer("data_domain")
+    def serialize_data_domain(self, data_domain: DataDomain) -> str:
+        return str(data_domain)
 
 
 class ReferralQuery(BaseModel):
-    pseudonym: Optional[Pseudonym] = None
-    data_domain: Optional[str] = None
+    oprf_jwe: Optional[str] = None
+    blind_factor: Optional[str] = None
+    data_domain: Optional[DataDomain] = None
     ura_number: UraNumber
 
-    @field_validator("pseudonym", mode="before")
+    @field_validator("oprf_jwe", "blind_factor", mode="after")
     @classmethod
-    def serialize_pseudo(cls, val: Optional[str]) -> Optional[Pseudonym]:
-        return None if val is None else Pseudonym(val)
+    def both_or_none(cls, val: Optional[str], info: Any) -> Optional[str]:
+        values = info.data
+        other_field = "blind_factor" if info.field_name == "oprf_jwe" else "oprf_jwe"
+        other_val = values.get(other_field)
+
+        if (val is None) != (other_val is None):
+            raise ValueError("Both 'oprf_jwe' and 'blind_factor' must be provided together or not at all.")
+        return val
+
+    @field_validator("data_domain", mode="before")
+    @classmethod
+    def serialize_data_domain(cls, val: Optional[str]) -> Optional[DataDomain]:
+        return None if val is None else DataDomain(value=val)
 
     @field_validator("ura_number", mode="before")
     @classmethod
