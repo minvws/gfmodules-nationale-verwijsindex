@@ -6,7 +6,6 @@ import inject
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec, ed448, ed25519, rsa
-from jwcrypto import jwk
 from pydantic import ValidationError
 
 from app.config import PROJECT_ROOT, Config, ConfigUraMiddleware, read_ini_file

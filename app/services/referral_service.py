@@ -121,7 +121,7 @@ class ReferralService:
         data_domain: DataDomain,
         ura_number: UraNumber,
         request_url: str,
-    ) -> bool:
+    ) -> None:
         """
         Method that removes a referral from the database
         """

@@ -1,6 +1,5 @@
 import base64
 import logging
-from typing import Any
 
 import pyoprf
 import requests
