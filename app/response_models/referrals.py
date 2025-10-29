@@ -1,6 +1,6 @@
 from typing import Any, Optional
 
-from pydantic import BaseModel, field_serializer, field_validator
+from pydantic import BaseModel, field_serializer, field_validator, model_validator
 
 from app.data import DataDomain, Pseudonym, UraNumber
 
@@ -60,16 +60,15 @@ class ReferralQuery(BaseModel):
     data_domain: Optional[DataDomain] = None
     ura_number: UraNumber
 
-    @field_validator("oprf_jwe", "blind_factor", mode="after")
+    @model_validator(mode="after")
     @classmethod
-    def both_or_none(cls, val: Optional[str], info: Any) -> Optional[str]:
-        values = info.data
-        other_field = "blind_factor" if info.field_name == "oprf_jwe" else "oprf_jwe"
-        other_val = values.get(other_field)
+    def both_or_none(cls, values: Any) -> Any:
+        oprf_jwe = values.oprf_jwe
+        blind_factor = values.blind_factor
 
-        if (val is None) != (other_val is None):
+        if (oprf_jwe is None) != (blind_factor is None):
             raise ValueError("Both 'oprf_jwe' and 'blind_factor' must be provided together or not at all.")
-        return val
+        return values
 
     @field_validator("data_domain", mode="before")
     @classmethod

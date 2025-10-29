@@ -121,7 +121,7 @@ class ReferralService:
         data_domain: DataDomain,
         ura_number: UraNumber,
         request_url: str,
-    ) -> bool:
+    ) -> None:
         """
         Method that removes a referral from the database
         """
@@ -144,7 +144,6 @@ class ReferralService:
                 raise HTTPException(status_code=404)
 
             referral_repository.delete_one(referral)
-            return True
 
     def query_referrals(
         self,

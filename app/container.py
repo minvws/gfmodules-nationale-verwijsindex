@@ -6,7 +6,6 @@ import inject
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec, ed448, ed25519, rsa
-from jwcrypto import jwk
 from pydantic import ValidationError
 
 from app.config import PROJECT_ROOT, Config, ConfigUraMiddleware, read_ini_file
@@ -18,6 +17,7 @@ from app.services.authorization_services.stub import StubAuthService
 from app.services.authorization_services.toestemming_stub_service import (
     ToestemmingStubService,
 )
+from app.services.decrypt_service import DecryptService
 from app.services.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 from app.ura.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
@@ -150,9 +150,8 @@ def container_config(binder: inject.Binder) -> None:
         )
         binder.bind(ReferralService, referral_service)
 
-    with open(config.pseudonym_api.mtls_key, "rb") as key_file:
-        private_key_pem = key_file.read()
-    jwk_data = jwk.JWK.from_pem(private_key_pem)
+    decrypt_service = DecryptService(mtls_key=config.pseudonym_api.mtls_key)
+    binder.bind(DecryptService, decrypt_service)
 
     pseudonym_service = PseudonymService(
         endpoint=config.pseudonym_api.endpoint,
@@ -161,8 +160,7 @@ def container_config(binder: inject.Binder) -> None:
         mtls_cert=config.pseudonym_api.mtls_cert,
         mtls_key=config.pseudonym_api.mtls_key,
         mtls_ca=config.pseudonym_api.mtls_ca,
-        jwkey=jwk_data,
-        public_key=jwk_data.public(),
+        decrypt_service=decrypt_service,
     )
 
     binder.bind(PseudonymService, pseudonym_service)
