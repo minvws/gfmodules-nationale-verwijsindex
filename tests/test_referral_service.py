@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from fastapi import HTTPException
 
-from app.data import Pseudonym, UraNumber
+from app.data import DataDomain, Pseudonym, UraNumber
 from app.db.db import Database
 from app.response_models.referrals import ReferralEntry
 from app.services.authorization_services.stub import StubAuthService
@@ -24,13 +24,14 @@ class ReferralServiceTest(TestCase):
     def test_db_connection(self) -> None:
         db_connection_valid = self.db.is_healthy()
 
-        self.assertEqual(db_connection_valid, True)
+        self.assertTrue(db_connection_valid)
 
     def test_add_referral(self) -> None:
         mock_referral = ReferralEntry(
             ura_number=UraNumber("12345"),
-            pseudonym=Pseudonym("6d87d96a-cb78-4f5c-823b-578095da2c4a"),
-            data_domain="ImagingStudy",
+            pseudonym=Pseudonym(value="6d87d96a-cb78-4f5c-823b-578095da2c4a"),
+            data_domain=DataDomain(value="ImagingStudy"),
+            encrypted_lmr_id="encrypted_lmr_id_12345",
         )
 
         self.referral_service.add_one_referral(
@@ -39,31 +40,35 @@ class ReferralServiceTest(TestCase):
             ura_number=mock_referral.ura_number,
             uzi_number="testuzinumber",
             request_url="https://test",
+            encrypted_lmr_id="encrypted_lmr_id_12345",
         )
 
     def test_add_referral_duplicate(self) -> None:
         mock_referral = ReferralEntry(
             ura_number=UraNumber("12345"),
-            pseudonym=Pseudonym("6d87d96a-cb78-4f5c-823b-578095da2c4a"),
-            data_domain="ImagingStudy",
+            pseudonym=Pseudonym(value="6d87d96a-cb78-4f5c-823b-578095da2c4a"),
+            data_domain=DataDomain(value="ImagingStudy"),
+            encrypted_lmr_id="encrypted_lmr_id_12345",
         )
 
         with self.assertRaises(HTTPException) as context:
-            for i in range(2):
+            for _ in range(2):
                 self.referral_service.add_one_referral(
                     pseudonym=mock_referral.pseudonym,
                     data_domain=mock_referral.data_domain,
                     ura_number=mock_referral.ura_number,
                     uzi_number="testuzinumber",
                     request_url="https://test",
+                    encrypted_lmr_id="encrypted_lmr_id_12345",
                 )
         self.assertEqual(context.exception.status_code, 409)
 
     def test_get_referral_by_domain_and_name(self) -> None:
         mock_referral = ReferralEntry(
             ura_number=UraNumber("12345"),
-            pseudonym=Pseudonym("6d87d96a-cb78-4f5c-823b-578095da2c4a"),
-            data_domain="ImagingStudy",
+            pseudonym=Pseudonym(value="6d87d96a-cb78-4f5c-823b-578095da2c4a"),
+            data_domain=DataDomain(value="ImagingStudy"),
+            encrypted_lmr_id="encrypted_lmr_id_12345",
         )
 
         self.referral_service.add_one_referral(
@@ -72,6 +77,7 @@ class ReferralServiceTest(TestCase):
             ura_number=mock_referral.ura_number,
             uzi_number="testuzinumber",
             request_url="https://test",
+            encrypted_lmr_id="encrypted_lmr_id_12345",
         )
         actual_referrals = self.referral_service.get_referrals_by_domain_and_pseudonym(
             pseudonym=mock_referral.pseudonym,
@@ -87,8 +93,8 @@ class ReferralServiceTest(TestCase):
     def test_get_referral_not_found(self) -> None:
         with self.assertRaises(HTTPException) as context:
             self.referral_service.get_referrals_by_domain_and_pseudonym(
-                pseudonym=Pseudonym(str(uuid4())),
-                data_domain="ImagingStudy",
+                pseudonym=Pseudonym(value=str(uuid4())),
+                data_domain=DataDomain(value="ImagingStudy"),
                 client_ura_number=UraNumber("12341234"),
             )
         self.assertEqual(context.exception.status_code, 404)
@@ -96,8 +102,9 @@ class ReferralServiceTest(TestCase):
     def test_delete_referral(self) -> None:
         mock_referral = ReferralEntry(
             ura_number=UraNumber("12345"),
-            pseudonym=Pseudonym("6d87d96a-cb78-4f5c-823b-578095da2c4a"),
-            data_domain="ImagingStudy",
+            pseudonym=Pseudonym(value="6d87d96a-cb78-4f5c-823b-578095da2c4a"),
+            data_domain=DataDomain(value="ImagingStudy"),
+            encrypted_lmr_id="encrypted_lmr_id_12345",
         )
 
         self.referral_service.add_one_referral(
@@ -106,6 +113,7 @@ class ReferralServiceTest(TestCase):
             ura_number=mock_referral.ura_number,
             uzi_number="testuzinumber",
             request_url="https://test",
+            encrypted_lmr_id="encrypted_lmr_id_12345",
         )
         actual_referrals = self.referral_service.get_referrals_by_domain_and_pseudonym(
             pseudonym=mock_referral.pseudonym,
@@ -136,8 +144,8 @@ class ReferralServiceTest(TestCase):
     def test_delete_referral_not_found(self) -> None:
         with self.assertRaises(HTTPException) as context:
             self.referral_service.delete_one_referral(
-                pseudonym=Pseudonym(str(uuid4())),
-                data_domain="ImagingStudy",
+                pseudonym=Pseudonym(value=str(uuid4())),
+                data_domain=DataDomain(value="ImagingStudy"),
                 ura_number=UraNumber("99999"),
                 request_url="https://test",
             )
@@ -146,8 +154,9 @@ class ReferralServiceTest(TestCase):
     def test_query_referral_single_item(self) -> None:
         mock_referral = ReferralEntry(
             ura_number=UraNumber("12345"),
-            pseudonym=Pseudonym("6d87d96a-cb78-4f5c-823b-578095da2c4a"),
-            data_domain="ImagingStudy",
+            pseudonym=Pseudonym(value="6d87d96a-cb78-4f5c-823b-578095da2c4a"),
+            data_domain=DataDomain(value="ImagingStudy"),
+            encrypted_lmr_id="encrypted_lmr_id_12345",
         )
 
         self.referral_service.add_one_referral(
@@ -156,6 +165,7 @@ class ReferralServiceTest(TestCase):
             ura_number=mock_referral.ura_number,
             uzi_number="testuzinumber",
             request_url="https://test",
+            encrypted_lmr_id="encrypted_lmr_id_12345",
         )
         actual_referrals = self.referral_service.query_referrals(
             pseudonym=mock_referral.pseudonym,
@@ -172,8 +182,9 @@ class ReferralServiceTest(TestCase):
     def test_query_referral_two_items(self) -> None:
         mock_referral = ReferralEntry(
             ura_number=UraNumber("12345"),
-            pseudonym=Pseudonym("6d87d96a-cb78-4f5c-823b-578095da2c4a"),
-            data_domain="ImagingStudy",
+            pseudonym=Pseudonym(value="6d87d96a-cb78-4f5c-823b-578095da2c4a"),
+            data_domain=DataDomain(value="ImagingStudy"),
+            encrypted_lmr_id="encrypted_lmr_id_12345",
         )
 
         self.referral_service.add_one_referral(
@@ -182,12 +193,14 @@ class ReferralServiceTest(TestCase):
             data_domain=mock_referral.data_domain,
             ura_number=mock_referral.ura_number,
             request_url="https://test",
+            encrypted_lmr_id="encrypted_lmr_id_12345",
         )
 
         mock_referral_2 = ReferralEntry(
             ura_number=mock_referral.ura_number,
-            pseudonym=Pseudonym("3ac6b06c-a07c-4f51-a8a6-a17143412038"),
+            pseudonym=Pseudonym(value="3ac6b06c-a07c-4f51-a8a6-a17143412038"),
             data_domain=mock_referral.data_domain,
+            encrypted_lmr_id="encrypted_lmr_id_12345",
         )
 
         self.referral_service.add_one_referral(
@@ -196,6 +209,7 @@ class ReferralServiceTest(TestCase):
             ura_number=mock_referral_2.ura_number,
             uzi_number="testuzi_number",
             request_url="https://test",
+            encrypted_lmr_id="encrypted_lmr_id_12345",
         )
 
         actual_referrals = self.referral_service.query_referrals(
@@ -210,7 +224,7 @@ class ReferralServiceTest(TestCase):
     def test_query_referral_not_found(self) -> None:
         with self.assertRaises(HTTPException) as context:
             _ = self.referral_service.query_referrals(
-                pseudonym=Pseudonym(str(uuid4())),
+                pseudonym=Pseudonym(value=str(uuid4())),
                 ura_number=UraNumber("99999"),
                 data_domain=None,
                 request_url="http://test",
@@ -221,7 +235,7 @@ class ReferralServiceTest(TestCase):
             _ = self.referral_service.query_referrals(
                 pseudonym=None,
                 ura_number=UraNumber("99999"),
-                data_domain="MedicationStatement",
+                data_domain=DataDomain(value="MedicationStatement"),
                 request_url="http://test",
             )
         self.assertEqual(context.exception.status_code, 404)

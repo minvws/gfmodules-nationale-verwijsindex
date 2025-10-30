@@ -59,12 +59,11 @@ class ConfigToestemmingStubApi(BaseModel):
 
 
 class ConfigPseudonymApi(BaseModel):
-    mock: bool = Field(default=False)
     endpoint: str
     timeout: int = Field(default=30, gt=0)
-    mtls_cert: str | None = Field(default=None)
-    mtls_key: str | None = Field(default=None)
-    mtls_ca: str | None = Field(default=None)
+    mtls_cert: str
+    mtls_key: str
+    mtls_ca: str
 
 
 class ConfigUvicorn(BaseModel):

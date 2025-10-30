@@ -13,7 +13,7 @@ from app.response_models.referrals import (
     ReferralEntry,
     ReferralQuery,
 )
-from app.services.pseudonym_service import PseudonymError, PseudonymService
+from app.services.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ router = APIRouter(
 @router.post(
     "/",
     summary="Creates a referral",
-    response_model=ReferralEntry,
+    response_model=None,
 )
 def create_referral(
     payload: CreateReferralRequest,
@@ -34,17 +34,19 @@ def create_referral(
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
     _: UraNumber = Depends(dependencies.authenticated_ura),
-) -> ReferralEntry | Response:
+) -> Response:
     """
     Creates a referral
     """
     span = trace.get_current_span()
-    span.update_name(
-        f"POST {router.prefix}/ pseudonym={str(payload.pseudonym)} data_domain={str(payload.data_domain)}, ura_number={str(payload.ura_number)}"
-    )
+    span.update_name(f"POST /info data_domain={str(payload.data_domain)}, ura_number={str(payload.ura_number)}")
+
     try:
-        localisation_pseudonym = pseudonym_service.exchange(payload.pseudonym)
-    except PseudonymError as e:
+        localisation_pseudonym = pseudonym_service.exchange(
+            oprf_jwe=payload.oprf_jwe,
+            blind_factor=payload.blind_factor,
+        )
+    except Exception as e:
         logger.error(f"Failed to exchange pseudonym: {e}")
         return Response(status_code=404)
 
@@ -54,10 +56,11 @@ def create_referral(
         ura_number=payload.ura_number,
         uzi_number=payload.requesting_uzi_number,
         request_url=str(request.url),
+        encrypted_lmr_id=payload.encrypted_lmr_id,
     )
     span.set_attribute("data.referral", str(referral))
 
-    return referral
+    return Response(status_code=201)
 
 
 @router.post(
@@ -78,14 +81,17 @@ def query_referrals(
     """
     span = trace.get_current_span()
     span.update_name(
-        f"POST {router.prefix}/query pseudonym={str(payload.pseudonym)} data_domain={str(payload.data_domain)} ura_number={str(payload.ura_number)}"
+        f"POST {router.prefix}/query data_domain={str(payload.data_domain)} ura_number={str(payload.ura_number)}"
     )
     request_url = str(request.url)
     localisation_pseudonym = None
-    if payload.pseudonym is not None:
+    if payload.oprf_jwe and payload.blind_factor:
         try:
-            localisation_pseudonym = pseudonym_service.exchange(payload.pseudonym)
-        except PseudonymError as e:
+            localisation_pseudonym = pseudonym_service.exchange(
+                oprf_jwe=payload.oprf_jwe,
+                blind_factor=payload.blind_factor,
+            )
+        except Exception as e:
             logger.error(f"Failed to exchange pseudonym: {e}")
             return Response(status_code=404)
 
@@ -113,13 +119,14 @@ def delete_referral(
     Deletes a referral
     """
     span = trace.get_current_span()
-    span.update_name(
-        f"DELETE {router.prefix}/ pseudonym={str(req.pseudonym)} data_domain={str(req.data_domain)} ura_number={str(req.ura_number)}"
-    )
+    span.update_name(f"DELETE {router.prefix}/ data_domain={str(req.data_domain)} ura_number={str(req.ura_number)}")
     request_url = str(request.url)
     try:
-        localisation_pseudonym = pseudonym_service.exchange(req.pseudonym)
-    except PseudonymError as e:
+        localisation_pseudonym = pseudonym_service.exchange(
+            oprf_jwe=req.oprf_jwe,
+            blind_factor=req.blind_factor,
+        )
+    except Exception as e:
         logger.error(f"Failed to exchange pseudonym: {e}")
         return Response(status_code=404)
 

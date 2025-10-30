@@ -104,6 +104,15 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@v5
 
+            - name: install liboprf
+              run: |
+                sudo apt install -y build-essential libsodium-dev
+                git clone https://github.com/stef/liboprf.git
+                cd liboprf/src
+                make
+                sudo make install
+                sudo ldconfig
+
             - name: Run build action
               uses: minvws/action-python-poetry-install@v1
               with:

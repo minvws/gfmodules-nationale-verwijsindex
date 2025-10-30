@@ -12,21 +12,18 @@ from app.config import PROJECT_ROOT, Config, ConfigUraMiddleware, read_ini_file
 from app.data import UraNumber
 from app.db.db import Database
 from app.jwt_validator import DeziSigningCert, JwtValidator
-from app.middleware.ura_middleware.allowlisted_ura_middleware import (
-    AllowlistedUraMiddleware,
-)
-from app.middleware.ura_middleware.config_based_ura_middleware import (
-    ConfigBasedUraMiddleware,
-)
-from app.middleware.ura_middleware.request_ura_middleware import RequestUraMiddleware
-from app.middleware.ura_middleware.ura_middleware import UraMiddleware
 from app.services.authorization_services.authorization_interface import BaseAuthService
 from app.services.authorization_services.stub import StubAuthService
 from app.services.authorization_services.toestemming_stub_service import (
     ToestemmingStubService,
 )
+from app.services.decrypt_service import DecryptService
 from app.services.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
+from app.ura.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
+from app.ura.ura_middleware.config_based_ura_middleware import ConfigBasedUraMiddleware
+from app.ura.ura_middleware.request_ura_middleware import RequestUraMiddleware
+from app.ura.ura_middleware.ura_middleware import UraMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -153,6 +150,9 @@ def container_config(binder: inject.Binder) -> None:
         )
         binder.bind(ReferralService, referral_service)
 
+    decrypt_service = DecryptService(mtls_key=config.pseudonym_api.mtls_key)
+    binder.bind(DecryptService, decrypt_service)
+
     pseudonym_service = PseudonymService(
         endpoint=config.pseudonym_api.endpoint,
         timeout=config.pseudonym_api.timeout,
@@ -160,6 +160,7 @@ def container_config(binder: inject.Binder) -> None:
         mtls_cert=config.pseudonym_api.mtls_cert,
         mtls_key=config.pseudonym_api.mtls_key,
         mtls_ca=config.pseudonym_api.mtls_ca,
+        decrypt_service=decrypt_service,
     )
 
     binder.bind(PseudonymService, pseudonym_service)
