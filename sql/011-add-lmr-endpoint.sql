@@ -1,0 +1,1 @@
+ALTER TABLE referrals ADD COLUMN lmr_endpoint VARCHAR(255) NOT NULL DEFAULT '';

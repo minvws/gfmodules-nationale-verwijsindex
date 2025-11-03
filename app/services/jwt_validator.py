@@ -1,13 +1,17 @@
 import base64
 import logging
+from pathlib import Path
 from typing import Any, Dict, List
 
 import jwt
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec, ed448, ed25519, padding, rsa
 from cryptography.x509 import Certificate
 from pydantic import BaseModel
+
+from app.data import UraNumber
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +36,8 @@ class JwtValidator:
 
     def __init__(
         self,
-        ca_certificate: Certificate,
-        dezi_register_signing_certificates: List[DeziSigningCert],
+        uzi_server_certificate_ca_cert_path: str,
+        dezi_register_trusted_signing_certs_store_path: str,
     ) -> None:
         """
         Initialize JWT validator.
@@ -42,8 +46,10 @@ class JwtValidator:
             ca_certificate: The parsed CA certificate
             dezi_register_signing_certificates: List of certificates with JWK
         """
-        self._ca_cert = ca_certificate
-        self.dezi_register_signing_certificates = dezi_register_signing_certificates
+        self._ca_cert = self._load_certificate(uzi_server_certificate_ca_cert_path)
+        self.dezi_register_signing_certificates = self._load_dezi_signing_certificates(
+            dezi_register_trusted_signing_certs_store_path
+        )
 
     def __load_cert_chain_from_x5c(self, x5c_list: List[str]) -> List[Certificate]:
         """Decode x5c entries into X.509 certificate objects."""
@@ -187,17 +193,17 @@ class JwtValidator:
             if key not in relation:
                 raise JwtValidationError(f"DEZI JWT token is missing '{key}' claim in 'relations'")
 
-    def _find_matching_ura_relation(self, decoded_dezi_jwt: Dict[str, Any], client_ura_number: str) -> None:
+    def _find_matching_ura_relation(self, decoded_dezi_jwt: Dict[str, Any], requesting_ura_number: UraNumber) -> None:
         """Find and return if relation URA matches the client URA number."""
         for relation in decoded_dezi_jwt["relations"]:
             self._validate_relation_keys(relation)
-            if relation["ura"] == client_ura_number:
-                logger.info(f"Found matching URA number '{client_ura_number}' in DEZI JWT relations")
+            if relation["ura"] == str(requesting_ura_number):
+                logger.info(f"Found matching URA number '{str(requesting_ura_number)}' in DEZI JWT relations")
                 return None
 
         available_uras = [rel["ura"] for rel in decoded_dezi_jwt["relations"]]
         raise JwtValidationError(
-            f"Client URA number '{client_ura_number}' does not match any URA in DEZI JWT relations: {available_uras}"
+            f"Client URA number '{str(requesting_ura_number)}' does not match any URA in DEZI JWT relations: {available_uras}"
         )
 
     def __retrieve_leaf_cert_from_x5c(self, token: str) -> Certificate:
@@ -230,7 +236,7 @@ class JwtValidator:
             raise JwtValidationError(f"Invalid public key type, type {type(public_key)} is not supported")
         return public_key
 
-    def validate_lrs_jwt(self, token: str, client_ura_number: str) -> Any:
+    def validate_lrs_jwt(self, token: str, requesting_ura_number: UraNumber) -> Any:
         """
         Validate a LRS JWT
         """
@@ -249,9 +255,68 @@ class JwtValidator:
             self._validate_dezi_jwt_claims(decoded_dezi_jwt)
 
             # Validate URA number matches a relation
-            self._find_matching_ura_relation(decoded_dezi_jwt, client_ura_number)
+            self._find_matching_ura_relation(decoded_dezi_jwt, requesting_ura_number)
 
             logger.info("JWT validation successful")
             return decoded_token
         except Exception as e:
             raise JwtValidationError(f"JWT validation failed: {e}")
+
+    def _load_certificate(self, cert_path: str) -> x509.Certificate:
+        """Load and parse CA certificate from file path."""
+        file_path = Path(cert_path)
+        if not file_path.exists():
+            raise FileNotFoundError(f"File not found at: {file_path}")
+        with open(file_path, "r", encoding="utf-8") as file:
+            cert_data = file.read()
+            try:
+                return x509.load_pem_x509_certificate(cert_data.encode())
+            except Exception as e:
+                raise ValueError(f"Failed to parse CA certificate from path {file_path} with error: {e}")
+
+    def _load_dezi_signing_certificates(self, cert_store_path: str) -> list[DeziSigningCert]:
+        """
+        Load the DEZI signing certificates from the given directory path and return them as a list of DeziSigningCert objects.
+        The certificates are expected to be in PEM format.
+        """
+        if not cert_store_path:
+            raise ValueError("DEZI signing certificate path is required")
+
+        dir_path = Path(cert_store_path)
+        if not dir_path.exists():
+            raise FileNotFoundError(f"DEZI signing certificates not found at: {dir_path}")
+
+        certificates = []
+        for cert_file in dir_path.iterdir():
+            certificate: x509.Certificate
+            try:
+                certificate = self._load_certificate(str(cert_file))
+            except ValueError as e:
+                logger.warning(e)
+                continue
+
+            # Generate x5t (X.509 certificate SHA-1 thumbprint)
+            sha1_fingerprint = certificate.fingerprint(hashes.SHA1())  # NOSONAR
+            x5t = base64.urlsafe_b64encode(sha1_fingerprint).decode("utf-8")
+            x5t = x5t.rstrip("=")  # Remove padding for x5t
+
+            public_key = certificate.public_key()
+            if not isinstance(
+                public_key,
+                (
+                    rsa.RSAPublicKey,
+                    ec.EllipticCurvePublicKey,
+                    ed25519.Ed25519PublicKey,
+                    ed448.Ed448PublicKey,
+                ),
+            ):
+                raise TypeError(f"Unsupported public key type in DEZI certificate: {type(public_key)}")
+
+            certificates.append(
+                DeziSigningCert(
+                    certificate=certificate,
+                    public_key=public_key,
+                    x5t=x5t,
+                )
+            )
+        return certificates

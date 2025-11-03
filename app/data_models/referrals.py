@@ -22,12 +22,17 @@ class ReferralRequestHeader(BaseModel):
 
 class CreateReferralRequest(ReferralRequest):
     ura_number: UraNumber
-    requesting_uzi_number: str
+    requesting_uzi_number: (
+        str  # FIXME: This should probably be parsed from the Certificate instead of being provided in the payload
+    )
     encrypted_lmr_id: str
+    lmr_endpoint: str
 
     @field_validator("ura_number", mode="before")
     @classmethod
-    def serialize_ura(cls, val: str) -> UraNumber:
+    def serialize_ura(cls, val: str | int | UraNumber) -> UraNumber:
+        if isinstance(val, UraNumber):
+            return val
         return UraNumber(val)
 
 
@@ -40,6 +45,7 @@ class ReferralEntry(BaseModel):
     data_domain: DataDomain
     ura_number: UraNumber
     encrypted_lmr_id: str
+    lmr_endpoint: str
 
     @field_serializer("ura_number")
     def serialize_pi(self, ura_number: UraNumber) -> str:
@@ -58,6 +64,8 @@ class ReferralQuery(BaseModel):
     oprf_jwe: Optional[str] = None
     blind_factor: Optional[str] = None
     data_domain: Optional[DataDomain] = None
+    lmr_endpoint: Optional[str] = None
+    requesting_uzi_number: str
     ura_number: UraNumber
 
     @model_validator(mode="after")
@@ -77,5 +85,7 @@ class ReferralQuery(BaseModel):
 
     @field_validator("ura_number", mode="before")
     @classmethod
-    def serialize_ura(cls, val: str) -> UraNumber:
+    def serialize_ura(cls, val: str | int | UraNumber) -> UraNumber:
+        if isinstance(val, UraNumber):
+            return val
         return UraNumber(val)
