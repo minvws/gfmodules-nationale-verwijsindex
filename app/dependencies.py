@@ -6,7 +6,7 @@ from fastapi import Request
 from app.config import Config
 from app.data import UraNumber
 from app.db.db import Database
-from app.services.jwt_validator import JwtValidator
+from app.services.cryptography.jwt_validator import JwtValidator
 from app.services.referral_service import ReferralService
 from app.ura.ura_middleware.ura_middleware import UraMiddleware
 

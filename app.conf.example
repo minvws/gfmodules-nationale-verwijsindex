@@ -49,12 +49,6 @@ pool_pre_ping=False
 # Recycle the connection after this time (in seconds)
 pool_recycle=1800
 
-[lmr_api]
-timeout=10
-# mtls_cert=secrets/ssl/lmr_api.cert
-# mtls_key=secrets/ssl/lmr_api.key
-# mtls_ca=secrets/ssl/lmr_api_ca.cert
-
 [pseudonym_api]
 endpoint=http://localhost:8504
 timeout=10

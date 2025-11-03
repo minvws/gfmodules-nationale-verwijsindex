@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, ed448, ed25519, rsa
 from cryptography.x509 import Certificate
 
 from app.data import UraNumber
-from app.services.jwt_validator import DeziSigningCert, JwtValidationError, JwtValidator
+from app.services.cryptography.jwt_validator import DeziSigningCert, JwtValidationError, JwtValidator
 
 
 def _generate_rsa_private_key() -> rsa.RSAPrivateKey:
@@ -97,8 +97,10 @@ def leaf_certificate(rsa_private_key, ca_private_key):
 def helper_create_jwt_validator(ca_certificate: Certificate, simple_dezi_signing_cert: DeziSigningCert) -> JwtValidator:
     """Create JWT validator for testing."""
     with (
-        patch("app.services.jwt_validator.JwtValidator._load_certificate") as mock_load_cert,
-        patch("app.services.jwt_validator.JwtValidator._load_dezi_signing_certificates") as mock_load_dezi_certs,
+        patch("app.services.cryptography.jwt_validator.JwtValidator._load_certificate") as mock_load_cert,
+        patch(
+            "app.services.cryptography.jwt_validator.JwtValidator._load_dezi_signing_certificates"
+        ) as mock_load_dezi_certs,
     ):
         mock_load_cert.return_value = ca_certificate
         mock_load_dezi_certs.return_value = [simple_dezi_signing_cert]

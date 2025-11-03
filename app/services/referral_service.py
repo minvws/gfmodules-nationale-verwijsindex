@@ -1,6 +1,6 @@
 from typing import List
 
-from app.data import Pseudonym, UraNumber
+from app.data import UraNumber
 from app.data_models.logging import ReferralLoggingPayload, ReferralRequestType
 from app.data_models.referrals import (
     CreateReferralRequest,
@@ -42,7 +42,6 @@ class ReferralService:
             data_domain=create_req.data_domain,
             ura_number=create_req.ura_number,
             encrypted_lmr_id=create_req.encrypted_lmr_id,
-            lmr_endpoint=create_req.lmr_endpoint,
         )
 
         audit_entry = ReferralLoggingPayload(
@@ -55,7 +54,6 @@ class ReferralService:
                 "data_domain": str(create_req.data_domain),
                 "ura_number": str(create_req.ura_number),
                 "encrypted_lmr_id": create_req.encrypted_lmr_id,
-                "lmr_endpoint": create_req.lmr_endpoint,
             },
         )
         self._audit_logger.log(audit_entry)
@@ -163,33 +161,4 @@ class ReferralService:
         )
         self._audit_logger.log(audit_entry)
 
-        if breaking_glass:
-            return referrals
-
-        return self.__get_authorized_referrals(
-            referrals,
-            pseudonym,
-            requesting_ura_number,
-        )
-
-    def __get_authorized_referrals(
-        self,
-        referrals: List[ReferralEntry],
-        pseudonym: Pseudonym,
-        requesting_ura_number: UraNumber,
-    ) -> List[ReferralEntry]:
-        """
-        For every URA obtained check Authorization in LMR.
-        filter every un-authorized URA
-        return with the list of authorized URAs.
-        """
-        authorized_referrals: List[ReferralEntry] = []
-        for referral in referrals:
-            if self._auth_service.is_authorized(
-                pseudonym=pseudonym,
-                requesting_ura_number=requesting_ura_number,
-                endpoint=referral.lmr_endpoint,
-                encrypted_lmr_id=referral.encrypted_lmr_id,
-            ):
-                authorized_referrals.append(referral)
-        return authorized_referrals
+        return referrals

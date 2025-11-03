@@ -1,18 +1,17 @@
-import unittest
+import pytest
 
 from app.data import UraNumber
 
 
-class TestUraNumber(unittest.TestCase):
-    def test_ura_number(self) -> None:
-        self.assertEqual("00001234", str(UraNumber("1234")))
-        self.assertEqual("12345678", str(UraNumber("12345678")))
+def test_ura_number() -> None:
+    assert "00001234" == str(UraNumber("1234"))
+    assert "12345678" == str(UraNumber("12345678"))
 
-        with self.assertRaises(ValueError):
-            UraNumber("1234567890")
-        with self.assertRaises(ValueError):
-            UraNumber("foobar")
-        with self.assertRaises(ValueError):
-            UraNumber("1A525")
-        with self.assertRaises(ValueError):
-            UraNumber("")
+    with pytest.raises(ValueError):
+        UraNumber("1234567890")
+    with pytest.raises(ValueError):
+        UraNumber("foobar")
+    with pytest.raises(ValueError):
+        UraNumber("1A525")
+    with pytest.raises(ValueError):
+        UraNumber("")

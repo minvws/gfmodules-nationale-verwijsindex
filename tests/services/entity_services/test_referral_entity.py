@@ -14,7 +14,6 @@ def mock_referral() -> ReferralEntry:
         pseudonym=Pseudonym(value="6d87d96a-cb78-4f5c-823b-578095da2c4a"),
         data_domain=DataDomain(value="ImagingStudy"),
         encrypted_lmr_id="encrypted_lmr_id_12345",
-        lmr_endpoint="https://example.com",
     )
 
 
@@ -25,7 +24,6 @@ def mock_referral_2() -> ReferralEntry:
         pseudonym=Pseudonym(value="8d4882ec-824e-4cd1-bc66-5b47d3d8eaaf"),
         data_domain=DataDomain(value="MedicationStatement"),
         encrypted_lmr_id="encrypted_lmr_id_54321",
-        lmr_endpoint="https://example.com",
     )
 
 
@@ -38,7 +36,6 @@ def _helper_add_referral(
         data_domain=mock_referral.data_domain,
         ura_number=mock_referral.ura_number,
         encrypted_lmr_id=mock_referral.encrypted_lmr_id,
-        lmr_endpoint=mock_referral.lmr_endpoint,
     )
 
 

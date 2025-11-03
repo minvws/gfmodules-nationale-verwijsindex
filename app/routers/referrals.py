@@ -15,7 +15,7 @@ from app.data_models.referrals import (
     ReferralRequest,
     ReferralRequestHeader,
 )
-from app.services.jwt_validator import JwtValidationError, JwtValidator
+from app.services.cryptography.jwt_validator import JwtValidationError, JwtValidator
 from app.services.referral_service import ReferralService
 
 logger = logging.getLogger(__name__)

@@ -5,6 +5,9 @@ from typing import Any
 @dataclass
 class UraNumber:
     def __init__(self, value: Any) -> None:
+        if isinstance(value, UraNumber):
+            self.value = str(value)
+            return
         if (isinstance(value, int) or isinstance(value, str)) and len(str(value)) <= 8 and str(value).isdigit():
             self.value = str(value).zfill(8)
         else:

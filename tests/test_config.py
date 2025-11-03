@@ -6,7 +6,6 @@ from app.config import (
     ConfigPseudonymApi,
     ConfigStats,
     ConfigTelemetry,
-    ConfigToestemmingStubApi,
     ConfigUraMiddleware,
     LogLevel,
 )
@@ -24,13 +23,6 @@ def get_test_config() -> Config:
             create_tables=True,
         ),
         pseudonym_api=ConfigPseudonymApi(
-            endpoint="http://example.com",
-            timeout=30,
-            mtls_cert="",
-            mtls_key="",
-            mtls_ca="",
-        ),
-        toestemming_stub_api=ConfigToestemmingStubApi(
             endpoint="http://example.com",
             timeout=30,
             mtls_cert="",

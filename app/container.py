@@ -9,12 +9,13 @@ from app.data import UraNumber
 from app.db.db import Database
 from app.services.api_service import HttpService
 from app.services.authorization_services.authorization_interface import BaseAuthService
-from app.services.authorization_services.lmr_service import LmrService
 from app.services.authorization_services.stub import StubAuthService
-from app.services.decrypt_service import DecryptService
+from app.services.cryptography.decrypt_service import DecryptService
+from app.services.cryptography.jwt_validator import JwtValidator
+from app.services.entity.logging_entity_service import LoggingEntityService
 from app.services.entity.referral_entity_service import ReferralEntityService
-from app.services.jwt_validator import JwtValidator
 from app.services.pseudonym_service import PseudonymService
+from app.services.referral_service import ReferralService
 from app.ura.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
 from app.ura.ura_middleware.config_based_ura_middleware import ConfigBasedUraMiddleware
 from app.ura.ura_middleware.request_ura_middleware import RequestUraMiddleware
@@ -60,28 +61,18 @@ def container_config(binder: inject.Binder) -> None:
     db = Database(config_database=config.database)
     binder.bind(Database, db)
 
-    if config.app.authorization_service:
-        lmr_service = LmrService(
-            api_service=HttpService(
-                base_url="",
-                timeout=config.lmr_api.timeout,
-                retries=config.lmr_api.retries,
-                backoff=config.lmr_api.retry_backoff,
-                mtls_cert=config.lmr_api.mtls_cert,
-                mtls_key=config.lmr_api.mtls_key,
-                mtls_ca=config.lmr_api.mtls_ca,
-            )
-        )
-        # Bind services to different identifiers
-        binder.bind(LmrService, lmr_service)
-    else:
-        stub_service = StubAuthService()
-        binder.bind(BaseAuthService, stub_service)
+    stub_service = StubAuthService()
+    binder.bind(BaseAuthService, stub_service)
 
     referral_entity_service = ReferralEntityService(
         database=db,
     )
     binder.bind(ReferralEntityService, referral_entity_service)
+
+    logging_entity_service = LoggingEntityService(
+        database=db,
+    )
+    binder.bind(LoggingEntityService, logging_entity_service)
 
     decrypt_service = DecryptService(mtls_key=config.pseudonym_api.mtls_key)
     binder.bind(DecryptService, decrypt_service)
@@ -111,6 +102,14 @@ def container_config(binder: inject.Binder) -> None:
 
     binder.bind(Config, config)
     binder.bind(UraMiddleware, _ura_middleware(config.ura_middleware, db))
+
+    referral_service = ReferralService(
+        entity_service=referral_entity_service,
+        prs_service=pseudonym_service,
+        audit_logger=logging_entity_service,
+        auth_service=stub_service,
+    )
+    binder.bind(ReferralService, referral_service)
 
 
 def configure() -> None:

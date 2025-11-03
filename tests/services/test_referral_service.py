@@ -18,7 +18,6 @@ def mock_referral() -> ReferralEntry:
         pseudonym=Pseudonym(value="6d87d96a-cb78-4f5c-823b-578095da2c4a"),
         data_domain=DataDomain(value="ImagingStudy"),
         encrypted_lmr_id="encrypted_lmr_id_12345",
-        lmr_endpoint="https://example.com/",
     )
 
 
@@ -31,7 +30,6 @@ def create_req(
         ura_number=mock_referral.ura_number,
         data_domain=mock_referral.data_domain,
         encrypted_lmr_id="encrypted_lmr_id_12345",
-        lmr_endpoint="https://example.com/",
         oprf_jwe="test_oprf_jwe",
         blind_factor="test_blind_factor",
     )
@@ -47,7 +45,6 @@ def query_request(
         oprf_jwe="test_oprf_jwe",
         blind_factor="test_blind_factor",
         data_domain=DataDomain(value="ImagingStudy"),
-        lmr_endpoint="https://example.com/",
     )
 
 
@@ -168,47 +165,3 @@ def test_request_uras_for_timeline_succeeds(
     referral_service._entity_service.query_referrals.assert_called_once()  # type: ignore
     referral_service._audit_logger.log.assert_called_once()  # type: ignore
     referral_service._auth_service.is_authorized.assert_not_called()  # type: ignore
-
-
-def test_request_uras_for_timeline_breaking_glass_succeeds(
-    referral_service: ReferralService,
-    referral_request: ReferralRequest,
-    mock_referral: ReferralEntry,
-) -> None:
-    referral_service._auth_service.is_authorized.return_value = True  # type: ignore
-    referral_service._entity_service.query_referrals.return_value = [mock_referral, mock_referral, mock_referral]  # type: ignore
-
-    _ura_numbers = referral_service.request_uras_for_timeline(
-        referral_request=referral_request,
-        requesting_ura_number=UraNumber("1234"),
-        requesting_uzi_number="test_uzi_number",
-        request_url="https://example.com/",
-        breaking_glass=False,
-    )
-
-    referral_service._prs_service.exchange.assert_called_once()  # type: ignore
-    referral_service._entity_service.query_referrals.assert_called_once()  # type: ignore
-    referral_service._audit_logger.log.assert_called_once()  # type: ignore
-    assert referral_service._auth_service.is_authorized.call_count == 3  # type: ignore
-
-
-def test_request_uras_for_timeline_unauthorized(
-    referral_service: ReferralService,
-    referral_request: ReferralRequest,
-    mock_referral: ReferralEntry,
-) -> None:
-    referral_service._entity_service.query_referrals.return_value = [mock_referral]  # type: ignore
-    referral_service._auth_service.is_authorized.return_value = False  # type: ignore
-
-    result = referral_service.request_uras_for_timeline(
-        referral_request=referral_request,
-        requesting_ura_number=UraNumber("1234"),
-        requesting_uzi_number="test_uzi_number",
-        request_url="https://example.com/",
-        breaking_glass=False,
-    )
-    referral_service._prs_service.exchange.assert_called_once()  # type: ignore
-    referral_service._entity_service.query_referrals.assert_called_once()  # type: ignore
-    referral_service._audit_logger.log.assert_called_once()  # type: ignore
-    referral_service._auth_service.is_authorized.assert_called_once()  # type: ignore
-    assert result == []

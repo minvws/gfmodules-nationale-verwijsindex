@@ -22,7 +22,6 @@ class ReferralEntityService:
         data_domain: DataDomain,
         ura_number: UraNumber,
         encrypted_lmr_id: str,
-        lmr_endpoint: str,
     ) -> ReferralEntry:
         """
         Method that adds a referral to the database
@@ -43,7 +42,6 @@ class ReferralEntityService:
                 data_domain=str(data_domain),
                 ura_number=str(ura_number),
                 encrypted_lmr_id=encrypted_lmr_id,
-                lmr_endpoint=lmr_endpoint,
             )
             return self.hydrate_referral(referral_repository.add_one(referral_entity))
 
@@ -70,8 +68,6 @@ class ReferralEntityService:
         pseudonym: Pseudonym | None = None,
         data_domain: DataDomain | None = None,
         ura_number: UraNumber | None = None,
-        encrypted_lmr_id: str | None = None,
-        lmr_endpoint: str | None = None,
     ) -> List[ReferralEntry]:
         """
         Method that queries referrals from the database
@@ -83,8 +79,6 @@ class ReferralEntityService:
                 pseudonym=pseudonym,
                 data_domain=data_domain,
                 ura_number=ura_number,
-                lmr_endpoint=lmr_endpoint,
-                encrypted_lmr_id=encrypted_lmr_id,
             )
             if not entities:
                 logger.info("No referrals found")
@@ -102,5 +96,4 @@ class ReferralEntityService:
             pseudonym=Pseudonym(value=entity.pseudonym),
             data_domain=DataDomain(value=data_domain),
             encrypted_lmr_id=entity.encrypted_lmr_id,
-            lmr_endpoint=entity.lmr_endpoint,
         )

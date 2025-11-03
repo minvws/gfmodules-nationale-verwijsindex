@@ -6,7 +6,7 @@ import requests
 
 from app.data import Pseudonym
 from app.services.api_service import HttpService
-from app.services.decrypt_service import DecryptService
+from app.services.cryptography.decrypt_service import DecryptService
 from app.ura.uzi_cert_common import verify_and_get_uzi_cert
 
 logger = logging.getLogger(__name__)
