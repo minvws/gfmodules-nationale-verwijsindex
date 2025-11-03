@@ -3,8 +3,8 @@ from typing import Any
 from sqlalchemy import JSON, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.data_models.logging import ReferralRequestType
 from app.db.models.base import Base
+from app.referral_request_type import ReferralRequestType
 
 
 class ReferralRequestLogEntry(Base):

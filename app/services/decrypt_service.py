@@ -15,7 +15,8 @@ class DecryptError(Exception):
 
 class DecryptService:
     def __init__(self, mtls_key: str) -> None:
-        self._private_key = self._read_private_key_file(mtls_key)
+        self._mtls_key = mtls_key
+        self._private_key = self._read_private_key_file()
 
     def decrypt_jwe(self, oprf_jwe: str) -> Any:
         """
@@ -40,9 +41,9 @@ class DecryptService:
             logger.error(f"Failed to decrypt JWE: {e}")
             raise DecryptError("Failed to decrypt JWE") from e
 
-    def _read_private_key_file(self, mtls_key: str) -> jwk.JWK:
+    def _read_private_key_file(self) -> jwk.JWK:
         try:
-            with open(mtls_key, "rb") as key_file:
+            with open(self._mtls_key, "rb") as key_file:
                 private_key_pem = key_file.read()
             return jwk.JWK.from_pem(private_key_pem)
         except Exception as e:

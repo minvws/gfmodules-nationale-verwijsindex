@@ -50,10 +50,9 @@ class ConfigDatabase(BaseModel):
     pool_recycle: int = Field(default=3600, ge=0)
 
 
-class ConfigLmrApi(BaseModel):
-    timeout: int = Field(default=10, gt=0)
-    retry_backoff: float = Field(default=0.3)
-    retries: int = Field(default=5, ge=0)
+class ConfigToestemmingStubApi(BaseModel):
+    endpoint: str
+    timeout: int = Field(default=30, gt=0)
     mtls_cert: str | None = Field(default=None)
     mtls_key: str | None = Field(default=None)
     mtls_ca: str | None = Field(default=None)
@@ -61,9 +60,7 @@ class ConfigLmrApi(BaseModel):
 
 class ConfigPseudonymApi(BaseModel):
     endpoint: str
-    timeout: int = Field(default=10, gt=0)
-    retry_backoff: float = Field(default=0.3)
-    retries: int = Field(default=5, ge=0)
+    timeout: int = Field(default=30, gt=0)
     mtls_cert: str
     mtls_key: str
     mtls_ca: str
@@ -101,7 +98,7 @@ class Config(BaseModel):
     pseudonym_api: ConfigPseudonymApi
     telemetry: ConfigTelemetry
     stats: ConfigStats
-    lmr_api: ConfigLmrApi
+    toestemming_stub_api: ConfigToestemmingStubApi
     ura_middleware: ConfigUraMiddleware
     dezi_register: ConfigDeziRegister
 
