@@ -5,6 +5,7 @@ import pytest
 import requests
 
 from app.data import Pseudonym
+from app.services.api_service import HttpService
 from app.services.pseudonym_service import PseudonymError, PseudonymService
 
 PATCHED_VERIFY_CERT = "app.services.pseudonym_service.verify_and_get_uzi_cert"
@@ -70,6 +71,7 @@ def test_register_organization_succeeds(
 
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
+    prs_service.__setattr__("_api_service", MagicMock(spec=HttpService))
     prs_service._api_service.do_request.return_value = mock_response  # type: ignore
 
     prs_service._register_organization("test_cert_data")
@@ -92,6 +94,7 @@ def test_register_organization_succeeds_already_exists(
     mock_response = MagicMock(status_code=409)
     err = requests.RequestException()
     err.response = mock_response
+    prs_service.__setattr__("_api_service", MagicMock(spec=HttpService))
     prs_service._api_service.do_request.side_effect = err  # type: ignore
 
     prs_service._register_organization("test_cert_data")
@@ -102,6 +105,7 @@ def test_register_organization_succeeds_already_exists(
 def test_register_organization_raises_network_error(mock_verify_cert: MagicMock, prs_service: PseudonymService) -> None:
     mock_ura = MagicMock(value="12345678")
     mock_verify_cert.return_value = mock_ura
+    prs_service.__setattr__("_api_service", MagicMock(spec=HttpService))
 
     prs_service._api_service.do_request.side_effect = requests.RequestException("Network error")  # type: ignore
 
@@ -114,6 +118,7 @@ def test_register_organization_raises_network_error(mock_verify_cert: MagicMock,
 def test_register_certificate_succeeds(prs_service: PseudonymService) -> None:
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
+    prs_service.__setattr__("_api_service", MagicMock(spec=HttpService))
     prs_service._api_service.do_request.return_value = mock_response  # type: ignore
 
     prs_service._register_certificate()
@@ -129,6 +134,7 @@ def test_register_certificate_already_exists(prs_service: PseudonymService) -> N
     mock_response = MagicMock(status_code=409)
     err = requests.RequestException()
     err.response = mock_response
+    prs_service.__setattr__("_api_service", MagicMock(spec=HttpService))
     prs_service._api_service.do_request.side_effect = err  # type: ignore
 
     prs_service._register_certificate()
@@ -136,6 +142,7 @@ def test_register_certificate_already_exists(prs_service: PseudonymService) -> N
 
 
 def test_register_certificate_fails_with_network_error(prs_service: PseudonymService) -> None:
+    prs_service.__setattr__("_api_service", MagicMock(spec=HttpService))
     prs_service._api_service.do_request.side_effect = requests.RequestException("Network error")  # type: ignore
 
     with pytest.raises(PseudonymError) as exc:

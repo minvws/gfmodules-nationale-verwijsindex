@@ -7,7 +7,6 @@ from pydantic import ValidationError
 from app.config import PROJECT_ROOT, Config, ConfigUraMiddleware, read_ini_file
 from app.data import UraNumber
 from app.db.db import Database
-from app.services.api_service import HttpService
 from app.services.authorization_services.authorization_interface import BaseAuthService
 from app.services.authorization_services.stub import StubAuthService
 from app.services.cryptography.decrypt_service import DecryptService
@@ -80,15 +79,7 @@ def container_config(binder: inject.Binder) -> None:
     pseudonym_service = PseudonymService(
         mtls_cert=config.pseudonym_api.mtls_cert,
         decrypt_service=decrypt_service,
-        api_service=HttpService(
-            base_url=config.pseudonym_api.endpoint,
-            timeout=config.pseudonym_api.timeout,
-            retries=config.pseudonym_api.retries,
-            backoff=config.pseudonym_api.retry_backoff,
-            mtls_cert=config.pseudonym_api.mtls_cert,
-            mtls_key=config.pseudonym_api.mtls_key,
-            mtls_ca=config.pseudonym_api.mtls_ca,
-        ),
+        pseudonym_config=config.pseudonym_api,
     )
 
     binder.bind(PseudonymService, pseudonym_service)

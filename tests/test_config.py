@@ -23,8 +23,7 @@ def get_test_config() -> Config:
             create_tables=True,
         ),
         pseudonym_api=ConfigPseudonymApi(
-            endpoint="http://example.com",
-            timeout=30,
+            base_url="http://example.com",
             mtls_cert="",
             mtls_key="",
             mtls_ca="",

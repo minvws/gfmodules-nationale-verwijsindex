@@ -6,12 +6,12 @@ import pytest
 
 from app.config import ConfigDatabase
 from app.db.db import Database
-from app.services.api_service import HttpService
 from app.services.authorization_services.authorization_interface import BaseAuthService
 from app.services.entity.logging_entity_service import LoggingEntityService
 from app.services.entity.referral_entity_service import ReferralEntityService
 from app.services.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
+from tests.test_config import get_test_config
 
 
 @pytest.fixture()
@@ -34,7 +34,7 @@ def prs_service(mock_register_nvi: MagicMock) -> PseudonymService:
     return PseudonymService(
         mtls_cert="fake_cert",
         decrypt_service=MagicMock(),
-        api_service=MagicMock(spec=HttpService),
+        pseudonym_config=get_test_config().pseudonym_api,
     )
 
 

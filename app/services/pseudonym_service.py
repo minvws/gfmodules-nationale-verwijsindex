@@ -4,6 +4,7 @@ import logging
 import pyoprf
 import requests
 
+from app.config import ConfigPseudonymApi
 from app.data import Pseudonym
 from app.services.api_service import HttpService
 from app.services.cryptography.decrypt_service import DecryptService
@@ -23,9 +24,9 @@ class PseudonymService:
         self,
         mtls_cert: str,
         decrypt_service: DecryptService,
-        api_service: HttpService,
+        pseudonym_config: ConfigPseudonymApi,
     ):
-        self._api_service = api_service
+        self._api_service = HttpService(**pseudonym_config.model_dump())
         self._mtls_cert = mtls_cert
         self._decrypt_service = decrypt_service
 

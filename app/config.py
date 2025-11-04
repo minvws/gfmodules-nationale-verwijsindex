@@ -51,9 +51,9 @@ class ConfigDatabase(BaseModel):
 
 
 class ConfigPseudonymApi(BaseModel):
-    endpoint: str
+    base_url: str
     timeout: int = Field(default=10, gt=0)
-    retry_backoff: float = Field(default=0.3)
+    backoff: float = Field(default=0.3)
     retries: int = Field(default=5, ge=0)
     mtls_cert: str
     mtls_key: str
