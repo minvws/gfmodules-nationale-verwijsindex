@@ -8,7 +8,7 @@ from app.data_models.referrals import (
     ReferralRequest,
 )
 from app.data_models.typing import DataDomain, Pseudonym, UraNumber
-from app.services.referral_service import ReferralService
+from app.services.localisation_service import LocalisationService
 
 
 @pytest.fixture()
@@ -59,7 +59,7 @@ def referral_request() -> ReferralRequest:
 
 def test_create_referral_succeeds(
     mock_referral: ReferralEntry,
-    referral_service: ReferralService,
+    referral_service: LocalisationService,
     create_req: CreateReferralRequest,
 ) -> None:
     referral_service._prs_service.exchange.return_value = mock_referral.pseudonym  # type: ignore
@@ -75,7 +75,7 @@ def test_create_referral_succeeds(
 
 
 def test_create_referral_prs_fails(
-    referral_service: ReferralService,
+    referral_service: LocalisationService,
     create_req: CreateReferralRequest,
 ) -> None:
     referral_service._prs_service.exchange.side_effect = Exception("PRS error")  # type: ignore
@@ -90,7 +90,7 @@ def test_create_referral_prs_fails(
 
 def test_query_referrals_succeeds(
     query_request: ReferralQuery,
-    referral_service: ReferralService,
+    referral_service: LocalisationService,
 ) -> None:
     _entries = referral_service.query_referrals(
         query_request=query_request,
@@ -104,7 +104,7 @@ def test_query_referrals_succeeds(
 
 
 def test_query_referrals_prs_fails(
-    referral_service: ReferralService,
+    referral_service: LocalisationService,
     query_request: ReferralQuery,
 ) -> None:
     referral_service._prs_service.exchange.side_effect = Exception("PRS error")  # type: ignore
@@ -120,7 +120,7 @@ def test_query_referrals_prs_fails(
 
 def test_delete_referral_succeeds(
     mock_referral: ReferralEntry,
-    referral_service: ReferralService,
+    referral_service: LocalisationService,
     create_req: DeleteReferralRequest,
 ) -> None:
     referral_service._prs_service.exchange.return_value = mock_referral.pseudonym  # type: ignore
@@ -136,7 +136,7 @@ def test_delete_referral_succeeds(
 
 
 def test_delete_referral_prs_fails(
-    referral_service: ReferralService,
+    referral_service: LocalisationService,
     create_req: DeleteReferralRequest,
 ) -> None:
     referral_service._prs_service.exchange.side_effect = Exception("PRS error")  # type: ignore
@@ -150,10 +150,10 @@ def test_delete_referral_prs_fails(
     assert "PRS error" in str(excinfo.value)
 
 
-def test_request_uras_for_timeline_succeeds(
-    referral_service: ReferralService, referral_request: ReferralRequest
+def test_query_authorized_referrals_succeeds(
+    referral_service: LocalisationService, referral_request: ReferralRequest
 ) -> None:
-    _ura_numbers = referral_service.request_uras_for_timeline(
+    _ura_numbers = referral_service.query_authorized_referrals(
         referral_request=referral_request,
         requesting_ura_number=UraNumber("1234"),
         requesting_uzi_number="test_uzi_number",

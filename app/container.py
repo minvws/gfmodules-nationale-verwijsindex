@@ -13,8 +13,8 @@ from app.services.cryptography.decrypt_service import DecryptService
 from app.services.cryptography.jwt_validator import JwtValidator
 from app.services.entity.logging_entity_service import LoggingEntityService
 from app.services.entity.referral_entity_service import ReferralEntityService
+from app.services.localisation_service import LocalisationService
 from app.services.pseudonym_service import PseudonymService
-from app.services.referral_service import ReferralService
 from app.ura.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
 from app.ura.ura_middleware.config_based_ura_middleware import ConfigBasedUraMiddleware
 from app.ura.ura_middleware.request_ura_middleware import RequestUraMiddleware
@@ -94,13 +94,13 @@ def container_config(binder: inject.Binder) -> None:
     binder.bind(Config, config)
     binder.bind(UraMiddleware, _ura_middleware(config.ura_middleware, db))
 
-    referral_service = ReferralService(
+    referral_service = LocalisationService(
         entity_service=referral_entity_service,
         prs_service=pseudonym_service,
         audit_logger=logging_entity_service,
         auth_service=stub_service,
     )
-    binder.bind(ReferralService, referral_service)
+    binder.bind(LocalisationService, referral_service)
 
 
 def configure() -> None:

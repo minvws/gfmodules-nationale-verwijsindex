@@ -16,7 +16,7 @@ from app.services.entity.referral_entity_service import ReferralEntityService
 from app.services.pseudonym_service import PseudonymService
 
 
-class ReferralService:
+class LocalisationService:
     def __init__(
         self,
         entity_service: ReferralEntityService,
@@ -125,7 +125,7 @@ class ReferralService:
         )
         self._audit_logger.log(audit_entry)
 
-    def request_uras_for_timeline(
+    def query_authorized_referrals(
         self,
         referral_request: ReferralRequest,
         requesting_ura_number: UraNumber,

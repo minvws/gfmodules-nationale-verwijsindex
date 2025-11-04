@@ -7,7 +7,7 @@ from app.config import Config
 from app.data_models.typing import UraNumber
 from app.db.db import Database
 from app.services.cryptography.jwt_validator import JwtValidator
-from app.services.referral_service import ReferralService
+from app.services.localisation_service import LocalisationService
 from app.ura.ura_middleware.ura_middleware import UraMiddleware
 
 
@@ -19,8 +19,8 @@ def get_database() -> Database:
     return inject.instance(Database)
 
 
-def get_referral_service() -> ReferralService:
-    return inject.instance(ReferralService)
+def get_referral_service() -> LocalisationService:
+    return inject.instance(LocalisationService)
 
 
 def get_ura_middleware() -> UraMiddleware:

@@ -9,8 +9,8 @@ from app.db.db import Database
 from app.services.authorization_services.authorization_interface import BaseAuthService
 from app.services.entity.logging_entity_service import LoggingEntityService
 from app.services.entity.referral_entity_service import ReferralEntityService
+from app.services.localisation_service import LocalisationService
 from app.services.pseudonym_service import PseudonymService
-from app.services.referral_service import ReferralService
 from tests.test_config import get_test_config
 
 
@@ -44,8 +44,8 @@ def logging_entity_service(database: Database) -> LoggingEntityService:
 
 
 @pytest.fixture()
-def referral_service() -> ReferralService:
-    return ReferralService(
+def referral_service() -> LocalisationService:
+    return LocalisationService(
         entity_service=MagicMock(spec=ReferralEntityService),
         prs_service=MagicMock(spec=PseudonymService),
         audit_logger=MagicMock(spec=LoggingEntityService),

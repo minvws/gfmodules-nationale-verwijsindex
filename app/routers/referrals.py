@@ -16,7 +16,7 @@ from app.data_models.referrals import (
 )
 from app.data_models.typing import UraNumber
 from app.services.cryptography.jwt_validator import JwtValidationError, JwtValidator
-from app.services.referral_service import ReferralService
+from app.services.localisation_service import LocalisationService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(
@@ -33,7 +33,7 @@ router = APIRouter(
 def create_referral(
     referral_request: CreateReferralRequest,
     request: Request,
-    referral_service: ReferralService = Depends(dependencies.get_referral_service),
+    referral_service: LocalisationService = Depends(dependencies.get_referral_service),
     requesting_ura_number: UraNumber = Depends(dependencies.authenticated_ura),
 ) -> Response:
     """
@@ -63,7 +63,7 @@ def create_referral(
 def query_referrals(
     query_request: ReferralQuery,
     request: Request,
-    referral_service: ReferralService = Depends(dependencies.get_referral_service),
+    referral_service: LocalisationService = Depends(dependencies.get_referral_service),
     requesting_ura_number: UraNumber = Depends(dependencies.authenticated_ura),
 ) -> List[ReferralEntry] | Response:
     """
@@ -89,7 +89,7 @@ def query_referrals(
 def delete_referral(
     request: Request,
     delete_request: DeleteReferralRequest,
-    referral_service: ReferralService = Depends(dependencies.get_referral_service),
+    referral_service: LocalisationService = Depends(dependencies.get_referral_service),
     requesting_ura_number: UraNumber = Depends(dependencies.authenticated_ura),
 ) -> Response:
     """
@@ -117,7 +117,7 @@ def get_referral_info(
     referral_request: ReferralRequest,
     request: Request,
     header: ReferralRequestHeader = Header(),
-    referral_service: ReferralService = Depends(dependencies.get_referral_service),
+    referral_service: LocalisationService = Depends(dependencies.get_referral_service),
     requesting_ura_number: UraNumber = Depends(dependencies.authenticated_ura),
     jwt_validator: JwtValidator = Depends(dependencies.get_jwt_validator),
 ) -> List[ReferralEntry]:
@@ -135,7 +135,7 @@ def get_referral_info(
     except JwtValidationError as e:
         raise ValueError(f"Invalid JWT token: {e}")
 
-    referrals = referral_service.request_uras_for_timeline(
+    referrals = referral_service.query_authorized_referrals(
         referral_request=referral_request,
         requesting_ura_number=requesting_ura_number,
         requesting_uzi_number=decoded_token["dezi_jwt"]["uzi_id"],
