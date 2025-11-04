@@ -222,7 +222,7 @@ def test_cert_chain_does_not_exist(rsa_private_key, ca_certificate, simple_dezi_
     token = jwt.encode(payload, rsa_private_key, algorithm="RS256")
 
     with pytest.raises(JwtValidationError, match="JWT is missing 'x5c' certificate chain"):
-        jwt_validator.validate_lrs_jwt(token, UraNumber("12341234"))
+        jwt_validator.validate_wrapped_jwt(token, UraNumber("12341234"))
 
 
 def test_cert_chain_failed_to_parse(rsa_private_key, jwt_validator):
@@ -235,7 +235,7 @@ def test_cert_chain_failed_to_parse(rsa_private_key, jwt_validator):
     token = jwt.encode(payload, rsa_private_key, algorithm="RS256", headers=headers)
 
     with pytest.raises(JwtValidationError, match="Failed to parse x5c certificate chain"):
-        jwt_validator.validate_lrs_jwt(token, "12341234")
+        jwt_validator.validate_wrapped_jwt(token, "12341234")
 
 
 def test_cert_chain_fails_to_validate(jwt_validator):
@@ -266,7 +266,7 @@ def test_cert_chain_fails_to_validate(jwt_validator):
     )
 
     with pytest.raises(JwtValidationError, match="Certificate validation failed"):
-        jwt_validator.validate_lrs_jwt(token, "12341234")
+        jwt_validator.validate_wrapped_jwt(token, "12341234")
 
 
 def test_expired_jwt_token(rsa_private_key, leaf_certificate, jwt_with_x5c, jwt_validator):
@@ -277,7 +277,7 @@ def test_expired_jwt_token(rsa_private_key, leaf_certificate, jwt_with_x5c, jwt_
     with pytest.raises(
         JwtValidationError, match="JWT signature verification failed or token is invalid: Signature has expired"
     ):
-        jwt_validator.validate_lrs_jwt(token, "12341234")
+        jwt_validator.validate_wrapped_jwt(token, "12341234")
 
 
 def test_invalid_signature(leaf_certificate, jwt_validator):
@@ -293,7 +293,7 @@ def test_invalid_signature(leaf_certificate, jwt_validator):
     )
 
     with pytest.raises(JwtValidationError, match="Signature verification failed"):
-        jwt_validator.validate_lrs_jwt(token, "12341234")
+        jwt_validator.validate_wrapped_jwt(token, "12341234")
 
 
 def test_issuer_mismatch_validation(jwt_validator):
@@ -316,7 +316,7 @@ def test_issuer_mismatch_validation(jwt_validator):
     )
 
     with pytest.raises(JwtValidationError, match="Issuer mismatch between JWT cert and trusted CA"):
-        jwt_validator.validate_lrs_jwt(token, "12341234")
+        jwt_validator.validate_wrapped_jwt(token, "12341234")
 
 
 def test_happy_flow_with_dezi_signature_validation(
@@ -346,7 +346,7 @@ def test_happy_flow_with_dezi_signature_validation(
     token = jwt_with_x5c(payload, rsa_private_key, [leaf_certificate])
 
     # Should not raise any exception
-    verified_payload = validator.validate_lrs_jwt(token, UraNumber("12341234"))
+    verified_payload = validator.validate_wrapped_jwt(token, UraNumber("12341234"))
 
     assert verified_payload["sub"] == "test-subject"
     assert verified_payload["custom_claim"] == "test_value"
@@ -397,7 +397,7 @@ def test_unhappy_flow_wrong_dezi_public_key(
 
     # Should raise JwtValidationError due to signature mismatch
     with pytest.raises(JwtValidationError, match="Signature verification failed"):
-        validator.validate_lrs_jwt(token, UraNumber("12341234"))
+        validator.validate_wrapped_jwt(token, UraNumber("12341234"))
 
 
 @pytest.mark.parametrize(
@@ -418,7 +418,7 @@ def test_missing_main_jwt_claims(
 
     token = jwt_with_x5c(payload, rsa_private_key, [leaf_certificate])
     with pytest.raises(JwtValidationError, match=expected_error):
-        jwt_validator.validate_lrs_jwt(token, "12341234")
+        jwt_validator.validate_wrapped_jwt(token, "12341234")
 
 
 def test_dezi_jwt_unknown_x5t(rsa_private_key, leaf_certificate, jwt_with_x5c, jwt_validator, standard_jwt_payload):
@@ -441,7 +441,7 @@ def test_dezi_jwt_unknown_x5t(rsa_private_key, leaf_certificate, jwt_with_x5c, j
         JwtValidationError,
         match="Dezi signing certificate with x5t 'unknown-x5t' not in configured `dezi_register_trusted_signing_certs_store_path`.",
     ):
-        jwt_validator.validate_lrs_jwt(token, "12341234")
+        jwt_validator.validate_wrapped_jwt(token, "12341234")
 
 
 def test_dezi_jwt_missing_x5t_fallback_success(
@@ -468,7 +468,7 @@ def test_dezi_jwt_missing_x5t_fallback_success(
     payload = standard_jwt_payload(dezi_jwt_token=dezi_jwt_token)
     token = jwt_with_x5c(payload, rsa_private_key, [leaf_certificate])
 
-    verified_payload = validator.validate_lrs_jwt(token, UraNumber("12341234"))
+    verified_payload = validator.validate_wrapped_jwt(token, UraNumber("12341234"))
     assert verified_payload["sub"] == "test-subject"
 
 
@@ -503,7 +503,7 @@ def test_dezi_jwt_missing_x5t_fallback_failure(
         JwtValidationError,
         match="Failed to validate DEZI JWT with any of the configured certificates in `dezi_register_trusted_signing_certs_store_path`.",
     ):
-        validator.validate_lrs_jwt(token, UraNumber("12341234"))
+        validator.validate_wrapped_jwt(token, UraNumber("12341234"))
 
 
 @pytest.mark.parametrize(
@@ -550,7 +550,7 @@ def test_dezi_jwt_missing_required_claims(
 
     token = jwt_with_x5c(payload, rsa_private_key, [leaf_certificate])
     with pytest.raises(JwtValidationError, match=f"DEZI JWT token is missing '{missing_claim}' claim"):
-        validator.validate_lrs_jwt(token, UraNumber("12341234"))
+        validator.validate_wrapped_jwt(token, UraNumber("12341234"))
 
 
 @pytest.mark.parametrize("missing_key", ["entity_name", "roles", "ura"])
@@ -585,7 +585,7 @@ def test_dezi_jwt_missing_relation_keys(
 
     token = jwt_with_x5c(payload, rsa_private_key, [leaf_certificate])
     with pytest.raises(JwtValidationError, match=f"DEZI JWT token is missing '{missing_key}' claim in 'relations'"):
-        validator.validate_lrs_jwt(token, UraNumber("12341234"))
+        validator.validate_wrapped_jwt(token, UraNumber("12341234"))
 
 
 def test_ura_number_mismatch(
@@ -625,4 +625,4 @@ def test_ura_number_mismatch(
         JwtValidationError,
         match="Client URA number '99999999' does not match any URA in DEZI JWT relations: \\['11111111', '22222222'\\]",
     ):
-        validator.validate_lrs_jwt(token, UraNumber("99999999"))
+        validator.validate_wrapped_jwt(token, UraNumber("99999999"))

@@ -131,7 +131,7 @@ def get_referral_info(
         if not header.authorization.startswith("Bearer "):
             raise ValueError("Invalid JWT token format")
         jwt_token = header.authorization.removeprefix("Bearer ").strip()
-        decoded_token = jwt_validator.validate_lrs_jwt(jwt_token, requesting_ura_number)
+        decoded_token = jwt_validator.validate_wrapped_jwt(jwt_token, requesting_ura_number)
     except JwtValidationError as e:
         raise ValueError(f"Invalid JWT token: {e}")
 

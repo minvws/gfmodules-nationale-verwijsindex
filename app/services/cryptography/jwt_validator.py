@@ -81,7 +81,7 @@ class JwtValidator:
         except Exception as e:
             raise JwtValidationError(f"Certificate validation failed: {e}")
 
-    def __validate_lrs_jwt_claims(self, decoded_token: Dict[str, Any]) -> None:
+    def __validate_wrapped_jwt_claims(self, decoded_token: Dict[str, Any]) -> None:
         """Validate required claims in the main JWT token."""
         required_claims = ["case_nr", "dezi_jwt", "breaking_glass"]
         for claim in required_claims:
@@ -236,7 +236,7 @@ class JwtValidator:
             raise JwtValidationError(f"Invalid public key type, type {type(public_key)} is not supported")
         return public_key
 
-    def validate_lrs_jwt(self, token: str, requesting_ura_number: UraNumber) -> Any:
+    def validate_wrapped_jwt(self, token: str, requesting_ura_number: UraNumber) -> Any:
         """
         Validate a LRS JWT
         """
@@ -248,7 +248,7 @@ class JwtValidator:
 
             # Decode and validate main JWT claims
             decoded_token = self.__decode_jwt(public_key, token)
-            self.__validate_lrs_jwt_claims(decoded_token)
+            self.__validate_wrapped_jwt_claims(decoded_token)
 
             # Decode and validate DEZI JWT
             decoded_dezi_jwt = self._find_cert_and_decode_dezi_jwt(decoded_token["dezi_jwt"])
