@@ -10,7 +10,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, ed448, ed25519, rsa
 from cryptography.x509 import Certificate
 
-from app.data import UraNumber
+from app.data_models.typing import UraNumber
 from app.services.cryptography.jwt_validator import DeziSigningCert, JwtValidationError, JwtValidator
 
 

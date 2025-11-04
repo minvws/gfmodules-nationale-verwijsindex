@@ -6,7 +6,6 @@ from opentelemetry import trace
 from starlette.responses import Response
 
 from app import dependencies
-from app.data import UraNumber
 from app.data_models.referrals import (
     CreateReferralRequest,
     DeleteReferralRequest,
@@ -15,6 +14,7 @@ from app.data_models.referrals import (
     ReferralRequest,
     ReferralRequestHeader,
 )
+from app.data_models.typing import UraNumber
 from app.services.cryptography.jwt_validator import JwtValidationError, JwtValidator
 from app.services.referral_service import ReferralService
 

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, mock_open, patch
 import pytest
 import requests
 
-from app.data import Pseudonym
+from app.data_models.typing import Pseudonym
 from app.services.api_service import HttpService
 from app.services.pseudonym_service import PseudonymError, PseudonymService
 

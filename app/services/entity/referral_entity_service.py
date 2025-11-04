@@ -3,8 +3,8 @@ from typing import List
 
 from fastapi import HTTPException
 
-from app.data import DataDomain, Pseudonym, UraNumber
 from app.data_models.referrals import ReferralEntry
+from app.data_models.typing import DataDomain, Pseudonym, UraNumber
 from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository

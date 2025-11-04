@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from starlette.requests import Request
 from uzireader.uziserver import UziServer
 
-from app.data import UraNumber
+from app.data_models.typing import UraNumber
 from app.ura.ura_middleware.request_ura_middleware import RequestUraMiddleware
 from app.ura.uzi_cert_common import _enforce_cert_newlines
 

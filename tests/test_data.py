@@ -1,6 +1,6 @@
 import pytest
 
-from app.data import UraNumber
+from app.data_models.typing import UraNumber
 
 
 def test_ura_number() -> None:

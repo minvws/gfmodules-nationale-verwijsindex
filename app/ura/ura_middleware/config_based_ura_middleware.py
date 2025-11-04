@@ -1,6 +1,6 @@
 from starlette.requests import Request
 
-from app.data import UraNumber
+from app.data_models.typing import UraNumber
 from app.ura.ura_middleware.ura_middleware import UraMiddleware
 
 

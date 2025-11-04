@@ -3,7 +3,7 @@ from typing import List
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.data import DataDomain, Pseudonym, UraNumber
+from app.data_models.typing import DataDomain, Pseudonym, UraNumber
 from app.db.decorator import repository
 from app.db.models.referral import ReferralEntity
 from app.db.repository.respository_base import RepositoryBase

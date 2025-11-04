@@ -1,7 +1,7 @@
 from typing import List
 
-from app.data import UraNumber
-from app.data_models.logging import ReferralLoggingPayload, ReferralRequestType
+from app.data import ReferralRequestType
+from app.data_models.logging import ReferralLoggingPayload
 from app.data_models.referrals import (
     CreateReferralRequest,
     DeleteReferralRequest,
@@ -9,6 +9,7 @@ from app.data_models.referrals import (
     ReferralQuery,
     ReferralRequest,
 )
+from app.data_models.typing import UraNumber
 from app.services.authorization_services.authorization_interface import BaseAuthService
 from app.services.entity.logging_entity_service import LoggingEntityService
 from app.services.entity.referral_entity_service import ReferralEntityService

@@ -4,7 +4,7 @@ import inject
 from fastapi import Request
 
 from app.config import Config
-from app.data import UraNumber
+from app.data_models.typing import UraNumber
 from app.db.db import Database
 from app.services.cryptography.jwt_validator import JwtValidator
 from app.services.referral_service import ReferralService

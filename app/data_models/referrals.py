@@ -2,7 +2,7 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, field_serializer, field_validator, model_validator
 
-from app.data import DataDomain, Pseudonym, UraNumber
+from app.data_models.typing import DataDomain, Pseudonym, UraNumber
 
 
 class ReferralRequest(BaseModel):

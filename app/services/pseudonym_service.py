@@ -5,7 +5,7 @@ import pyoprf
 import requests
 
 from app.config import ConfigPseudonymApi
-from app.data import Pseudonym
+from app.data_models.typing import Pseudonym
 from app.services.api_service import HttpService
 from app.services.cryptography.decrypt_service import DecryptService
 from app.ura.uzi_cert_common import verify_and_get_uzi_cert

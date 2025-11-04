@@ -1,8 +1,8 @@
 import pytest
 from fastapi import HTTPException
 
-from app.data import DataDomain, Pseudonym, UraNumber
 from app.data_models.referrals import ReferralEntry
+from app.data_models.typing import DataDomain, Pseudonym, UraNumber
 from app.db.models.referral import ReferralEntity
 from app.services.entity.referral_entity_service import ReferralEntityService
 

@@ -2,7 +2,7 @@ import abc
 
 from starlette.requests import Request
 
-from app.data import UraNumber
+from app.data_models.typing import UraNumber
 
 
 class UraMiddleware(abc.ABC):

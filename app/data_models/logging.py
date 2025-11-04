@@ -1,19 +1,12 @@
-import enum
-from dataclasses import dataclass
 from typing import Any
 
-from app.data import UraNumber
+from pydantic import BaseModel
+
+from app.data import ReferralRequestType
+from app.data_models.typing import UraNumber
 
 
-class ReferralRequestType(enum.Enum):
-    CREATE = "create"
-    DELETE = "delete"
-    QUERY = "query"
-    TIMELINE_REFERRAL_QUERY = "timeline_referral_query"
-
-
-@dataclass
-class ReferralLoggingPayload:
+class ReferralLoggingPayload(BaseModel):
     endpoint: str
     requesting_uzi_number: str
     requesting_ura_number: UraNumber

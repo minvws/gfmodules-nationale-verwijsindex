@@ -9,7 +9,7 @@ from pytest_mock import MockerFixture
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
 
-from app.data import UraNumber
+from app.data_models.typing import UraNumber
 from app.db.db import Database
 from app.db.models.ura_number_allowlist import UraNumberAllowlistEntity
 from app.ura.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware

@@ -5,7 +5,7 @@ import inject
 from pydantic import ValidationError
 
 from app.config import PROJECT_ROOT, Config, ConfigUraMiddleware, read_ini_file
-from app.data import UraNumber
+from app.data_models.typing import UraNumber
 from app.db.db import Database
 from app.services.authorization_services.authorization_interface import BaseAuthService
 from app.services.authorization_services.stub import StubAuthService

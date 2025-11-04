@@ -3,8 +3,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 from sqlalchemy import select
 
-from app.data import UraNumber
-from app.data_models.logging import ReferralLoggingPayload, ReferralRequestType
+from app.data import ReferralRequestType
+from app.data_models.logging import ReferralLoggingPayload
+from app.data_models.typing import UraNumber
 from app.db.models.referral_request_log import ReferralRequestLogEntry
 from app.services.entity.logging_entity_service import LoggingEntityService
 

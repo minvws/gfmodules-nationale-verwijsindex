@@ -1,7 +1,7 @@
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.data import UraNumber
+from app.data_models.typing import UraNumber
 from app.db.models.base import Base
 
 

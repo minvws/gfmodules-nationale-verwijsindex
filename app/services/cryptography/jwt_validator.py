@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, ed448, ed25519, paddin
 from cryptography.x509 import Certificate
 from pydantic import BaseModel
 
-from app.data import UraNumber
+from app.data_models.typing import UraNumber
 
 logger = logging.getLogger(__name__)
 

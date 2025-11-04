@@ -1,6 +1,5 @@
 import pytest
 
-from app.data import DataDomain, Pseudonym, UraNumber
 from app.data_models.referrals import (
     CreateReferralRequest,
     DeleteReferralRequest,
@@ -8,6 +7,7 @@ from app.data_models.referrals import (
     ReferralQuery,
     ReferralRequest,
 )
+from app.data_models.typing import DataDomain, Pseudonym, UraNumber
 from app.services.referral_service import ReferralService
 
 

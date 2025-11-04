@@ -2,7 +2,7 @@ import textwrap
 
 from uzireader.uziserver import UziServer
 
-from app.data import UraNumber
+from app.data_models.typing import UraNumber
 
 _CERT_START = "-----BEGIN CERTIFICATE-----"
 _CERT_END = "-----END CERTIFICATE-----"
