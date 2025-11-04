@@ -128,7 +128,6 @@ def get_referral_info(
     span.update_name(f"POST /info data_domain={str(referral_request.data_domain)}")
 
     try:
-        # Validate the JWT token - this will raise an exception if invalid
         if not header.authorization.startswith("Bearer "):
             raise ValueError("Invalid JWT token format")
         jwt_token = header.authorization.removeprefix("Bearer ").strip()
