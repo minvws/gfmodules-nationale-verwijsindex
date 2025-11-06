@@ -24,6 +24,7 @@ class CreateReferralRequest(ReferralRequest):
     ura_number: UraNumber
     requesting_uzi_number: str
     encrypted_lmr_id: str
+    lmr_endpoint: str
 
     @field_validator("ura_number", mode="before")
     @classmethod
@@ -40,6 +41,7 @@ class ReferralEntry(BaseModel):
     data_domain: DataDomain
     ura_number: UraNumber
     encrypted_lmr_id: str
+    lmr_endpoint: str
 
     @field_serializer("ura_number")
     def serialize_pi(self, ura_number: UraNumber) -> str:

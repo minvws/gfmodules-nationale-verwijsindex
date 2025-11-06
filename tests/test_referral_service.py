@@ -19,7 +19,7 @@ class ReferralServiceTest(TestCase):
         self.db.generate_tables()
         self.auth_service = StubAuthService()
         # setup service
-        self.referral_service = ReferralService(self.db, toestemming_service=self.auth_service)
+        self.referral_service = ReferralService(self.db, auth_service=self.auth_service)
 
     def test_db_connection(self) -> None:
         db_connection_valid = self.db.is_healthy()
@@ -32,6 +32,7 @@ class ReferralServiceTest(TestCase):
             pseudonym=Pseudonym(value="6d87d96a-cb78-4f5c-823b-578095da2c4a"),
             data_domain=DataDomain(value="ImagingStudy"),
             encrypted_lmr_id="encrypted_lmr_id_12345",
+            lmr_endpoint="https://example.com",
         )
 
         self.referral_service.add_one_referral(
@@ -40,6 +41,7 @@ class ReferralServiceTest(TestCase):
             ura_number=mock_referral.ura_number,
             uzi_number="testuzinumber",
             request_url="https://test",
+            lmr_endpoint="https://example.com",
             encrypted_lmr_id="encrypted_lmr_id_12345",
         )
 
@@ -48,6 +50,7 @@ class ReferralServiceTest(TestCase):
             ura_number=UraNumber("12345"),
             pseudonym=Pseudonym(value="6d87d96a-cb78-4f5c-823b-578095da2c4a"),
             data_domain=DataDomain(value="ImagingStudy"),
+            lmr_endpoint="https://example.com",
             encrypted_lmr_id="encrypted_lmr_id_12345",
         )
 
@@ -59,6 +62,7 @@ class ReferralServiceTest(TestCase):
                     ura_number=mock_referral.ura_number,
                     uzi_number="testuzinumber",
                     request_url="https://test",
+                    lmr_endpoint="https://example.com",
                     encrypted_lmr_id="encrypted_lmr_id_12345",
                 )
         self.assertEqual(context.exception.status_code, 409)
@@ -68,6 +72,7 @@ class ReferralServiceTest(TestCase):
             ura_number=UraNumber("12345"),
             pseudonym=Pseudonym(value="6d87d96a-cb78-4f5c-823b-578095da2c4a"),
             data_domain=DataDomain(value="ImagingStudy"),
+            lmr_endpoint="https://example.com",
             encrypted_lmr_id="encrypted_lmr_id_12345",
         )
 
@@ -77,6 +82,7 @@ class ReferralServiceTest(TestCase):
             ura_number=mock_referral.ura_number,
             uzi_number="testuzinumber",
             request_url="https://test",
+            lmr_endpoint="https://example.com",
             encrypted_lmr_id="encrypted_lmr_id_12345",
         )
         actual_referrals = self.referral_service.get_referrals_by_domain_and_pseudonym(
@@ -104,6 +110,7 @@ class ReferralServiceTest(TestCase):
             ura_number=UraNumber("12345"),
             pseudonym=Pseudonym(value="6d87d96a-cb78-4f5c-823b-578095da2c4a"),
             data_domain=DataDomain(value="ImagingStudy"),
+            lmr_endpoint="https://example.com",
             encrypted_lmr_id="encrypted_lmr_id_12345",
         )
 
@@ -113,6 +120,7 @@ class ReferralServiceTest(TestCase):
             ura_number=mock_referral.ura_number,
             uzi_number="testuzinumber",
             request_url="https://test",
+            lmr_endpoint="https://example.com",
             encrypted_lmr_id="encrypted_lmr_id_12345",
         )
         actual_referrals = self.referral_service.get_referrals_by_domain_and_pseudonym(
@@ -156,6 +164,7 @@ class ReferralServiceTest(TestCase):
             ura_number=UraNumber("12345"),
             pseudonym=Pseudonym(value="6d87d96a-cb78-4f5c-823b-578095da2c4a"),
             data_domain=DataDomain(value="ImagingStudy"),
+            lmr_endpoint="https://example.com",
             encrypted_lmr_id="encrypted_lmr_id_12345",
         )
 
@@ -165,6 +174,7 @@ class ReferralServiceTest(TestCase):
             ura_number=mock_referral.ura_number,
             uzi_number="testuzinumber",
             request_url="https://test",
+            lmr_endpoint="https://example.com",
             encrypted_lmr_id="encrypted_lmr_id_12345",
         )
         actual_referrals = self.referral_service.query_referrals(
@@ -184,6 +194,7 @@ class ReferralServiceTest(TestCase):
             ura_number=UraNumber("12345"),
             pseudonym=Pseudonym(value="6d87d96a-cb78-4f5c-823b-578095da2c4a"),
             data_domain=DataDomain(value="ImagingStudy"),
+            lmr_endpoint="https://example.com",
             encrypted_lmr_id="encrypted_lmr_id_12345",
         )
 
@@ -194,12 +205,14 @@ class ReferralServiceTest(TestCase):
             ura_number=mock_referral.ura_number,
             request_url="https://test",
             encrypted_lmr_id="encrypted_lmr_id_12345",
+            lmr_endpoint="https://example.com",
         )
 
         mock_referral_2 = ReferralEntry(
             ura_number=mock_referral.ura_number,
             pseudonym=Pseudonym(value="3ac6b06c-a07c-4f51-a8a6-a17143412038"),
             data_domain=mock_referral.data_domain,
+            lmr_endpoint="https://example.com",
             encrypted_lmr_id="encrypted_lmr_id_12345",
         )
 
@@ -209,6 +222,7 @@ class ReferralServiceTest(TestCase):
             ura_number=mock_referral_2.ura_number,
             uzi_number="testuzi_number",
             request_url="https://test",
+            lmr_endpoint="https://example.com",
             encrypted_lmr_id="encrypted_lmr_id_12345",
         )
 

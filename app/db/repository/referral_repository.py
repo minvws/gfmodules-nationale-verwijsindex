@@ -26,9 +26,9 @@ class ReferralRepository(RepositoryBase):
 
     def query_referrals(
         self,
-        pseudonym: Pseudonym | None,
-        data_domain: DataDomain | None,
-        ura_number: UraNumber | None,
+        pseudonym: Pseudonym | None = None,
+        data_domain: DataDomain | None = None,
+        ura_number: UraNumber | None = None,
     ) -> List[ReferralEntity]:
         stmt = select(ReferralEntity)
 

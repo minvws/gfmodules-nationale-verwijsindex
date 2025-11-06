@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 
 class ReferralService:
     @inject.autoparams()
-    def __init__(self, database: Database, toestemming_service: BaseAuthService) -> None:
+    def __init__(self, database: Database, auth_service: BaseAuthService) -> None:
         self.database = database
-        self.toestemming_service = toestemming_service
+        self.auth_service = auth_service
 
     def get_referrals_by_domain_and_pseudonym(
         self,
@@ -44,33 +44,26 @@ class ReferralService:
                 logger.info(f"No referrals found for pseudonym {str(pseudonym)} and data domain {str(data_domain)}")
                 raise HTTPException(status_code=404)
 
-            allowed_entities: List[ReferralEntry] = []
-
             if breaking_glass:
                 # If JWT is provided an Break the Glass scenario is assumed
                 logger.info(
                     f"Break the Glass scenario for pseudonym {str(pseudonym)} and data domain {str(data_domain)}"
                 )
                 # In this case, we assume all entities are allowed as we could not ask for toestemming
-                allowed_entities = [self.hydrate_referral(entity) for entity in entities]
-            else:
-                for entity in entities:
-                    # Check toestemming if sharing organization has permission
-                    otv_permission = self.toestemming_service.is_authorized(
-                        pseudonym=str(pseudonym),
-                        client_ura_number=str(client_ura_number),
-                        dossier_keeping_ura_number=entity.ura_number,
-                        dossier_keeping_org_category="V6",  # TODO hardcoded for now
-                    )
+                return [self.hydrate_referral(entity) for entity in entities]
+            allowed_entities: List[ReferralEntry] = []
 
-                    logger.info(
-                        f"Can {entity.ura_number} share data with {client_ura_number}? Toestemming-stub says: {otv_permission}"
-                    )
+            for entity in entities:
+                # Check toestemming if sharing organization has permission
+                otv_permission = self.auth_service.is_authorized(
+                    lmr_endpoint=entity.lmr_endpoint,
+                    pseudonym=str(pseudonym),
+                    requesting_ura_number=str(client_ura_number),
+                    encrypted_lmr_id=entity.encrypted_lmr_id,
+                )
 
-                    if otv_permission:
-                        allowed_entities.append(self.hydrate_referral(entity))
-
-            # Returns a list of hydrated referral objects for entities where authorization is granted.
+                if otv_permission:
+                    allowed_entities.append(self.hydrate_referral(entity))
             return allowed_entities
 
     def add_one_referral(
@@ -81,6 +74,7 @@ class ReferralService:
         uzi_number: str,
         request_url: str,
         encrypted_lmr_id: str,
+        lmr_endpoint: str,
     ) -> ReferralEntry:
         """
         Method that adds a referral to the database
@@ -96,6 +90,7 @@ class ReferralService:
                     "pseudonym": str(pseudonym),
                     "data_domain": str(data_domain),
                     "encrypted_lmr_id": encrypted_lmr_id,
+                    "lmr_endpoint": lmr_endpoint,
                 },
             )
 
@@ -111,6 +106,7 @@ class ReferralService:
                     data_domain=str(data_domain),
                     ura_number=str(ura_number),
                     encrypted_lmr_id=encrypted_lmr_id,
+                    lmr_endpoint=lmr_endpoint,
                 )
                 return self.hydrate_referral(referral_repository.add_one(referral_entity))
             raise HTTPException(status_code=409)
@@ -190,4 +186,5 @@ class ReferralService:
             pseudonym=Pseudonym(value=entity.pseudonym),
             data_domain=DataDomain(value=data_domain),
             encrypted_lmr_id=entity.encrypted_lmr_id,
+            lmr_endpoint=entity.lmr_endpoint,
         )
