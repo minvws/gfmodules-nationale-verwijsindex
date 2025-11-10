@@ -57,6 +57,7 @@ def create_referral(
         uzi_number=payload.requesting_uzi_number,
         request_url=str(request.url),
         encrypted_lmr_id=payload.encrypted_lmr_id,
+        lmr_endpoint=payload.lmr_endpoint,
     )
     span.set_attribute("data.referral", str(referral))
 

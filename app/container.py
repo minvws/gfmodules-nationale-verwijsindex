@@ -13,10 +13,8 @@ from app.data import UraNumber
 from app.db.db import Database
 from app.jwt_validator import DeziSigningCert, JwtValidator
 from app.services.authorization_services.authorization_interface import BaseAuthService
+from app.services.authorization_services.lmr_service import LmrService
 from app.services.authorization_services.stub import StubAuthService
-from app.services.authorization_services.toestemming_stub_service import (
-    ToestemmingStubService,
-)
 from app.services.decrypt_service import DecryptService
 from app.services.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
@@ -127,28 +125,19 @@ def container_config(binder: inject.Binder) -> None:
     db = Database(config_database=config.database)
     binder.bind(Database, db)
 
+    auth_service: BaseAuthService
     if config.app.authorization_service:
-        toestemming_stub_service = ToestemmingStubService(
-            endpoint=config.toestemming_stub_api.endpoint,
-            timeout=config.toestemming_stub_api.timeout,
+        auth_service = LmrService(
+            mtls_cert=config.lmr_api.mtls_cert,
+            mtls_key=config.lmr_api.mtls_key,
+            mtls_ca=config.lmr_api.mtls_ca,
         )
-        # Bind services to different identifiers
-        binder.bind(ToestemmingStubService, toestemming_stub_service)
-
-        referral_service = ReferralService(
-            database=db,
-            toestemming_service=toestemming_stub_service,
-        )
-        binder.bind(ReferralService, referral_service)
     else:
-        stub_service = StubAuthService()
-        binder.bind(BaseAuthService, stub_service)
+        auth_service = StubAuthService()
+    binder.bind(BaseAuthService, auth_service)
 
-        referral_service = ReferralService(
-            database=db,
-            toestemming_service=stub_service,
-        )
-        binder.bind(ReferralService, referral_service)
+    referral_service = ReferralService(database=db, auth_service=auth_service)
+    binder.bind(ReferralService, referral_service)
 
     decrypt_service = DecryptService(mtls_key=config.pseudonym_api.mtls_key)
     binder.bind(DecryptService, decrypt_service)
