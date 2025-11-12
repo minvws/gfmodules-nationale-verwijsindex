@@ -21,8 +21,7 @@ class LmrService(BaseAuthService):
 
     def is_authorized(self, **kwargs: bool | str) -> bool:
         request_payload = {
-            "pseudonym": kwargs.get("pseudonym"),
-            "requesting_ura_number": kwargs.get("requesting_ura_number"),
+            "client_ura_number": kwargs.get("client_ura_number"),
             "encrypted_lmr_id": kwargs.get("encrypted_lmr_id"),
         }
         endpoint = kwargs.get("lmr_endpoint")
