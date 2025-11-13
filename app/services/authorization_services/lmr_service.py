@@ -1,7 +1,8 @@
 import logging
 
-import requests
+from requests import request
 
+from app.data import UraNumber
 from app.services.authorization_services.authorization_interface import BaseAuthService
 
 logger = logging.getLogger(__name__)
@@ -19,27 +20,20 @@ class LmrService(BaseAuthService):
         self._mtls_ca = mtls_ca
         self._timeout = 10
 
-    def is_authorized(self, **kwargs: bool | str) -> bool:
-        request_payload = {
-            "client_ura_number": kwargs.get("client_ura_number"),
-            "encrypted_lmr_id": kwargs.get("encrypted_lmr_id"),
-        }
-        endpoint = kwargs.get("lmr_endpoint")
-
-        if not endpoint or not isinstance(endpoint, str):
-            logger.error("LMR endpoint is not provided or invalid")
-            raise ValueError("LMR endpoint is required for authorization")
-
-        for key, value in request_payload.items():
-            if value is None:
-                logger.error(f"Missing required authorization parameter: {key}")
-                raise ValueError(f"Missing required authorization parameter: {key}")
-
+    def is_authorized(
+        self,
+        client_ura_number: UraNumber,
+        encrypted_lmr_id: str,
+        lmr_endpoint: str,
+    ) -> bool:
         try:
-            response = requests.request(
+            response = request(
                 method="POST",
-                url=endpoint + "/authorize",
-                json=request_payload,
+                url=lmr_endpoint + "/authorize",
+                json={
+                    "client_ura_number": str(client_ura_number),
+                    "encrypted_lmr_id": encrypted_lmr_id,
+                },
                 timeout=self._timeout,
                 cert=(self._mtls_cert, self._mtls_key) if self._mtls_cert and self._mtls_key else None,
                 verify=self._mtls_ca if self._mtls_ca else True,
