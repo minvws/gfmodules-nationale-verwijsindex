@@ -57,7 +57,7 @@ class ReferralService:
                 # Check toestemming if sharing organization has permission
                 otv_permission = self.auth_service.is_authorized(
                     lmr_endpoint=entity.lmr_endpoint,
-                    client_ura_number=str(client_ura_number),
+                    client_ura_number=client_ura_number,
                     encrypted_lmr_id=entity.encrypted_lmr_id,
                 )
 
