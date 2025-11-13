@@ -45,7 +45,11 @@ class LmrService(BaseAuthService):
                 verify=self._mtls_ca if self._mtls_ca else True,
             )
             response.raise_for_status()
-            return bool(response.json().get("authorized", False))
+            result = response.json()
+            if not isinstance(result, bool):
+                logger.error("Invalid response format from LMR service")
+                raise ValueError("Invalid response format from LMR service")
+            return result
         except Exception as e:
             logger.error(f"LMR authorization request failed: {str(e)}")
             return False
