@@ -1,9 +1,13 @@
 import configparser
+import logging
 from enum import Enum
 from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, Field, ValidationError
+
+logger = logging.getLogger(__name__)
+
 
 PROJECT_ROOT = Path(__file__).parent.parent
 DEFAULT_CONFIG_INI_FILE = PROJECT_ROOT / "app.conf"
@@ -115,7 +119,7 @@ def read_ini_file(path: Path) -> Any:
 
 
 def remove_empty_values(section: dict[str, Any]) -> None:
-    for key in list(section.keys()):
+    for key in section.keys():
         if section[key] == "":
             del section[key]
 
@@ -133,6 +137,7 @@ def load_default_config(path: Path = DEFAULT_CONFIG_INI_FILE) -> Config:
 
         config = Config(**ini_data)
     except ValidationError as e:
+        logger.error(f"Configuration validation error: {e}")
         raise e
 
     return config
@@ -149,6 +154,7 @@ def load_default_uvicorn_config(path: Path) -> ConfigUvicorn:
     try:
         config = ConfigUvicorn(**section_data)
     except ValidationError as e:
+        logger.error(f"Configuration validation error: {e}")
         raise e
 
     return config

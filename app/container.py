@@ -41,6 +41,7 @@ def _load_default_config(config_path: Path) -> Config:
 
         config = Config(**ini_data)
     except ValidationError as e:
+        logger.error(f"Configuration validation error: {e}")
         raise e
 
     return config
