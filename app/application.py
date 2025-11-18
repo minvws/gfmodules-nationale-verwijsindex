@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from app import container
 from app.config import Config, load_default_config
+from app.dependencies import get_prs_registration_service
 from app.routers.default import router as default_router
 from app.routers.health import router as health_router
 from app.routers.info_referrals import router as info_referral_router
@@ -26,6 +27,8 @@ def create_fastapi_app(config: Config | None = None) -> FastAPI:
     if config.telemetry.enabled:
         setup_telemetry(fastapi, config.telemetry)
 
+    register_at_prs()
+
     return fastapi
 
 
@@ -38,6 +41,11 @@ def setup_logging(config: Config) -> None:
         level=loglevel,
         datefmt="%m/%d/%Y %I:%M:%S %p",
     )
+
+
+def register_at_prs() -> None:
+    prs_registration_service = get_prs_registration_service()
+    prs_registration_service.register_nvi_at_prs()
 
 
 def setup_fastapi(config: Config) -> FastAPI:

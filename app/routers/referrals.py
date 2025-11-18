@@ -13,7 +13,7 @@ from app.response_models.referrals import (
     ReferralEntry,
     ReferralQuery,
 )
-from app.services.pseudonym_service import PseudonymService
+from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 
 logger = logging.getLogger(__name__)
