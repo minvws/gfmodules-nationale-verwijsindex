@@ -13,7 +13,7 @@ def test_lmr_auth_service_is_authorized(
     mock_request: MagicMock,
 ) -> None:
     mock_response = MagicMock()
-    mock_response.json.return_value = {"authorized": True}
+    mock_response.json.return_value = True
     mock_request.return_value = mock_response
     auth_service = LmrService()
     assert issubclass(type(auth_service), BaseAuthService)
@@ -30,7 +30,7 @@ def test_lmr_auth_service_is_not_authorized(
     mock_request: MagicMock,
 ) -> None:
     mock_response = MagicMock()
-    mock_response.json.return_value = {"authorized": False}
+    mock_response.json.return_value = False
     mock_request.return_value = mock_response
     auth_service = LmrService()
     assert issubclass(type(auth_service), BaseAuthService)
