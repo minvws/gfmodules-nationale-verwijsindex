@@ -34,7 +34,7 @@ class PrsRegistrationService:
                 url=f"{self._config.endpoint}/orgs",
                 json={
                     "ura": ura_number,
-                    "name": "nvi",
+                    "name": "nationale-verwijsindex",
                     "max_key_usage": "bsn",
                 },
                 timeout=self._config.timeout,
@@ -57,7 +57,7 @@ class PrsRegistrationService:
             request = requests.post(
                 url=f"{self._config.endpoint}/register/certificate",
                 json={
-                    "scope": ["nvi"],
+                    "scope": ["nationale-verwijsindex"],
                 },
                 timeout=self._config.timeout,
                 cert=(self._config.mtls_cert, self._config.mtls_key),
