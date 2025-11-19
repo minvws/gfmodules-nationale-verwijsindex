@@ -1,6 +1,6 @@
 import unittest
 
-from app.data import UraNumber
+from app.models.ura import UraNumber
 
 
 class TestUraNumber(unittest.TestCase):

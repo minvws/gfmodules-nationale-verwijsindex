@@ -1,6 +1,6 @@
 import abc
 
-from app.referral_request_payload import ReferralLoggingPayload
+from app.models.referrals import ReferralLoggingPayload
 
 
 class ReferralRequestLogger(abc.ABC):

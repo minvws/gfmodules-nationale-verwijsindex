@@ -1,8 +1,12 @@
+from dataclasses import dataclass
 from typing import Any, Optional
 
 from pydantic import BaseModel, field_serializer, field_validator, model_validator
 
-from app.data import DataDomain, Pseudonym, UraNumber
+from app.data import ReferralRequestType
+from app.models.data_domain import DataDomain
+from app.models.pseudonym import Pseudonym
+from app.models.ura import UraNumber
 
 
 class ReferralRequest(BaseModel):
@@ -81,3 +85,12 @@ class ReferralQuery(BaseModel):
     @classmethod
     def serialize_ura(cls, val: str) -> UraNumber:
         return UraNumber(val)
+
+
+@dataclass
+class ReferralLoggingPayload:
+    endpoint: str
+    requesting_uzi_number: str
+    ura_number: UraNumber
+    request_type: ReferralRequestType
+    payload: dict[str, Any]

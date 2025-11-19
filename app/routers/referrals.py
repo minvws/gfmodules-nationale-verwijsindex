@@ -6,14 +6,14 @@ from opentelemetry import trace
 from starlette.responses import Response
 
 from app import dependencies
-from app.data import UraNumber
-from app.response_models.referrals import (
+from app.models.referrals import (
     CreateReferralRequest,
     DeleteReferralRequest,
     ReferralEntry,
     ReferralQuery,
 )
-from app.services.prs.pseudonym_service import PseudonymService
+from app.models.ura import UraNumber
+from app.services.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 
 logger = logging.getLogger(__name__)

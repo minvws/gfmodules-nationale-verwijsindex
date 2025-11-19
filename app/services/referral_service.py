@@ -4,14 +4,15 @@ from typing import List
 import inject
 from fastapi.exceptions import HTTPException
 
-from app.data import DataDomain, Pseudonym, UraNumber
+from app.data import ReferralRequestType
 from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
 from app.logger.referral_request_database_logger import ReferralRequestDatabaseLogger
-from app.referral_request_payload import ReferralLoggingPayload
-from app.referral_request_type import ReferralRequestType
-from app.response_models.referrals import ReferralEntry
+from app.models.data_domain import DataDomain
+from app.models.pseudonym import Pseudonym
+from app.models.referrals import ReferralEntry, ReferralLoggingPayload
+from app.models.ura import UraNumber
 from app.services.authorization_services.authorization_interface import BaseAuthService
 
 logger = logging.getLogger(__name__)
@@ -126,7 +127,11 @@ class ReferralService:
                 requesting_uzi_number="000000",
                 endpoint=request_url,
                 request_type=ReferralRequestType.DELETE,
-                payload={"pseudonym": str(pseudonym), "data_domain": str(data_domain), "ura_number": str(ura_number)},
+                payload={
+                    "pseudonym": str(pseudonym),
+                    "data_domain": str(data_domain),
+                    "ura_number": str(ura_number),
+                },
             )
 
             # Inject interface with DI when shared package is used (https://github.com/minvws/gfmodules-national-referral-index/issues/42)

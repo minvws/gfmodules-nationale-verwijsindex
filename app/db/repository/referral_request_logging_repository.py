@@ -3,7 +3,7 @@ from sqlalchemy import insert
 from app.db.decorator import repository
 from app.db.models.referral_request_log import ReferralRequestLogEntry
 from app.db.repository.respository_base import RepositoryBase
-from app.referral_request_payload import ReferralLoggingPayload
+from app.models.referrals import ReferralLoggingPayload
 
 
 @repository(ReferralRequestLogEntry)

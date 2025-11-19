@@ -9,9 +9,9 @@ from cryptography.hazmat.primitives.asymmetric import ec, ed448, ed25519, rsa
 from pydantic import ValidationError
 
 from app.config import PROJECT_ROOT, Config, ConfigUraMiddleware, read_ini_file
-from app.data import UraNumber
 from app.db.db import Database
 from app.jwt_validator import DeziSigningCert, JwtValidator
+from app.models.ura import UraNumber
 from app.services.authorization_services.authorization_interface import BaseAuthService
 from app.services.authorization_services.lmr_service import LmrService
 from app.services.authorization_services.stub import StubAuthService

@@ -2,7 +2,7 @@ import logging
 
 from requests import request
 
-from app.data import UraNumber
+from app.models.ura import UraNumber
 from app.services.authorization_services.authorization_interface import BaseAuthService
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ class LmrService(BaseAuthService):
                     "encrypted_lmr_id": encrypted_lmr_id,
                 },
                 timeout=self._timeout,
-                cert=(self._mtls_cert, self._mtls_key) if self._mtls_cert and self._mtls_key else None,
+                cert=((self._mtls_cert, self._mtls_key) if self._mtls_cert and self._mtls_key else None),
                 verify=self._mtls_ca if self._mtls_ca else True,
             )
             response.raise_for_status()

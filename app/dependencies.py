@@ -4,11 +4,10 @@ import inject
 from fastapi import Request
 
 from app.config import Config
-from app.data import UraNumber
 from app.db.db import Database
 from app.jwt_validator import JwtValidator
-from app.services.prs.pseudonym_service import PseudonymService
-from app.services.prs.registration_service import PrsRegistrationService
+from app.models.ura import UraNumber
+from app.services.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 from app.ura.ura_middleware.ura_middleware import UraMiddleware
 
