@@ -3,7 +3,7 @@ import logging
 
 import pyoprf
 
-from app.data import Pseudonym
+from app.models.pseudonym import Pseudonym
 from app.services.decrypt_service import DecryptService
 
 logger = logging.getLogger(__name__)

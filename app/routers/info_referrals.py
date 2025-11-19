@@ -7,9 +7,10 @@ from opentelemetry import trace
 from app import dependencies
 from app.jwt_validator import JwtValidationError, JwtValidator
 from app.models.data_domain import DataDomain
-from app.models.referrals import ReferralEntry, ReferralRequest, ReferralRequestHeader
+from app.models.referrals.entry import ReferralEntry
+from app.models.referrals.requests import ReferralRequest, ReferralRequestHeader
 from app.models.ura import UraNumber
-from app.services.pseudonym_service import PseudonymService
+from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 
 logger = logging.getLogger(__name__)

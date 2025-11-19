@@ -3,7 +3,7 @@ from app.db.repository.referral_request_logging_repository import (
 )
 from app.db.session import DbSession
 from app.logger.referral_request_logger import ReferralRequestLogger
-from app.models.referrals import ReferralLoggingPayload
+from app.models.referrals.logging import ReferralLoggingPayload
 
 
 class ReferralRequestDatabaseLogger(ReferralRequestLogger):

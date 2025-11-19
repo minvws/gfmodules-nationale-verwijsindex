@@ -11,7 +11,8 @@ from app.db.repository.referral_repository import ReferralRepository
 from app.logger.referral_request_database_logger import ReferralRequestDatabaseLogger
 from app.models.data_domain import DataDomain
 from app.models.pseudonym import Pseudonym
-from app.models.referrals import ReferralEntry, ReferralLoggingPayload
+from app.models.referrals.entry import ReferralEntry
+from app.models.referrals.logging import ReferralLoggingPayload
 from app.models.ura import UraNumber
 from app.services.authorization_services.authorization_interface import BaseAuthService
 

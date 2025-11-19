@@ -4,11 +4,16 @@ from typing import Any
 
 @dataclass
 class UraNumber:
+    """
+    Representation of an URA Number, where it can adhere to the requirements
+    of that number.
+    See: https://www.zorgcsp.nl/documents/10-01-2025%20RK1%20CPS%20UZI-register%20V11.9%20NL.pdf
+    """
+
     def __init__(self, value: Any) -> None:
         if (isinstance(value, int) or isinstance(value, str)) and len(str(value)) <= 8 and str(value).isdigit():
             self.value = str(value).zfill(8)
         else:
-            # See https://www.zorgcsp.nl/documents/10-01-2025%20RK1%20CPS%20UZI-register%20V11.9%20NL.pdf
             raise ValueError("URA number must be 8 digits or less")
 
     def __str__(self) -> str:

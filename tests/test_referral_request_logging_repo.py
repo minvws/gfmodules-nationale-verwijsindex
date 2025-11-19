@@ -9,7 +9,7 @@ from app.db.repository.referral_request_logging_repository import (
     ReferralRequestLoggingRepository,
 )
 from app.db.session import DbSession
-from app.models.referrals import ReferralLoggingPayload
+from app.models.referrals.logging import ReferralLoggingPayload
 from app.models.ura import UraNumber
 from tests.test_config import get_test_config
 
