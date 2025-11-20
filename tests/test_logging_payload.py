@@ -1,6 +1,6 @@
-from app.data import UraNumber
-from app.referral_request_payload import ReferralLoggingPayload
-from app.referral_request_type import ReferralRequestType
+from app.data import ReferralRequestType
+from app.models.referrals.logging import ReferralLoggingPayload
+from app.models.ura import UraNumber
 
 TESTING_URA = UraNumber(123)
 

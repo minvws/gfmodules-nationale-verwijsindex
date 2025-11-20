@@ -5,9 +5,11 @@ from fastapi import APIRouter, Depends, Header, Response
 from opentelemetry import trace
 
 from app import dependencies
-from app.data import DataDomain, UraNumber
 from app.jwt_validator import JwtValidationError, JwtValidator
-from app.response_models.referrals import ReferralEntry, ReferralRequest, ReferralRequestHeader
+from app.models.data_domain import DataDomain
+from app.models.referrals.entry import ReferralEntry
+from app.models.referrals.requests import ReferralRequest, ReferralRequestHeader
+from app.models.ura import UraNumber
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 

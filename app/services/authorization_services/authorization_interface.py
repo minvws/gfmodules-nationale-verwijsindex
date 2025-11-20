@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from app.data import UraNumber
+from app.models.ura import UraNumber
 
 
 class BaseAuthService(ABC):

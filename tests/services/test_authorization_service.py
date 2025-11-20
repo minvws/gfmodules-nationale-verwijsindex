@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.data import UraNumber
+from app.models.ura import UraNumber
 from app.services.authorization_services.authorization_interface import BaseAuthService
 from app.services.authorization_services.lmr_service import LmrService
 from app.services.authorization_services.stub import StubAuthService
@@ -19,7 +19,9 @@ def test_lmr_auth_service_is_authorized(
     assert issubclass(type(auth_service), BaseAuthService)
     assert (
         auth_service.is_authorized(
-            client_ura_number=UraNumber("12345"), encrypted_lmr_id="some_encrypted_id", lmr_endpoint="some_endpoint"
+            client_ura_number=UraNumber("12345"),
+            encrypted_lmr_id="some_encrypted_id",
+            lmr_endpoint="some_endpoint",
         )
         is True
     )
@@ -36,7 +38,9 @@ def test_lmr_auth_service_is_not_authorized(
     assert issubclass(type(auth_service), BaseAuthService)
     assert (
         auth_service.is_authorized(
-            client_ura_number=UraNumber("12345"), encrypted_lmr_id="some_encrypted_id", lmr_endpoint="some_endpoint"
+            client_ura_number=UraNumber("12345"),
+            encrypted_lmr_id="some_encrypted_id",
+            lmr_endpoint="some_endpoint",
         )
         is False
     )
@@ -47,7 +51,9 @@ def test_stub_auth_service_is_authorized():
     assert issubclass(type(auth_service), BaseAuthService)
     assert (
         auth_service.is_authorized(
-            client_ura_number=UraNumber("12345"), encrypted_lmr_id="some_encrypted_id", lmr_endpoint="some_endpoint"
+            client_ura_number=UraNumber("12345"),
+            encrypted_lmr_id="some_encrypted_id",
+            lmr_endpoint="some_endpoint",
         )
         is True
     )

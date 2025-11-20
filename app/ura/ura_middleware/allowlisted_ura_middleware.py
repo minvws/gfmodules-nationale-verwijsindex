@@ -6,16 +6,23 @@ from typing import List
 from fastapi.exceptions import HTTPException
 from starlette.requests import Request
 
-from app.data import UraNumber
 from app.db.db import Database
-from app.db.repository.ura_number_allowlist_repository import UraNumberAllowlistRepository
+from app.db.repository.ura_number_allowlist_repository import (
+    UraNumberAllowlistRepository,
+)
+from app.models.ura import UraNumber
 from app.ura.ura_middleware.ura_middleware import UraMiddleware
 
 logger = logging.getLogger(__name__)
 
 
 class AllowlistedUraMiddleware(UraMiddleware):
-    def __init__(self, db: Database, ura_middleware: UraMiddleware, allowlist_cache_in_seconds: int):
+    def __init__(
+        self,
+        db: Database,
+        ura_middleware: UraMiddleware,
+        allowlist_cache_in_seconds: int,
+    ):
         self._db = db
         self._ura_middleware = ura_middleware
         self._cached = 0.0

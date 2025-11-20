@@ -1,4 +1,4 @@
-from app.data import UraNumber
+from app.models.ura import UraNumber
 from app.services.authorization_services.authorization_interface import BaseAuthService
 
 

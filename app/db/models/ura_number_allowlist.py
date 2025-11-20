@@ -1,8 +1,8 @@
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.data import UraNumber
 from app.db.models.base import Base
+from app.models.ura import UraNumber
 
 
 class UraNumberAllowlistEntity(Base):
