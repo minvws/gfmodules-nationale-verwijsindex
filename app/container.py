@@ -16,7 +16,8 @@ from app.services.authorization_services.authorization_interface import BaseAuth
 from app.services.authorization_services.lmr_service import LmrService
 from app.services.authorization_services.stub import StubAuthService
 from app.services.decrypt_service import DecryptService
-from app.services.pseudonym_service import PseudonymService
+from app.services.prs.pseudonym_service import PseudonymService
+from app.services.prs.registration_service import PrsRegistrationService
 from app.services.referral_service import ReferralService
 from app.ura.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
 from app.ura.ura_middleware.config_based_ura_middleware import ConfigBasedUraMiddleware
@@ -121,7 +122,6 @@ def _ura_middleware(config: ConfigUraMiddleware, db: Database) -> UraMiddleware:
 
 def container_config(binder: inject.Binder) -> None:
     config = _load_default_config(DEFAULT_CONFIG_INI_FILE)
-    provider_id = config.app.provider_id
 
     db = Database(config_database=config.database)
     binder.bind(Database, db)
@@ -144,16 +144,14 @@ def container_config(binder: inject.Binder) -> None:
     binder.bind(DecryptService, decrypt_service)
 
     pseudonym_service = PseudonymService(
-        endpoint=config.pseudonym_api.endpoint,
-        timeout=config.pseudonym_api.timeout,
-        provider_id=provider_id,
-        mtls_cert=config.pseudonym_api.mtls_cert,
-        mtls_key=config.pseudonym_api.mtls_key,
-        mtls_ca=config.pseudonym_api.mtls_ca,
         decrypt_service=decrypt_service,
     )
-
     binder.bind(PseudonymService, pseudonym_service)
+
+    prs_registration_service = PrsRegistrationService(
+        config=config.pseudonym_api,
+    )
+    binder.bind(PrsRegistrationService, prs_registration_service)
 
     # JWT validator for NVI
     ca_certificate = _load_certificate(config.dezi_register.uzi_server_certificate_ca_cert_path)
