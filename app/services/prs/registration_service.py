@@ -3,28 +3,27 @@ import logging
 from requests.exceptions import ConnectionError, HTTPError, Timeout
 
 from app.config import ConfigPseudonymApi
+from app.models.ura import UraNumber
 from app.services.http import HttpService
-from app.services.prs.pseudonym_service import PseudonymError
-from app.ura.uzi_cert_common import get_ura_from_cert
+from app.services.prs.exception import PseudonymError
 
 logger = logging.getLogger(__name__)
 
 
 class PrsRegistrationService:
-    def __init__(self, config: ConfigPseudonymApi):
-        self._config = config
+    def __init__(self, ura_number: UraNumber, config: ConfigPseudonymApi):
         self._http_service = HttpService(**config.model_dump())
-        self._ura_number = get_ura_from_cert(config.mtls_cert)
+        self._ura_number = ura_number
 
     def register_nvi_at_prs(self) -> None:
         """
         Register the NVI organization and certificate at the PRS.
         """
         logger.info("Registering NVI at PRS")
-        self.register_organization()
-        self.register_certificate()
+        self._register_organization()
+        self._register_certificate()
 
-    def register_organization(self) -> None:
+    def _register_organization(self) -> None:
         """
         Register the NVI organization at the PRS.
         """
@@ -33,7 +32,7 @@ class PrsRegistrationService:
                 method="POST",
                 sub_route="orgs",
                 data={
-                    "ura": self._ura_number,
+                    "ura": self._ura_number.value,
                     "name": "nationale-verwijsindex",
                     "max_key_usage": "bsn",
                 },
@@ -43,11 +42,13 @@ class PrsRegistrationService:
                 logger.info("Organization already registered at PRS")
                 return
 
+            response.raise_for_status()
+
         except (HTTPError, ConnectionError, Timeout) as e:
-            logger.error(f"Failed to register certificate: {e}")
+            logger.error(f"Failed to register orgnizaton: {e}")
             raise PseudonymError("Failed to register orgnizaton")
 
-    def register_certificate(self) -> None:
+    def _register_certificate(self) -> None:
         """
         Register the NVI certificate at the PRS.
         """
@@ -61,6 +62,8 @@ class PrsRegistrationService:
             if response.status_code == 409:
                 logging.info("Certificate already registered at PRS")
                 return
+
+            response.raise_for_status()
 
         except (HTTPError, ConnectionError, Timeout) as e:
             logger.error(f"Failed to register certificate: {e}")

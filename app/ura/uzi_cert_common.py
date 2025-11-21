@@ -31,11 +31,11 @@ def verify_and_get_uzi_cert(cert: str) -> UraNumber:
     return UraNumber(uzi_server["SubscriberNumber"])
 
 
-def get_ura_from_cert(cert_path: str) -> str:
+def get_ura_from_cert(cert_path: str) -> UraNumber:
     try:
         with open(cert_path, "r") as cert_file:
             cert_data = cert_file.read()
-            ura_number = verify_and_get_uzi_cert(cert=cert_data).value
+            ura_number = verify_and_get_uzi_cert(cert=cert_data)
             return ura_number
     except (IOError, UziException) as e:
         raise UraException(f"Failed to load URA Number from ceritificate: {e}")

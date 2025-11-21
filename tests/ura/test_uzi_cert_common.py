@@ -40,16 +40,19 @@ def test_verify_and_get_uzi_cert_should_succeed(mock_cert: MagicMock, mock_uzi_s
 
 
 @patch(f"{PATCHED_MODULE}.verify_and_get_uzi_cert")
-def test_get_ura_should_succeed(mock_ura_number: MagicMock, monkeypatch: MonkeyPatch) -> None:
-    expected = "00000123"
-    mock_ura_number.return_value = UraNumber(expected)
-    monkeypatch.setattr(builtins, "open", mock_open(read_data=expected))
+def test_get_ura_from_cert_should_succeed(mock_ura_number: MagicMock, monkeypatch: MonkeyPatch) -> None:
+    expected = UraNumber("00000123")
+    mock_ura_number.return_value = expected
+    # note: value for read_data muyt be str otherwise TypeError occurs
+    monkeypatch.setattr(builtins, "open", mock_open(read_data=str(expected)))
     actual = get_ura_from_cert("/some/path")
 
     assert expected == actual
 
 
-def test_get_ura_should_fail_with_wrong_cert_path(monkeypatch: MonkeyPatch) -> None:
+def test_get_ura_from_cert_should_fail_with_wrong_cert_path(
+    monkeypatch: MonkeyPatch,
+) -> None:
     mocked_open = mock_open(read_data="some-cert")
     mocked_open.side_effect = IOError
     monkeypatch.setattr(builtins, "open", mocked_open)
@@ -58,7 +61,7 @@ def test_get_ura_should_fail_with_wrong_cert_path(monkeypatch: MonkeyPatch) -> N
 
 
 @patch(f"{PATCHED_MODULE}.verify_and_get_uzi_cert")
-def test_get_ura_should_raise_exception_with_invalid_uzi_cert(
+def test_get_ura_from_cert_should_raise_exception_with_invalid_uzi_cert(
     mock_ura_number: MagicMock, monkeypatch: MonkeyPatch
 ) -> None:
     mock_ura_number.side_effect = UziException
