@@ -1,10 +1,11 @@
 import logging
 
-import requests
+from requests.exceptions import ConnectionError, HTTPError, Timeout
 
 from app.config import ConfigPseudonymApi
+from app.services.http import HttpService
 from app.services.prs.pseudonym_service import PseudonymError
-from app.ura.uzi_cert_common import verify_and_get_uzi_cert
+from app.ura.uzi_cert_common import get_ura_from_cert
 
 logger = logging.getLogger(__name__)
 
@@ -12,61 +13,55 @@ logger = logging.getLogger(__name__)
 class PrsRegistrationService:
     def __init__(self, config: ConfigPseudonymApi):
         self._config = config
+        self._http_service = HttpService(**config.model_dump())
+        self._ura_number = get_ura_from_cert(config.mtls_cert)
 
     def register_nvi_at_prs(self) -> None:
         """
         Register the NVI organization and certificate at the PRS.
         """
         logger.info("Registering NVI at PRS")
-        self._register_organization()
-        self._register_certificate()
+        self.register_organization()
+        self.register_certificate()
 
-    def _register_organization(self) -> None:
+    def register_organization(self) -> None:
         """
         Register the NVI organization at the PRS.
         """
-        with open(self._config.mtls_cert, "r") as cert_file:
-            cert_data = cert_file.read()
-            ura_number = verify_and_get_uzi_cert(cert=cert_data).value
-
         try:
-            request = requests.post(
-                url=f"{self._config.endpoint}/orgs",
-                json={
-                    "ura": ura_number,
+            response = self._http_service.do_request(
+                method="POST",
+                sub_route="orgs",
+                data={
+                    "ura": self._ura_number,
                     "name": "nationale-verwijsindex",
                     "max_key_usage": "bsn",
                 },
-                timeout=self._config.timeout,
-                cert=(self._config.mtls_cert, self._config.mtls_key),
-                verify=self._config.mtls_ca,
             )
-            request.raise_for_status()
-        except requests.RequestException as e:
-            if hasattr(e, "response") and e.response is not None and e.response.status_code == 409:
+
+            if response.status_code == 409:
                 logger.info("Organization already registered at PRS")
                 return
-            logger.error(f"Failed to register organization: {e}")
-            raise PseudonymError("Failed to register organization")
 
-    def _register_certificate(self) -> None:
+        except (HTTPError, ConnectionError, Timeout) as e:
+            logger.error(f"Failed to register certificate: {e}")
+            raise PseudonymError("Failed to register orgnizaton")
+
+    def register_certificate(self) -> None:
         """
         Register the NVI certificate at the PRS.
         """
         try:
-            request = requests.post(
-                url=f"{self._config.endpoint}/register/certificate",
-                json={
-                    "scope": ["nationale-verwijsindex"],
-                },
-                timeout=self._config.timeout,
-                cert=(self._config.mtls_cert, self._config.mtls_key),
-                verify=self._config.mtls_ca,
+            response = self._http_service.do_request(
+                method="POST",
+                sub_route="/register/certificate",
+                data={"scope": ["nationale-verwijsindex"]},
             )
-            request.raise_for_status()
-        except requests.RequestException as e:
-            if hasattr(e, "response") and e.response is not None and e.response.status_code == 409:
-                logger.info("Certificate already registered at PRS")
+
+            if response.status_code == 409:
+                logging.info("Certificate already registered at PRS")
                 return
+
+        except (HTTPError, ConnectionError, Timeout) as e:
             logger.error(f"Failed to register certificate: {e}")
             raise PseudonymError("Failed to register certificate")
