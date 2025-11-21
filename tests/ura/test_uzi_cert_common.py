@@ -15,6 +15,8 @@ from app.ura.uzi_cert_common import (
     verify_and_get_uzi_cert,
 )
 
+PATCHED_MODULE = "app.ura.uzi_cert_common"
+
 
 def test_enforce_cert_newlines_should_succeed() -> None:
     data = _CERT_START + "some-data" + _CERT_END
@@ -25,8 +27,8 @@ def test_enforce_cert_newlines_should_succeed() -> None:
     assert expected == actual
 
 
-@patch("app.ura.uzi_cert_common.UziServer")
-@patch("app.ura.uzi_cert_common._enforce_cert_newlines")
+@patch(f"{PATCHED_MODULE}.UziServer")
+@patch(f"{PATCHED_MODULE}._enforce_cert_newlines")
 def test_verify_and_get_uzi_cert_should_succeed(mock_cert: MagicMock, mock_uzi_server: MagicMock) -> None:
     expected_ura = UraNumber("00000123")
     mock_cert.return_value = "some-cert"
@@ -37,7 +39,7 @@ def test_verify_and_get_uzi_cert_should_succeed(mock_cert: MagicMock, mock_uzi_s
     assert expected_ura == actual
 
 
-@patch("app.ura.uzi_cert_common.verify_and_get_uzi_cert")
+@patch(f"{PATCHED_MODULE}.verify_and_get_uzi_cert")
 def test_get_ura_should_succeed(mock_ura_number: MagicMock, monkeypatch: MonkeyPatch) -> None:
     expected = "00000123"
     mock_ura_number.return_value = UraNumber(expected)
@@ -55,7 +57,7 @@ def test_get_ura_should_fail_with_wrong_cert_path(monkeypatch: MonkeyPatch) -> N
         get_ura_from_cert("somne/path")
 
 
-@patch("app.ura.uzi_cert_common.verify_and_get_uzi_cert")
+@patch(f"{PATCHED_MODULE}.verify_and_get_uzi_cert")
 def test_get_ura_should_raise_exception_with_invalid_uzi_cert(
     mock_ura_number: MagicMock, monkeypatch: MonkeyPatch
 ) -> None:
