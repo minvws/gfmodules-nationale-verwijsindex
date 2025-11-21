@@ -1,5 +1,6 @@
 import textwrap
 
+from uzireader.uzi import UziException
 from uzireader.uziserver import UziServer
 
 from app.models.ura import UraNumber
@@ -36,5 +37,5 @@ def get_ura_from_cert(cert_path: str) -> str:
             cert_data = cert_file.read()
             ura_number = verify_and_get_uzi_cert(cert=cert_data).value
             return ura_number
-    except Exception as e:
+    except (IOError, UziException) as e:
         raise UraException(f"Failed to load URA Number from ceritificate: {e}")
