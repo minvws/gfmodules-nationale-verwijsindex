@@ -8,10 +8,9 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec, ed448, ed25519, rsa
 from pydantic import ValidationError
 
-from app.config import PROJECT_ROOT, Config, ConfigUraMiddleware, read_ini_file
+from app.config import PROJECT_ROOT, Config, read_ini_file
 from app.db.db import Database
 from app.jwt_validator import DeziSigningCert, JwtValidator
-from app.models.ura import UraNumber
 from app.services.authorization_services.authorization_interface import BaseAuthService
 from app.services.authorization_services.lmr_service import LmrService
 from app.services.authorization_services.stub import StubAuthService
@@ -19,9 +18,7 @@ from app.services.decrypt_service import DecryptService
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.prs.registration_service import PrsRegistrationService
 from app.services.referral_service import ReferralService
-from app.ura.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
-from app.ura.ura_middleware.config_based_ura_middleware import ConfigBasedUraMiddleware
-from app.ura.ura_middleware.request_ura_middleware import RequestUraMiddleware
+from app.ura.ura_middleware.factory import create_ura_middleware
 from app.ura.ura_middleware.ura_middleware import UraMiddleware
 from app.ura.uzi_cert_common import get_ura_from_cert
 
@@ -110,19 +107,9 @@ def _load_dezi_signing_certificates(cert_store_path: str) -> list[DeziSigningCer
     return certificates
 
 
-def _ura_middleware(config: ConfigUraMiddleware, db: Database) -> UraMiddleware:
-    ura_middleware: UraMiddleware
-    if config.override_authentication_ura:
-        ura_middleware = ConfigBasedUraMiddleware(UraNumber(config.override_authentication_ura))
-    else:
-        ura_middleware = RequestUraMiddleware()
-    if config.use_authentication_ura_allowlist:
-        return AllowlistedUraMiddleware(db, ura_middleware, config.allowlist_cache_in_seconds)
-    return ura_middleware
-
-
 def container_config(binder: inject.Binder) -> None:
     config = _load_default_config(DEFAULT_CONFIG_INI_FILE)
+    binder.bind(Config, config)
 
     db = Database(config_database=config.database)
     binder.bind(Database, db)
@@ -166,8 +153,8 @@ def container_config(binder: inject.Binder) -> None:
     )
     binder.bind(JwtValidator, jwt_validator)
 
-    binder.bind(Config, config)
-    binder.bind(UraMiddleware, _ura_middleware(config.ura_middleware, db))
+    ura_middleware = create_ura_middleware(config.ura_middleware, db)
+    binder.bind(UraMiddleware, ura_middleware)
 
 
 def configure() -> None:
