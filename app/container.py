@@ -23,6 +23,7 @@ from app.ura.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMidd
 from app.ura.ura_middleware.config_based_ura_middleware import ConfigBasedUraMiddleware
 from app.ura.ura_middleware.request_ura_middleware import RequestUraMiddleware
 from app.ura.ura_middleware.ura_middleware import UraMiddleware
+from app.ura.uzi_cert_common import get_ura_from_cert
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +151,7 @@ def container_config(binder: inject.Binder) -> None:
 
     prs_registration_service = PrsRegistrationService(
         config=config.pseudonym_api,
+        ura_number=get_ura_from_cert(config.pseudonym_api.mtls_cert),
     )
     binder.bind(PrsRegistrationService, prs_registration_service)
 

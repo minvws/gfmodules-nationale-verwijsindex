@@ -5,14 +5,9 @@ import pyoprf
 
 from app.models.pseudonym import Pseudonym
 from app.services.decrypt_service import DecryptService
+from app.services.prs.exception import PseudonymError
 
 logger = logging.getLogger(__name__)
-
-
-class PseudonymError(Exception):
-    """Exception raised when pseudonym operations fail."""
-
-    pass
 
 
 class PseudonymService:

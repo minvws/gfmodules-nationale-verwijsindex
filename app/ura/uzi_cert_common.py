@@ -1,11 +1,16 @@
 import textwrap
 
+from uzireader.uzi import UziException
 from uzireader.uziserver import UziServer
 
 from app.models.ura import UraNumber
 
 _CERT_START = "-----BEGIN CERTIFICATE-----"
 _CERT_END = "-----END CERTIFICATE-----"
+
+
+class UraException(Exception):
+    pass
 
 
 def _enforce_cert_newlines(cert_data: str) -> str:
@@ -24,3 +29,13 @@ def verify_and_get_uzi_cert(cert: str) -> UraNumber:
     uzi_server = UziServer(verify="SUCCESS", cert=formatted_cert)
 
     return UraNumber(uzi_server["SubscriberNumber"])
+
+
+def get_ura_from_cert(cert_path: str) -> UraNumber:
+    try:
+        with open(cert_path, "r") as cert_file:
+            cert_data = cert_file.read()
+            ura_number = verify_and_get_uzi_cert(cert=cert_data)
+            return ura_number
+    except (IOError, UziException) as e:
+        raise UraException(f"Failed to load URA Number from ceritificate: {e}")
