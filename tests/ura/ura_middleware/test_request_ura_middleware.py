@@ -1,11 +1,13 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
 from fastapi import HTTPException
 from starlette.requests import Request
 from uzireader.uziserver import UziServer
 
 from app.models.ura import UraNumber
+from app.ura.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
 from app.ura.ura_middleware.request_ura_middleware import RequestUraMiddleware
-from app.ura.uzi_cert_common import _enforce_cert_newlines
 
 
 def test_authenticated_ura(mocker):
@@ -30,31 +32,49 @@ def test_authenticated_ura(mocker):
     mock_class.__getitem__.assert_called_with("SubscriberNumber")
 
 
+@patch("app.ura.ura_middleware.request_ura_middleware.verify_and_get_uzi_cert")
+def test_authetnicate_with_filter_should_succeed(
+    mock_verify: MagicMock,
+    ura_number: UraNumber,
+    ura_filter_service: AllowlistedUraMiddleware,
+) -> None:
+    mock_verify.return_value = ura_number
+    middleware = RequestUraMiddleware(filter_service=ura_filter_service)
+    ura_filter_service.allowlist.extend([UraNumber(98765432), ura_number])
+    request = Request(
+        scope={
+            "type": "http",
+            "headers": [("x-proxy-ssl_client_cert".encode(), "cert-content".encode())],
+        },
+    )
+    actual = middleware.authenticated_ura(request)
+
+    assert actual == ura_number
+
+
+@patch("app.ura.ura_middleware.request_ura_middleware.verify_and_get_uzi_cert")
+def test_authenticate_should_raise_exception_with_filter_when_ura_no_allowed(
+    mock_verify: MagicMock,
+    ura_number: UraNumber,
+    ura_filter_service: AllowlistedUraMiddleware,
+) -> None:
+    mock_verify.return_value = ura_number
+    middleware = RequestUraMiddleware(filter_service=ura_filter_service)
+    ura_filter_service.allowlist.append(UraNumber(98765432))
+    request = Request(
+        scope={
+            "type": "http",
+            "headers": [("x-proxy-ssl_client_cert".encode(), "cert-content".encode())],
+        },
+    )
+
+    with pytest.raises(HTTPException):
+        middleware.authenticated_ura(request)
+
+
 def test_authenticated_ura_when_header_not_present(mocker):
     request = mocker.MagicMock(spec=Request)
     request.headers = {}
 
     with pytest.raises(HTTPException):
         RequestUraMiddleware().authenticated_ura(request)
-
-
-def test_enforce_cert_newlines_with_headers(mocker):
-    request = mocker.MagicMock(spec=Request)
-    request.headers = {"x-proxy-ssl_client_cert": "cert-content"}
-
-    cert = "-----BEGIN CERTIFICATE-----000102030405060708091011121314151617181920212223242526272829303132333435363738394041424344454647484950-----END CERTIFICATE-----"
-    expected = "-----BEGIN CERTIFICATE-----\n0001020304050607080910111213141516171819202122232425262728293031\n32333435363738394041424344454647484950\n-----END CERTIFICATE-----"
-
-    actual = _enforce_cert_newlines(cert)
-    assert actual == expected
-
-
-def test_enforce_cert_newlines_without_headers(mocker):
-    request = mocker.MagicMock(spec=Request)
-    request.headers = {"x-proxy-ssl_client_cert": "cert-content"}
-
-    cert = "000102030405060708091011121314151617181920212223242526272829303132333435363738394041424344454647484950"
-    expected = "-----BEGIN CERTIFICATE-----\n0001020304050607080910111213141516171819202122232425262728293031\n32333435363738394041424344454647484950\n-----END CERTIFICATE-----"
-
-    actual = _enforce_cert_newlines(cert)
-    assert actual == expected
