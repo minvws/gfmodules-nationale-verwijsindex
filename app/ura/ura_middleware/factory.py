@@ -8,11 +8,15 @@ from app.ura.ura_middleware.ura_middleware import UraMiddleware
 
 
 def create_ura_middleware(config: ConfigUraMiddleware, db: Database) -> UraMiddleware:
-    ura_middleware: UraMiddleware
+    filter_service = (
+        AllowlistedUraMiddleware(db, config.allowlist_cache_in_seconds)
+        if config.use_authentication_ura_allowlist
+        else None
+    )
     if config.override_authentication_ura:
-        ura_middleware = ConfigBasedUraMiddleware(UraNumber(config.override_authentication_ura))
-    else:
-        ura_middleware = RequestUraMiddleware()
-    if config.use_authentication_ura_allowlist:
-        return AllowlistedUraMiddleware(db, ura_middleware, config.allowlist_cache_in_seconds)
-    return ura_middleware
+        return ConfigBasedUraMiddleware(
+            config_value=UraNumber(config.override_authentication_ura),
+            filter_service=filter_service,
+        )
+
+    return RequestUraMiddleware(filter_service=filter_service)
