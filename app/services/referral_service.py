@@ -67,7 +67,7 @@ class ReferralService:
                     allowed_entities.append(ReferralEntry.from_entity(entity))
             return allowed_entities
 
-    def add_one_referral(
+    def add_one(
         self,
         pseudonym: Pseudonym,
         data_domain: DataDomain,
@@ -112,7 +112,7 @@ class ReferralService:
             )
             return ReferralEntry.from_entity(new_referral)
 
-    def delete_one_referral(
+    def delete_one(
         self,
         pseudonym: Pseudonym,
         data_domain: DataDomain,

@@ -6,8 +6,10 @@ import pytest
 from app.config import ConfigDatabase
 from app.db.db import Database
 from app.models.ura import UraNumber
+from app.services.authorization_services.stub import StubAuthService
 from app.services.http import HttpService
 from app.services.prs.registration_service import PrsRegistrationService
+from app.services.referral_service import ReferralService
 from app.ura.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
 from tests.test_config import get_test_config
 
@@ -43,3 +45,8 @@ def ura_filter_service(database: Database) -> AllowlistedUraMiddleware:
 def prs_registration_service(ura_number: UraNumber) -> PrsRegistrationService:
     config = get_test_config()
     return PrsRegistrationService(config=config.pseudonym_api, ura_number=ura_number)
+
+
+@pytest.fixture()
+def referral_service(database: Database) -> ReferralService:
+    return ReferralService(database=database, auth_service=StubAuthService())  # type: ignore
