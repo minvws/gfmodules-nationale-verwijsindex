@@ -52,7 +52,7 @@ class ReferralService:
                     f"Break the Glass scenario for pseudonym {str(pseudonym)} and data domain {str(data_domain)}"
                 )
                 # In this case, we assume all entities are allowed as we could not ask for toestemming
-                return [self.hydrate_referral(entity) for entity in entities]
+                return [ReferralEntry.from_entity(e) for e in entities]
             allowed_entities: List[ReferralEntry] = []
 
             for entity in entities:
@@ -64,7 +64,7 @@ class ReferralService:
                 )
 
                 if otv_permission:
-                    allowed_entities.append(self.hydrate_referral(entity))
+                    allowed_entities.append(ReferralEntry.from_entity(entity))
             return allowed_entities
 
     def add_one_referral(
@@ -98,19 +98,19 @@ class ReferralService:
             audit_logger = ReferralRequestDatabaseLogger(session)
             audit_logger.log(logging_payload)
 
-            if (
-                referral_repository.find_one(pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number)
-                is None
-            ):
-                referral_entity = ReferralEntity(
+            if referral_repository.find_one(pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number):
+                raise HTTPException(status_code=409)
+
+            new_referral: ReferralEntity = referral_repository.add_one(
+                ReferralEntity(
                     pseudonym=str(pseudonym),
                     data_domain=str(data_domain),
                     ura_number=str(ura_number),
                     encrypted_lmr_id=encrypted_lmr_id,
                     lmr_endpoint=lmr_endpoint,
                 )
-                return self.hydrate_referral(referral_repository.add_one(referral_entity))
-            raise HTTPException(status_code=409)
+            )
+            return ReferralEntry.from_entity(new_referral)
 
     def delete_one_referral(
         self,
@@ -178,18 +178,4 @@ class ReferralService:
             )
             if not entities:
                 raise HTTPException(status_code=404)
-            return [self.hydrate_referral(entity) for entity in entities]
-
-    @staticmethod
-    def hydrate_referral(entity: ReferralEntity) -> ReferralEntry:
-        data_domain = entity.data_domain
-        if data_domain is None:
-            raise ValueError("Invalid data domain")
-
-        return ReferralEntry(
-            ura_number=UraNumber(entity.ura_number),
-            pseudonym=Pseudonym(value=entity.pseudonym),
-            data_domain=DataDomain(value=data_domain),
-            encrypted_lmr_id=entity.encrypted_lmr_id,
-            lmr_endpoint=entity.lmr_endpoint,
-        )
+            return [ReferralEntry.from_entity(e) for e in entities]
