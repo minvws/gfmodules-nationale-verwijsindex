@@ -1,6 +1,6 @@
 from typing import List
 
-from sqlalchemy import select
+from sqlalchemy import exists, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db.decorator import repository
@@ -64,3 +64,14 @@ class ReferralRepository(RepositoryBase):
         except SQLAlchemyError as exc:
             self.db_session.rollback()
             raise exc
+
+    def exists(self, pseudonym: str, data_domain: str, ura_number: str) -> bool:
+        stmt = select(
+            exists().where(
+                ReferralEntity.pseudonym == pseudonym,
+                ReferralEntity.data_domain == data_domain,
+                ReferralEntity.ura_number == ura_number,
+            )
+        )
+        results = self.db_session.session.execute(stmt).scalar()
+        return results or False

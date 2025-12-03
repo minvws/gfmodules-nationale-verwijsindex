@@ -98,7 +98,11 @@ class ReferralService:
             audit_logger = ReferralRequestDatabaseLogger(session)
             audit_logger.log(logging_payload)
 
-            if referral_repository.find_one(pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number):
+            if referral_repository.exists(
+                pseudonym=str(pseudonym),
+                data_domain=str(data_domain),
+                ura_number=str(ura_number),
+            ):
                 raise HTTPException(status_code=409)
 
             new_referral: ReferralEntity = referral_repository.add_one(
