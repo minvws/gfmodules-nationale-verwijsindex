@@ -8,7 +8,7 @@ from sqlalchemy.exc import DatabaseError, OperationalError, PendingRollbackError
 from sqlalchemy.orm import Session
 
 from app.db.models.base import Base
-from app.db.repository.respository_base import RepositoryBase, TRepositoryBase
+from app.db.repository import respository_base
 
 """
 This module contains the DbSession class, which is a context manager that provides a session to interact with
@@ -65,11 +65,13 @@ class DbSession:
         """
         self.session.close()
 
-    def get_repository(self, repository_class: Type[TRepositoryBase]) -> TRepositoryBase:
+    def get_repository(
+        self, repository_class: Type["respository_base.TRepositoryBase"]
+    ) -> "respository_base.TRepositoryBase":
         """
         Returns an instantiated repository for the given model class
         """
-        if issubclass(repository_class, RepositoryBase):
+        if issubclass(repository_class, respository_base.RepositoryBase):
             return repository_class(self)
         raise ValueError(f"No repository registered for model {repository_class}")
 

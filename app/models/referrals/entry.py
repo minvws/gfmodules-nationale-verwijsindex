@@ -1,5 +1,6 @@
 from pydantic import BaseModel, field_serializer, field_validator
 
+from app.db.models.referral import ReferralEntity
 from app.models.data_domain import DataDomain
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
@@ -44,3 +45,13 @@ class ReferralEntry(BaseModel):
         if not isinstance(value, UraNumber):
             return UraNumber(value)
         return value
+
+    @classmethod
+    def from_entity(cls, entity: ReferralEntity) -> "ReferralEntry":
+        return cls(
+            ura_number=UraNumber(entity.ura_number),
+            pseudonym=Pseudonym(value=entity.pseudonym),
+            data_domain=DataDomain(value=entity.data_domain),
+            encrypted_lmr_id=entity.encrypted_lmr_id,
+            lmr_endpoint=entity.lmr_endpoint,
+        )

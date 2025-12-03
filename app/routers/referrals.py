@@ -50,7 +50,7 @@ def create_referral(
         logger.error(f"Failed to exchange pseudonym: {e}")
         return Response(status_code=404)
 
-    referral: ReferralEntry = referral_service.add_one_referral(
+    referral: ReferralEntry = referral_service.add_one(
         pseudonym=localisation_pseudonym,
         data_domain=payload.data_domain,
         ura_number=payload.ura_number,
@@ -131,7 +131,7 @@ def delete_referral(
         logger.error(f"Failed to exchange pseudonym: {e}")
         return Response(status_code=404)
 
-    referral_service.delete_one_referral(
+    referral_service.delete_one(
         pseudonym=localisation_pseudonym,
         data_domain=req.data_domain,
         ura_number=req.ura_number,

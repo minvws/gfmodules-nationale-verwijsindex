@@ -1,4 +1,6 @@
-from typing import Any, TypeVar
+from typing import TypeVar
+
+from app.db import session
 
 
 class RepositoryBase:
@@ -6,7 +8,7 @@ class RepositoryBase:
     abstract base class for repository: not yet implemented
     """
 
-    def __init__(self, db_session: Any):
+    def __init__(self, db_session: session.DbSession):
         self.db_session = db_session
 
 
