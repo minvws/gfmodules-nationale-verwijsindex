@@ -40,7 +40,7 @@ class ReferralService:
             # Check toestemming if requesting organization has permission
             referral_repository = session.get_repository(ReferralRepository)
             entities: List[ReferralEntity] = referral_repository.query_referrals(
-                pseudonym=pseudonym, data_domain=data_domain, ura_number=None
+                pseudonym=str(pseudonym), data_domain=str(data_domain), ura_number=None
             )
             if not entities:
                 logger.info(f"No referrals found for pseudonym {str(pseudonym)} and data domain {str(data_domain)}")
@@ -144,7 +144,11 @@ class ReferralService:
             audit_logger.log(logging_payload)
 
             referral_repository = session.get_repository(ReferralRepository)
-            referral = referral_repository.find_one(pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number)
+            referral = referral_repository.find_one(
+                pseudonym=str(pseudonym),
+                data_domain=str(data_domain),
+                ura_number=str(ura_number),
+            )
             if referral is None:
                 raise HTTPException(status_code=404)
 
@@ -178,7 +182,9 @@ class ReferralService:
             audit_logger.log(logging_payload)
 
             entities = referral_repository.query_referrals(
-                pseudonym=pseudonym, data_domain=data_domain, ura_number=ura_number
+                pseudonym=str(pseudonym) if pseudonym else None,
+                data_domain=str(data_domain) if data_domain else None,
+                ura_number=str(ura_number),
             )
             if not entities:
                 raise HTTPException(status_code=404)
