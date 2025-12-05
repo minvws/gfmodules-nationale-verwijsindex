@@ -5,5 +5,5 @@ from app.db.repository.referral_repository import ReferralRepository
 
 
 @pytest.fixture()
-def referrals_repo(database: Database) -> ReferralRepository:
+def referral_repository(database: Database) -> ReferralRepository:
     return ReferralRepository(db_session=database.get_db_session())
