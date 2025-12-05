@@ -1,11 +1,12 @@
 import logging
 import random
 from time import sleep
-from typing import Any, Callable, List, Type, TypeVar
+from typing import Any, Callable, List, ParamSpec, Tuple, Type, TypeVar
 
-from sqlalchemy import Engine
+from sqlalchemy import Engine, Insert, Result
 from sqlalchemy.exc import DatabaseError, OperationalError, PendingRollbackError
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.selectable import TypedReturnsRows
 
 from app.db.models.base import Base
 from app.db.repository import respository_base
@@ -42,6 +43,8 @@ Usage:
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
+P = ParamSpec("P")
+R = TypeVar("R", bound=Tuple[Any, ...])
 
 
 class DbSession:
@@ -110,7 +113,7 @@ class DbSession:
         """
         self._retry(self.session.rollback)
 
-    def execute(self, stmt: Any) -> Any:
+    def execute(self, stmt: TypedReturnsRows[R] | Insert) -> Result[R]:
         """
         Execute a statement in the current session
 
@@ -127,7 +130,7 @@ class DbSession:
         """
         return self._retry(self.session.begin)
 
-    def _retry(self, f: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+    def _retry(self, f: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
         """
         Retry a function call in case of database errors
         """

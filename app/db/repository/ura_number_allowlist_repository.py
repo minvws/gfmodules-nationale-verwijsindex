@@ -14,6 +14,10 @@ class UraNumberAllowlistRepository(RepositoryBase):
         super().__init__(db_session)
 
     def get_all(self) -> Sequence[UraNumberAllowlistEntity]:
+        stmt = select(UraNumberAllowlistEntity)
+        results = self.db_session.execute(stmt).scalars().all()
+        return results
+
         return cast(
             Sequence[UraNumberAllowlistEntity],
             self.db_session.execute(select(UraNumberAllowlistEntity)).scalars().all(),
