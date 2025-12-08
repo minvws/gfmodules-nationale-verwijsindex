@@ -1,4 +1,4 @@
-from typing import List
+from typing import Sequence
 
 from sqlalchemy import exists, select
 from sqlalchemy.exc import SQLAlchemyError
@@ -17,18 +17,14 @@ class ReferralRepository(RepositoryBase):
             ReferralEntity.pseudonym == str(pseudonym),
         )
         result = self.db_session.execute(stmt).scalars().first()
-        if result is None:
-            return None
-        if isinstance(result, ReferralEntity):
-            return result
-        raise TypeError("Result not of type ReferralEntity")
+        return result
 
     def query_referrals(
         self,
         pseudonym: str | None = None,
         data_domain: str | None = None,
         ura_number: str | None = None,
-    ) -> List[ReferralEntity]:
+    ) -> Sequence[ReferralEntity]:
         stmt = select(ReferralEntity)
 
         if ura_number is not None:
@@ -40,10 +36,8 @@ class ReferralRepository(RepositoryBase):
         if data_domain is not None:
             stmt = stmt.where(ReferralEntity.data_domain == data_domain)
 
-        result = self.db_session.execute(stmt).scalars().all()
-        if isinstance(result, List):
-            return result
-        raise TypeError("Result not of type ReferralEntity")
+        results = self.db_session.execute(stmt).scalars().all()
+        return results
 
     def add_one(self, referral_entity: ReferralEntity) -> ReferralEntity:
         try:

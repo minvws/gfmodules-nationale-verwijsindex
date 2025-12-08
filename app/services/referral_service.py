@@ -39,7 +39,7 @@ class ReferralService:
         with self.database.get_db_session() as session:
             # Check toestemming if requesting organization has permission
             referral_repository = session.get_repository(ReferralRepository)
-            entities: List[ReferralEntity] = referral_repository.query_referrals(
+            entities = referral_repository.query_referrals(
                 pseudonym=str(pseudonym), data_domain=str(data_domain), ura_number=None
             )
             if not entities:
