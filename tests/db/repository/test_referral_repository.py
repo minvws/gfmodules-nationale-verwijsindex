@@ -1,5 +1,5 @@
 import pytest
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
@@ -75,6 +75,24 @@ def test_add_one_should_succeed(referral_repository: ReferralRepository, mock_re
         actual = referral_repository.add_one(mock_referral_entity)
 
     assert mock_referral_entity == actual
+
+
+def test_add_one_with_same_values_should_raise_exception(
+    referral_repository: ReferralRepository, mock_referral_entity: ReferralEntity
+) -> None:
+    with referral_repository.db_session:
+        mock_2 = ReferralEntity(
+            ura_number=mock_referral_entity.ura_number,
+            pseudonym=mock_referral_entity.pseudonym,
+            data_domain=mock_referral_entity.data_domain,
+            encrypted_lmr_id=mock_referral_entity.encrypted_lmr_id,
+            lmr_endpoint=mock_referral_entity.lmr_endpoint,
+        )
+        referral_repository.add_one(mock_referral_entity)
+        with pytest.raises(SQLAlchemyError) as exec:
+            referral_repository.add_one(mock_2)
+
+        assert isinstance(exec.value, IntegrityError)
 
 
 def test_delete_one_should_succeed(

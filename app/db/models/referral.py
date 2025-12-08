@@ -4,8 +4,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db.models.base import Base
 
 
-# TODO: validate the below constraints are correct
-# this TODO is added on purpose and should be resolved in a separate PR
 class ReferralEntity(Base):
     __tablename__ = "referrals"
 
