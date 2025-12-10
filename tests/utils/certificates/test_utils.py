@@ -1,17 +1,15 @@
-import builtins
-from unittest.mock import MagicMock, mock_open, patch
-
 import pytest
-from pytest import MonkeyPatch
+from cryptography.x509 import Certificate
 
 from app.utils.certificates.utils import (
     _CERT_END,
     _CERT_START,
+    create_certificate,
     enforce_cert_newlines,
     load_certificate,
+    load_many_certificate_files,
+    load_one_certificate_file,
 )
-
-PATCHED_MODULE = "app.utils.certificates.utils"
 
 
 def test_enforce_cert_newlines_should_succeed() -> None:
@@ -23,42 +21,52 @@ def test_enforce_cert_newlines_should_succeed() -> None:
     assert expected == actual
 
 
-@patch(f"{PATCHED_MODULE}.x509")
-@patch(f"{PATCHED_MODULE}.Path")
-def test_load_ceritifcate_should_succeed(mock_path: MagicMock, mock_cert: MagicMock, monkeypatch: MonkeyPatch) -> None:
-    fake_path = "/some/path"
-    cert_data = "some-cert-data"
-    cert = "some-cert"
-    mock_path.exists.return_value = True
-    mock_cert.load_pem_x509_certificate.return_value = cert
-    monkeypatch.setattr(builtins, "open", mock_open(read_data=cert_data))
+def test_load_one_certificate_path_should_succeed(certificate_str: str, cert_path: str) -> None:
+    actual = load_one_certificate_file(cert_path)
 
-    actual = load_certificate(fake_path)
-
-    assert cert == actual
-    mock_cert.load_pem_x509_certificate.assert_called_once_with(cert_data.encode())
+    assert actual == certificate_str
 
 
-@patch(f"{PATCHED_MODULE}.Path.exists")
-def test_load_ceritificate_should_raise_exception_when_file_not_found(
-    mock_path: MagicMock,
+def test_load_one_cerftificate_should_raise_exception_when_a_dir_is_given(
+    cert_dir: str,
 ) -> None:
-    unknown_path = "/some/unknown/path"
-    mock_path.return_value = False
+    with pytest.raises(IsADirectoryError):
+        load_one_certificate_file(cert_dir)
+
+
+def test_load_one_certificate_should_raise_exception_when_file_not_found() -> None:
+    incorrect_file_path = "some/incorrec-path/wrong-file"
     with pytest.raises(FileNotFoundError):
-        load_certificate(unknown_path)
+        load_one_certificate_file(incorrect_file_path)
 
 
-@patch(f"{PATCHED_MODULE}.x509")
-@patch(f"{PATCHED_MODULE}.Path")
-def test_load_certificate_should_raise_exception_when_error_occurs_from_cryptography(
-    mock_path: MagicMock, mock_cert: MagicMock, monkeypatch: MonkeyPatch
-) -> None:
-    fake_path = "/some/path"
-    cert_data = "some-cert-data"
-    mock_path.exists.return_value = True
-    opened_data = mock_open(read_data=str(cert_data))
-    mock_cert.load_pem_x509_certificate.side_effect = Exception
-    monkeypatch.setattr(builtins, "open", opened_data)
-    with pytest.raises(ValueError):
-        load_certificate(fake_path)
+def test_load_many_certificate_files_should_succeed(cert_dir: str, certificate_str: str) -> None:
+    expected = [certificate_str]
+
+    actual = load_many_certificate_files(cert_dir)
+
+    assert expected == actual
+
+
+def test_load_many_ceritifcate_should_raise_exception_when_dir_does_not_exist() -> None:
+    incorrect_dir = "some/incorrect_dir"
+    with pytest.raises(FileNotFoundError):
+        load_many_certificate_files(incorrect_dir)
+
+
+def test_create_certificate_should_succeed(certificate_str: str, certificate: Certificate) -> None:
+    expected = create_certificate(certificate_str)
+
+    assert expected == certificate
+
+
+def test_create_ceritifcate_should_raise_exception_with_incorrect_x509_cert() -> None:
+    cert = "some-malformed-x509-cert"
+    with pytest.raises(Exception):
+        create_certificate(cert)
+
+
+def test_load_certificate_should_succeed(cert_path: str, certificate: Certificate) -> None:
+    actual = load_certificate(cert_path)
+
+    assert certificate == actual

@@ -1,8 +1,6 @@
 import base64
 import logging
-from pathlib import Path
 
-from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec, ed448, ed25519, rsa
 from uzireader.uzi import UziException
@@ -10,12 +8,17 @@ from uzireader.uziserver import UziServer
 
 from app.jwt_validator import DeziSigningCert
 from app.models.ura import UraNumber
-from app.utils.certificates.utils import enforce_cert_newlines, load_certificate
+from app.utils.certificates.utils import (
+    create_certificate,
+    enforce_cert_newlines,
+    load_many_certificate_files,
+    load_one_certificate_file,
+)
 
 logger = logging.getLogger(__name__)
 
 
-class DeziCertExceptin(Exception):
+class DeziCertException(Exception):
     pass
 
 
@@ -27,16 +30,13 @@ def load_dezi_signing_certificates(cert_store_path: str) -> list[DeziSigningCert
     if not cert_store_path:
         raise ValueError("DEZI signing certificate path is required")
 
-    dir_path = Path(cert_store_path)
-    if not dir_path.exists():
-        raise FileNotFoundError(f"DEZI signing certificates not found at: {dir_path}")
+    files = load_many_certificate_files(cert_store_path)
 
     certificates = []
-    for cert_file in dir_path.iterdir():
-        certificate: x509.Certificate
+    for file in files:
         try:
-            certificate = load_certificate(str(cert_file))
-        except ValueError as e:
+            certificate = create_certificate(file)
+        except Exception as e:
             logger.warning(e)
             continue
 
@@ -46,7 +46,6 @@ def load_dezi_signing_certificates(cert_store_path: str) -> list[DeziSigningCert
         x5t = x5t.rstrip("=")  # Remove padding for x5t
 
         public_key = certificate.public_key()
-        print(public_key)
         if not isinstance(
             public_key,
             (
@@ -76,9 +75,8 @@ def verify_and_get_uzi_cert(cert: str) -> UraNumber:
 
 def get_ura_from_cert(cert_path: str) -> UraNumber:
     try:
-        with open(cert_path, "r") as cert_file:
-            cert_data = cert_file.read()
-            ura_number = verify_and_get_uzi_cert(cert=cert_data)
-            return ura_number
-    except (IOError, UziException) as e:
-        raise DeziCertExceptin(f"Failed to load URA Number from ceritificate: {e}")
+        cert_data = load_one_certificate_file(cert_path)
+        ura_number = verify_and_get_uzi_cert(cert_data)
+        return ura_number
+    except (IOError, UziException, ValueError) as e:
+        raise DeziCertException(f"Failed to load URA Number from ceritificate: {e}")
