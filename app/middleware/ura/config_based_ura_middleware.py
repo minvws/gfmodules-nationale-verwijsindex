@@ -1,8 +1,8 @@
 from starlette.requests import Request
 
+from app.middleware.ura.allowlisted_ura_middleware import AllowlistedUraMiddleware
+from app.middleware.ura.ura_middleware import UraMiddleware
 from app.models.ura import UraNumber
-from app.ura.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
-from app.ura.ura_middleware.ura_middleware import UraMiddleware
 
 
 class ConfigBasedUraMiddleware(UraMiddleware):

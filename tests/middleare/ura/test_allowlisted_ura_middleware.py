@@ -1,6 +1,5 @@
 import random
 import time
-from typing import Any
 from unittest import mock
 
 import pytest
@@ -9,14 +8,8 @@ from starlette.exceptions import HTTPException
 
 from app.db.db import Database
 from app.db.models.ura_number_allowlist import UraNumberAllowlistEntity
+from app.middleware.ura.allowlisted_ura_middleware import AllowlistedUraMiddleware
 from app.models.ura import UraNumber
-from app.ura.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
-from app.ura.ura_middleware.request_ura_middleware import RequestUraMiddleware
-
-
-@pytest.fixture()
-def request_ura_middleware_mock(mocker: MockerFixture) -> Any:
-    return mocker.Mock(spec=RequestUraMiddleware)
 
 
 @pytest.fixture()

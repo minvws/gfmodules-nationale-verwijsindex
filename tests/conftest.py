@@ -9,12 +9,12 @@ from cryptography.x509 import Certificate
 
 from app.config import ConfigDatabase
 from app.db.db import Database
+from app.middleware.ura.allowlisted_ura_middleware import AllowlistedUraMiddleware
 from app.models.ura import UraNumber
 from app.services.authorization_services.stub import StubAuthService
 from app.services.http import HttpService
 from app.services.prs.registration_service import PrsRegistrationService
 from app.services.referral_service import ReferralService
-from app.ura.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
 from app.utils.certificates.utils import load_certificate
 from tests.test_config import get_test_config
 
@@ -64,13 +64,14 @@ def referral_service(database: Database) -> ReferralService:
 @pytest.fixture(scope="session")
 def certificate_str(ura_number: UraNumber) -> str:
     global TEST_SCRIPT_PATH
+    global TEST_CERTIFICATE_PATH
     root = Path(__file__).parent.parent
     path = os.path.join(str(root) + "/" + TEST_SCRIPT_PATH)
     exit_code = subprocess.call(f"{path} {str(ura_number)}", shell=True)
     if exit_code != 0:
         raise Exception(f"script {TEST_SCRIPT_PATH} exited with error code: {exit_code}")
 
-    with open("tests/secrets/mock-server-cert.crt", "r") as f:
+    with open(TEST_CERTIFICATE_PATH, "r") as f:
         data = f.read()
 
     return data

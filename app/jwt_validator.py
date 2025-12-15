@@ -7,18 +7,10 @@ from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec, ed448, ed25519, padding, rsa
 from cryptography.x509 import Certificate
-from pydantic import BaseModel
+
+from app.models.dezi import DeziSigningCert
 
 logger = logging.getLogger(__name__)
-
-
-class DeziSigningCert(BaseModel):
-    certificate: Certificate
-    x5t: str
-    public_key: rsa.RSAPublicKey | ec.EllipticCurvePublicKey | ed25519.Ed25519PublicKey | ed448.Ed448PublicKey
-
-    class Config:
-        arbitrary_types_allowed = True
 
 
 class JwtValidationError(Exception):
@@ -132,7 +124,9 @@ class JwtValidator:
                     f"Dezi signing certificate with x5t '{x5t}' not in configured `dezi_register_trusted_signing_certs_store_path`."
                 )
             result = self.__decode_jwt(
-                cert.public_key, dezi_jwt_token, override_verify_options={"verify_exp": False, "verify_aud": False}
+                cert.public_key,
+                dezi_jwt_token,
+                override_verify_options={"verify_exp": False, "verify_aud": False},
             )
             if not result:
                 raise JwtValidationError(f"Failed to validate DEZI JWT with certificate from x5t: {x5t}")
@@ -142,7 +136,9 @@ class JwtValidator:
         for cert in self.dezi_register_signing_certificates:
             try:
                 return self.__decode_jwt(
-                    cert.public_key, dezi_jwt_token, override_verify_options={"verify_exp": False, "verify_aud": False}
+                    cert.public_key,
+                    dezi_jwt_token,
+                    override_verify_options={"verify_exp": False, "verify_aud": False},
                 )
             except JwtValidationError:
                 continue
@@ -225,7 +221,8 @@ class JwtValidator:
         """
         public_key = cert.public_key()
         if not isinstance(
-            public_key, (rsa.RSAPublicKey | ec.EllipticCurvePublicKey | ed25519.Ed25519PublicKey | ed448.Ed448PublicKey)
+            public_key,
+            (rsa.RSAPublicKey | ec.EllipticCurvePublicKey | ed25519.Ed25519PublicKey | ed448.Ed448PublicKey),
         ):
             raise JwtValidationError(f"Invalid public key type, type {type(public_key)} is not supported")
         return public_key

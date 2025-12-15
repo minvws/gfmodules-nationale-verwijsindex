@@ -1,6 +1,7 @@
 import pytest
 from cryptography.x509 import Certificate
 
+from app.data import AllowedFilesExtenions
 from app.utils.certificates.utils import (
     _CERT_END,
     _CERT_START,
@@ -43,7 +44,7 @@ def test_load_one_certificate_should_raise_exception_when_file_not_found() -> No
 def test_load_many_certificate_files_should_succeed(cert_dir: str, certificate_str: str) -> None:
     expected = [certificate_str]
 
-    actual = load_many_certificate_files(cert_dir)
+    actual = load_many_certificate_files(cert_dir, [AllowedFilesExtenions("crt")])
 
     assert expected == actual
 
@@ -51,7 +52,7 @@ def test_load_many_certificate_files_should_succeed(cert_dir: str, certificate_s
 def test_load_many_ceritifcate_should_raise_exception_when_dir_does_not_exist() -> None:
     incorrect_dir = "some/incorrect_dir"
     with pytest.raises(FileNotFoundError):
-        load_many_certificate_files(incorrect_dir)
+        load_many_certificate_files(incorrect_dir, [AllowedFilesExtenions("crt")])
 
 
 def test_create_certificate_should_succeed(certificate_str: str, certificate: Certificate) -> None:

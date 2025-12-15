@@ -1,10 +1,10 @@
 from app.config import ConfigUraMiddleware
 from app.db.db import Database
+from app.middleware.ura.allowlisted_ura_middleware import AllowlistedUraMiddleware
+from app.middleware.ura.config_based_ura_middleware import ConfigBasedUraMiddleware
+from app.middleware.ura.request_ura_middleware import RequestUraMiddleware
+from app.middleware.ura.ura_middleware import UraMiddleware
 from app.models.ura import UraNumber
-from app.ura.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
-from app.ura.ura_middleware.config_based_ura_middleware import ConfigBasedUraMiddleware
-from app.ura.ura_middleware.request_ura_middleware import RequestUraMiddleware
-from app.ura.ura_middleware.ura_middleware import UraMiddleware
 
 
 def create_ura_middleware(config: ConfigUraMiddleware, db: Database) -> UraMiddleware:

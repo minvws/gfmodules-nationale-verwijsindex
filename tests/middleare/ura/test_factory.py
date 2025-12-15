@@ -1,8 +1,8 @@
 from app.config import ConfigUraMiddleware
 from app.db.db import Database
-from app.ura.ura_middleware.config_based_ura_middleware import ConfigBasedUraMiddleware
-from app.ura.ura_middleware.factory import create_ura_middleware
-from app.ura.ura_middleware.request_ura_middleware import RequestUraMiddleware
+from app.middleware.ura.config_based_ura_middleware import ConfigBasedUraMiddleware
+from app.middleware.ura.factory import create_ura_middleware
+from app.middleware.ura.request_ura_middleware import RequestUraMiddleware
 
 
 def test_create_ura_middleware_should_return_config_based_ura(

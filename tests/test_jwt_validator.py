@@ -9,7 +9,8 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, ed448, ed25519, rsa
 from cryptography.x509 import Certificate
 
-from app.jwt_validator import DeziSigningCert, JwtValidationError, JwtValidator
+from app.jwt_validator import JwtValidationError, JwtValidator
+from app.models.dezi import DeziSigningCert
 
 
 def _generate_rsa_private_key() -> rsa.RSAPrivateKey:
@@ -54,7 +55,13 @@ def _get_cert_public_key(
     """Extract the public key from a certificate."""
     public_key = cert.public_key()
     if not isinstance(
-        public_key, (rsa.RSAPublicKey, ec.EllipticCurvePublicKey, ed25519.Ed25519PublicKey, ed448.Ed448PublicKey)
+        public_key,
+        (
+            rsa.RSAPublicKey,
+            ec.EllipticCurvePublicKey,
+            ed25519.Ed25519PublicKey,
+            ed448.Ed448PublicKey,
+        ),
     ):
         raise TypeError(f"Unsupported public key type in certificate: {type(public_key)}")
     return public_key
@@ -76,7 +83,10 @@ def ca_private_key():
 def ca_certificate(ca_private_key):
     """Create CA certificate for testing."""
     return _create_test_certificate(
-        private_key=ca_private_key, subject_name="Test CA", issuer_name="Test CA", is_ca=True
+        private_key=ca_private_key,
+        subject_name="Test CA",
+        issuer_name="Test CA",
+        is_ca=True,
     )
 
 
@@ -107,7 +117,9 @@ def jwt_with_x5c():
     """Fixture to create JWT with x5c header."""
 
     def _create_jwt_with_x5c(
-        payload: Dict[str, Any], signing_key: rsa.RSAPrivateKey, x5c_certs: List[Certificate]
+        payload: Dict[str, Any],
+        signing_key: rsa.RSAPrivateKey,
+        x5c_certs: List[Certificate],
     ) -> str:
         x5c = [base64.b64encode(cert.public_bytes(serialization.Encoding.DER)).decode("utf-8") for cert in x5c_certs]
         headers = {"x5c": x5c}
@@ -176,7 +188,11 @@ def base_relation_factory() -> Callable[..., Dict[str, Any]]:
     """Fixture for creating relation objects used in DEZI payloads."""
 
     def _create_relation(**overrides: Any) -> Dict[str, Any]:
-        base_relation = {"entity_name": "TestEntity", "roles": ["01.010"], "ura": "12341234"}
+        base_relation = {
+            "entity_name": "TestEntity",
+            "roles": ["01.010"],
+            "ura": "12341234",
+        }
         base_relation.update(overrides)
         return base_relation
 
@@ -193,9 +209,14 @@ def simple_dezi_signing_cert() -> tuple[DeziSigningCert, rsa.RSAPrivateKey]:
         issuer_name="DEZI CA",
         is_ca=False,
     )
-    return DeziSigningCert(
-        certificate=dezi_cert, x5t="test-x5t", public_key=_get_cert_public_key(dezi_cert)
-    ), dezi_private_key
+    return (
+        DeziSigningCert(
+            certificate=dezi_cert,
+            x5t="test-x5t",
+            public_key=_get_cert_public_key(dezi_cert),
+        ),
+        dezi_private_key,
+    )
 
 
 def test_cert_chain_does_not_exist(rsa_private_key, jwt_validator):
@@ -259,7 +280,8 @@ def test_expired_jwt_token(rsa_private_key, leaf_certificate, jwt_with_x5c, jwt_
     token = jwt_with_x5c(payload, rsa_private_key, [leaf_certificate])
 
     with pytest.raises(
-        JwtValidationError, match="JWT signature verification failed or token is invalid: Signature has expired"
+        JwtValidationError,
+        match="JWT signature verification failed or token is invalid: Signature has expired",
     ):
         jwt_validator.validate_lrs_jwt(token, "12341234")
 
@@ -367,7 +389,9 @@ def test_unhappy_flow_wrong_dezi_public_key(
 
     # Create DeziSigningCert for wrong DEZI signing key
     wrong_dezi_cert_with_x5t = DeziSigningCert(
-        certificate=wrong_dezi_cert, x5t="test-x5t", public_key=_get_cert_public_key(wrong_dezi_cert)
+        certificate=wrong_dezi_cert,
+        x5t="test-x5t",
+        public_key=_get_cert_public_key(wrong_dezi_cert),
     )
 
     # Create validator with wrong certificate
@@ -399,7 +423,13 @@ def test_unhappy_flow_wrong_dezi_public_key(
     ],
 )
 def test_missing_main_jwt_claims(
-    rsa_private_key, leaf_certificate, jwt_with_x5c, jwt_validator, standard_jwt_payload, missing_claim, expected_error
+    rsa_private_key,
+    leaf_certificate,
+    jwt_with_x5c,
+    jwt_validator,
+    standard_jwt_payload,
+    missing_claim,
+    expected_error,
 ):
     """Test scenarios where main JWT is missing required claims."""
     # Create base payload and remove the specific claim
@@ -586,7 +616,10 @@ def test_dezi_jwt_missing_relation_keys(
     payload = standard_jwt_payload(dezi_jwt_token=dezi_jwt_token)
 
     token = jwt_with_x5c(payload, rsa_private_key, [leaf_certificate])
-    with pytest.raises(JwtValidationError, match=f"DEZI JWT token is missing '{missing_key}' claim in 'relations'"):
+    with pytest.raises(
+        JwtValidationError,
+        match=f"DEZI JWT token is missing '{missing_key}' claim in 'relations'",
+    ):
         validator.validate_lrs_jwt(token, "12341234")
 
 

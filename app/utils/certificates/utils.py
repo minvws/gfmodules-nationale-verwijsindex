@@ -1,9 +1,14 @@
+import base64
 import logging
 import textwrap
 from pathlib import Path
 from typing import List
 
 from cryptography import x509
+from cryptography.hazmat.primitives import hashes
+
+from app.data import AllowedFilesExtenions
+from app.utils.certificates.exceptions import CertificateLoadingError
 
 logger = logging.getLogger(__name__)
 
@@ -12,16 +17,6 @@ _CERT_END = "-----END CERTIFICATE-----"
 
 
 def load_one_certificate_file(path: str) -> str:
-    """
-    Load a certificate file from the given path.
-
-    Args:
-        path (str): Path to the certificate file to read.
-        example: "path/certificate.crt"
-
-    Returns:
-        the content of a ceritifacte as `str`
-    """
     file_path = Path(path)
     if not file_path.exists():
         raise FileNotFoundError(f"File not found at: {file_path}")
@@ -36,29 +31,27 @@ def load_one_certificate_file(path: str) -> str:
     return cert_data
 
 
-def load_many_certificate_files(dir: str) -> List[str]:
-    """
-    Load a certificates file from the given directory.
-
-    Args:
-        dir (str): Path to the certificate directory to read.
-        example: "path/certificate/"
-
-    Returns:
-        a `List` that holds certificates content.
-    """
+def load_many_certificate_files(dir: str, allowed_extensions: List[AllowedFilesExtenions]) -> List[str]:
     file_path = Path(dir)
     if not file_path.exists():
         raise FileNotFoundError(f"File not found at: {file_path}")
 
-    return [load_one_certificate_file(str(f)) for f in file_path.iterdir()]
+    cert_files = []
+    for file in file_path.iterdir():
+        file_extension = str(file).split(".")[-1]
+
+        if file_extension in [e.value for e in allowed_extensions]:
+            certificate_file = load_one_certificate_file(str(file))
+            cert_files.append(certificate_file)
+
+    return cert_files
 
 
 def create_certificate(cert: str) -> x509.Certificate:
     try:
         return x509.load_pem_x509_certificate(cert.encode())
-    except Exception as e:
-        raise RuntimeError(f"Unable to create CA certificate from path {cert} with error {e}")
+    except ValueError as e:
+        raise CertificateLoadingError(f"Unable to create CA certificate from path certificate with error {e}")
 
 
 def load_certificate(cert_path: str) -> x509.Certificate:
@@ -76,3 +69,11 @@ def enforce_cert_newlines(cert_data: str) -> str:
     result += _CERT_END
 
     return result
+
+
+def get_x5t_from_certificate(certificate: x509.Certificate) -> str:
+    sha1_fingerprint = certificate.fingerprint(hashes.SHA512())
+    x5t = base64.urlsafe_b64encode(sha1_fingerprint).decode("utf-8")
+    x5t = x5t.rstrip("=")  # Remove padding for x5t
+
+    return x5t

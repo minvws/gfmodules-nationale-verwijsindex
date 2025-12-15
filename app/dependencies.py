@@ -6,11 +6,11 @@ from fastapi import Request
 from app.config import Config
 from app.db.db import Database
 from app.jwt_validator import JwtValidator
+from app.middleware.ura.ura_middleware import UraMiddleware
 from app.models.ura import UraNumber
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.prs.registration_service import PrsRegistrationService
 from app.services.referral_service import ReferralService
-from app.ura.ura_middleware.ura_middleware import UraMiddleware
 
 
 def get_default_config() -> Config:
