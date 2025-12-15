@@ -137,7 +137,7 @@ jobs:
               with:
                 fetch-depth: 0
             - name: Download coverage report
-              uses: actions/download-artifact@v6
+              uses: actions/download-artifact@v7
             - name: Run SonarQube scan
               uses: minvws/action-sonarqube@v1
               with:
