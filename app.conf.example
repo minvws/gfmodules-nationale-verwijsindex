@@ -9,8 +9,6 @@ redoc_url = /redocs
 loglevel=debug
 # Provider ID of this service
 provider_id=dcc2217b-600e-4587-b74a-6b04bf3a882b
-# Authorization service to use: Either True to use external toestemming stub or False for a stub implementation
-authorization_service = False
 
 [dezi_register]
 # The Viewer sends the Dezi JWT or a Mock JWT of the authenticated user to the LRS.
@@ -48,12 +46,6 @@ max_overflow=10
 pool_pre_ping=False
 # Recycle the connection after this time (in seconds)
 pool_recycle=1800
-
-[toestemming_stub_api]
-# Endpoint for the toestemming stub
-endpoint=http://toestemming-stub:8507
-# Timeout for toestemming stub
-timeout=10
 
 [pseudonym_api]
 endpoint=http://localhost:8504

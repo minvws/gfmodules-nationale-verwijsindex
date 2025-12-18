@@ -75,7 +75,6 @@ def test_get_referral_by_domain_and_pseudonym_should_succeed(
     actual = referral_service.get_referrals_by_domain_and_pseudonym(
         pseudonym=mock_referral.pseudonym,
         data_domain=mock_referral.data_domain,
-        client_ura_number=mock_referral.ura_number,
     )[0]
 
     assert mock_referral == actual
@@ -88,7 +87,6 @@ def test_get_referral_by_domain_and_pseudonym_should_raise_exception_when_not_fo
         referral_service.get_referrals_by_domain_and_pseudonym(
             pseudonym=mock_referral.pseudonym,
             data_domain=mock_referral.data_domain,
-            client_ura_number=mock_referral.ura_number,
         )
 
     assert exec.value.status_code == 404
@@ -115,7 +113,6 @@ def test_delete_referral_should_succeed(referral_service: ReferralService, mock_
         referral_service.get_referrals_by_domain_and_pseudonym(
             pseudonym=mock_referral.pseudonym,
             data_domain=mock_referral.data_domain,
-            client_ura_number=mock_referral.ura_number,
         )
 
     assert exec.value.status_code == 404

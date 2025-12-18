@@ -11,7 +11,6 @@ from app.config import ConfigDatabase
 from app.db.db import Database
 from app.middleware.ura.allowlisted_ura_middleware import AllowlistedUraMiddleware
 from app.models.ura import UraNumber
-from app.services.authorization_services.stub import StubAuthService
 from app.services.http import HttpService
 from app.services.prs.registration_service import PrsRegistrationService
 from app.services.referral_service import ReferralService
@@ -58,7 +57,7 @@ def prs_registration_service(ura_number: UraNumber) -> PrsRegistrationService:
 
 @pytest.fixture()
 def referral_service(database: Database) -> ReferralService:
-    return ReferralService(database=database, auth_service=StubAuthService())  # type: ignore
+    return ReferralService(database=database)  # type: ignore
 
 
 @pytest.fixture(scope="session")
