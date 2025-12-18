@@ -19,11 +19,12 @@ class ReferralRepository(RepositoryBase):
         result = self.db_session.execute(stmt).scalars().first()
         return result
 
-    def query_referrals(
+    def find_many(
         self,
         pseudonym: str | None = None,
         data_domain: str | None = None,
         ura_number: str | None = None,
+        organization_type: str | None = None,
     ) -> Sequence[ReferralEntity]:
         stmt = select(ReferralEntity)
 
@@ -35,6 +36,9 @@ class ReferralRepository(RepositoryBase):
 
         if data_domain is not None:
             stmt = stmt.where(ReferralEntity.data_domain == data_domain)
+
+        if organization_type is not None:
+            stmt = stmt.where(ReferralEntity.organization_type == organization_type)
 
         results = self.db_session.execute(stmt).scalars().all()
         return results
