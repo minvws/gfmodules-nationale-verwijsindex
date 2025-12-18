@@ -16,6 +16,7 @@ def test_serialize_should_succeed() -> None:
         "ura_number": "00000123",
         "encrypted_lmr_id": "encrypted id",
         "lmr_endpoint": "http://example.com",
+        "organization_type": "Hospital",
     }
     data = ReferralEntry(
         pseudonym=Pseudonym("encrypted data"),
@@ -23,6 +24,7 @@ def test_serialize_should_succeed() -> None:
         ura_number=UraNumber("123"),
         encrypted_lmr_id="encrypted id",
         lmr_endpoint="http://example.com",
+        organization_type="Hospital",
     )
 
     actual = data.model_dump()

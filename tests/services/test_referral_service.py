@@ -16,6 +16,7 @@ def mock_referral() -> ReferralEntry:
         data_domain=DataDomain(value="ImagingStudy"),
         encrypted_lmr_id="encrypted_lmr_id_12345",
         lmr_endpoint="https://example.com",
+        organization_type="Hospital",
     )
 
 
@@ -28,6 +29,7 @@ def test_add_one_should_succeed(referral_service: ReferralService, mock_referral
         lmr_endpoint=mock_referral.lmr_endpoint,
         uzi_number="12345678",
         request_url="http://example.com",
+        organization_type=mock_referral.organization_type,
     )
 
     assert mock_referral == actual
@@ -44,6 +46,7 @@ def test_add_referral_should_raise_exception_with_duplicates(
         lmr_endpoint=mock_referral.lmr_endpoint,
         uzi_number="12345678",
         request_url="http://example.com",
+        organization_type=mock_referral.organization_type,
     )
     with pytest.raises(HTTPException) as exec:
         referral_service.add_one(
@@ -54,6 +57,7 @@ def test_add_referral_should_raise_exception_with_duplicates(
             lmr_endpoint=mock_referral.lmr_endpoint,
             uzi_number="12345678",
             request_url="http://example.com",
+            organization_type=mock_referral.organization_type,
         )
 
     assert exec.value.status_code == 409
@@ -70,6 +74,7 @@ def test_get_referral_by_domain_and_pseudonym_should_succeed(
         lmr_endpoint=mock_referral.lmr_endpoint,
         uzi_number="12345678",
         request_url="http://example.com",
+        organization_type=mock_referral.organization_type,
     )
 
     actual = referral_service.get_referrals_by_domain_and_pseudonym(
@@ -101,6 +106,7 @@ def test_delete_referral_should_succeed(referral_service: ReferralService, mock_
         lmr_endpoint=mock_referral.lmr_endpoint,
         uzi_number="12345678",
         request_url="http://example.com",
+        organization_type=mock_referral.organization_type,
     )
     assert data == mock_referral
     referral_service.delete_one(
@@ -141,6 +147,7 @@ def test_query_referral_single_item(referral_service: ReferralService, mock_refe
         request_url="https://test",
         lmr_endpoint="https://example.com",
         encrypted_lmr_id="encrypted_lmr_id_12345",
+        organization_type=mock_referral.organization_type,
     )
 
     actual_referrals = referral_service.query_referrals(

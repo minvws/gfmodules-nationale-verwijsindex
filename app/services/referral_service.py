@@ -34,7 +34,7 @@ class ReferralService:
 
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)
-            entities = referral_repository.query_referrals(
+            entities = referral_repository.find_many(
                 pseudonym=str(pseudonym), data_domain=str(data_domain), ura_number=None
             )
             if not entities:
@@ -51,6 +51,7 @@ class ReferralService:
         request_url: str,
         encrypted_lmr_id: str,
         lmr_endpoint: str,
+        organization_type: str | None = None,
     ) -> ReferralEntry:
         """
         Method that adds a referral to the database
@@ -67,6 +68,7 @@ class ReferralService:
                     "data_domain": str(data_domain),
                     "encrypted_lmr_id": encrypted_lmr_id,
                     "lmr_endpoint": lmr_endpoint,
+                    "organization_type": organization_type,
                 },
             )
 
@@ -87,6 +89,7 @@ class ReferralService:
                     ura_number=str(ura_number),
                     encrypted_lmr_id=encrypted_lmr_id,
                     lmr_endpoint=lmr_endpoint,
+                    organization_type=organization_type,
                 )
             )
             return ReferralEntry.from_entity(new_referral)
@@ -156,7 +159,7 @@ class ReferralService:
             audit_logger = ReferralRequestDatabaseLogger(session)
             audit_logger.log(logging_payload)
 
-            entities = referral_repository.query_referrals(
+            entities = referral_repository.find_many(
                 pseudonym=str(pseudonym) if pseudonym else None,
                 data_domain=str(data_domain) if data_domain else None,
                 ura_number=str(ura_number),
