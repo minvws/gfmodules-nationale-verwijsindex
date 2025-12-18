@@ -1,10 +1,10 @@
 from fastapi import HTTPException
 from starlette.requests import Request
 
+from app.middleware.ura.allowlisted_ura_middleware import AllowlistedUraMiddleware
+from app.middleware.ura.ura_middleware import UraMiddleware
 from app.models.ura import UraNumber
-from app.ura.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
-from app.ura.ura_middleware.ura_middleware import UraMiddleware
-from app.ura.uzi_cert_common import verify_and_get_uzi_cert
+from app.utils.certificates.dezi import verify_and_get_uzi_cert
 
 
 class RequestUraMiddleware(UraMiddleware):

@@ -2,9 +2,9 @@ import pytest
 from fastapi.exceptions import HTTPException
 from starlette.requests import Request
 
+from app.middleware.ura.allowlisted_ura_middleware import AllowlistedUraMiddleware
+from app.middleware.ura.config_based_ura_middleware import ConfigBasedUraMiddleware
 from app.models.ura import UraNumber
-from app.ura.ura_middleware.allowlisted_ura_middleware import AllowlistedUraMiddleware
-from app.ura.ura_middleware.config_based_ura_middleware import ConfigBasedUraMiddleware
 
 
 def test_authenticate_ura_should_succeed_and_return_value(
