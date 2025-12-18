@@ -21,10 +21,6 @@ class ReferralRequest(BaseModel):
         return str(value)
 
 
-class ReferralRequestHeader(BaseModel):
-    authorization: str
-
-
 class CreateReferralRequest(ReferralRequest):
     ura_number: UraNumber
     requesting_uzi_number: str

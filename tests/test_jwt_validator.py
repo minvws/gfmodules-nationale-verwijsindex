@@ -150,7 +150,6 @@ def standard_jwt_payload() -> Callable[..., Dict[str, Any]]:
             "exp": 9999999999,
             "case_nr": "1234",
             "dezi_jwt": dezi_jwt_token,
-            "breaking_glass": False,
         }
         base_payload.update(overrides)
         return base_payload
@@ -419,7 +418,6 @@ def test_unhappy_flow_wrong_dezi_public_key(
     [
         ("case_nr", "JWT token is missing 'case_nr' claim"),
         ("dezi_jwt", "JWT token is missing 'dezi_jwt' claim"),
-        ("breaking_glass", "JWT token is missing 'breaking_glass' claim"),
     ],
 )
 def test_missing_main_jwt_claims(

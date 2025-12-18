@@ -14,30 +14,25 @@ from app.models.pseudonym import Pseudonym
 from app.models.referrals.entry import ReferralEntry
 from app.models.referrals.logging import ReferralLoggingPayload
 from app.models.ura import UraNumber
-from app.services.authorization_services.authorization_interface import BaseAuthService
 
 logger = logging.getLogger(__name__)
 
 
 class ReferralService:
     @inject.autoparams()
-    def __init__(self, database: Database, auth_service: BaseAuthService) -> None:
+    def __init__(self, database: Database) -> None:
         self.database = database
-        self.auth_service = auth_service
 
     def get_referrals_by_domain_and_pseudonym(
         self,
         pseudonym: Pseudonym,
         data_domain: DataDomain,
-        client_ura_number: UraNumber,
-        breaking_glass: bool = False,
     ) -> List[ReferralEntry]:
         """
         Method that gets all the referrals by pseudonym and data domain
         """
 
         with self.database.get_db_session() as session:
-            # Check toestemming if requesting organization has permission
             referral_repository = session.get_repository(ReferralRepository)
             entities = referral_repository.query_referrals(
                 pseudonym=str(pseudonym), data_domain=str(data_domain), ura_number=None
@@ -45,27 +40,7 @@ class ReferralService:
             if not entities:
                 logger.info(f"No referrals found for pseudonym {str(pseudonym)} and data domain {str(data_domain)}")
                 raise HTTPException(status_code=404)
-
-            if breaking_glass:
-                # If JWT is provided an Break the Glass scenario is assumed
-                logger.info(
-                    f"Break the Glass scenario for pseudonym {str(pseudonym)} and data domain {str(data_domain)}"
-                )
-                # In this case, we assume all entities are allowed as we could not ask for toestemming
-                return [ReferralEntry.from_entity(e) for e in entities]
-            allowed_entities: List[ReferralEntry] = []
-
-            for entity in entities:
-                # Check toestemming if sharing organization has permission
-                otv_permission = self.auth_service.is_authorized(
-                    lmr_endpoint=entity.lmr_endpoint,
-                    client_ura_number=client_ura_number,
-                    encrypted_lmr_id=entity.encrypted_lmr_id,
-                )
-
-                if otv_permission:
-                    allowed_entities.append(ReferralEntry.from_entity(entity))
-            return allowed_entities
+            return [ReferralEntry.from_entity(e) for e in entities]
 
     def add_one(
         self,

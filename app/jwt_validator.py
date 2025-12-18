@@ -69,7 +69,7 @@ class JwtValidator:
 
     def __validate_lrs_jwt_claims(self, decoded_token: Dict[str, Any]) -> None:
         """Validate required claims in the main JWT token."""
-        required_claims = ["case_nr", "dezi_jwt", "breaking_glass"]
+        required_claims = ["case_nr", "dezi_jwt"]
         for claim in required_claims:
             if claim not in decoded_token:
                 raise JwtValidationError(f"JWT token is missing '{claim}' claim")

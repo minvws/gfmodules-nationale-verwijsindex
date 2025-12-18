@@ -9,9 +9,6 @@ from app.db.db import Database
 from app.jwt_validator import JwtValidator
 from app.middleware.ura.factory import create_ura_middleware
 from app.middleware.ura.ura_middleware import UraMiddleware
-from app.services.authorization_services.authorization_interface import BaseAuthService
-from app.services.authorization_services.lmr_service import LmrService
-from app.services.authorization_services.stub import StubAuthService
 from app.services.decrypt_service import DecryptService
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.prs.registration_service import PrsRegistrationService
@@ -53,18 +50,7 @@ def container_config(binder: inject.Binder) -> None:
     db = Database(config_database=config.database)
     binder.bind(Database, db)
 
-    auth_service: BaseAuthService
-    if config.app.authorization_service:
-        auth_service = LmrService(
-            mtls_cert=config.lmr_api.mtls_cert,
-            mtls_key=config.lmr_api.mtls_key,
-            mtls_ca=config.lmr_api.mtls_ca,
-        )
-    else:
-        auth_service = StubAuthService()
-    binder.bind(BaseAuthService, auth_service)
-
-    referral_service = ReferralService(database=db, auth_service=auth_service)
+    referral_service = ReferralService(database=db)
     binder.bind(ReferralService, referral_service)
 
     decrypt_service = DecryptService(mtls_key=config.pseudonym_api.mtls_key)
