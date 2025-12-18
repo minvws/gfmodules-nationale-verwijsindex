@@ -32,7 +32,6 @@ class HttpService:
     ) -> Response:
         try:
             cert = (self._mtls_cert, self._mtls_key) if self._mtls_cert and self._mtls_key else None
-            verify = self._mtls_ca if self._mtls_ca else True
             response = request(
                 method=method,
                 url=f"{self._endpoint}/{sub_route}" if sub_route else self._endpoint,
@@ -41,7 +40,7 @@ class HttpService:
                 json=data,
                 timeout=self._timeout,
                 cert=cert,
-                verify=verify,
+                verify=True,
             )
 
             return response
