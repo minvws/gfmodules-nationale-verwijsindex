@@ -3,7 +3,6 @@ from app.config import (
     ConfigApp,
     ConfigDatabase,
     ConfigDeziRegister,
-    ConfigLmrApi,
     ConfigPseudonymApi,
     ConfigStats,
     ConfigTelemetry,
@@ -17,7 +16,6 @@ def get_test_config() -> Config:
         app=ConfigApp(
             loglevel=LogLevel.error,
             provider_id="84de3f9c-0113-4fbb-af4b-215715e631bd",
-            authorization_service=False,
         ),
         database=ConfigDatabase(
             dsn="sqlite:///:memory:",
@@ -25,12 +23,6 @@ def get_test_config() -> Config:
         ),
         pseudonym_api=ConfigPseudonymApi(
             endpoint="http://example.com",
-            timeout=30,
-            mtls_cert="",
-            mtls_key="",
-            mtls_ca="",
-        ),
-        lmr_api=ConfigLmrApi(
             timeout=30,
             mtls_cert="",
             mtls_key="",

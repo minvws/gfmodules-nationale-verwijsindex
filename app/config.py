@@ -30,7 +30,6 @@ class ConfigApp(BaseModel):
     swagger_enabled: bool = Field(default=False)
     docs_url: str = Field(default="/docs")
     redoc_url: str = Field(default="/redoc")
-    authorization_service: bool = Field(default=True)
 
 
 class ConfigDeziRegister(BaseModel):
@@ -52,13 +51,6 @@ class ConfigDatabase(BaseModel):
     max_overflow: int = Field(default=10, ge=0, lt=100)
     pool_pre_ping: bool = Field(default=False)
     pool_recycle: int = Field(default=3600, ge=0)
-
-
-class ConfigLmrApi(BaseModel):
-    timeout: int = Field(default=10, gt=0)
-    mtls_cert: str | None = Field(default=None)
-    mtls_key: str | None = Field(default=None)
-    mtls_ca: str | None = Field(default=None)
 
 
 class ConfigPseudonymApi(BaseModel):
@@ -101,7 +93,6 @@ class Config(BaseModel):
     pseudonym_api: ConfigPseudonymApi
     telemetry: ConfigTelemetry
     stats: ConfigStats
-    lmr_api: ConfigLmrApi
     ura_middleware: ConfigUraMiddleware
     dezi_register: ConfigDeziRegister
 
