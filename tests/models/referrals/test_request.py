@@ -17,6 +17,7 @@ def test_deserialize_create_referral_request_should_succed() -> None:
         "data_domain": "domain",
         "ura_number": "00000123",
         "requesting_uzi_number": "123456",
+        "organization_type": "Hospital",
     }
 
     data = CreateReferralRequest(
@@ -25,6 +26,7 @@ def test_deserialize_create_referral_request_should_succed() -> None:
         data_domain=DataDomain("domain"),
         ura_number=UraNumber("123"),
         requesting_uzi_number="123456",
+        organization_type="Hospital",
     )
 
     actual = data.model_dump()
@@ -39,6 +41,7 @@ def test_serialize_create_referral_request_should_succeed() -> None:
         data_domain=DataDomain("domain"),
         ura_number=UraNumber("123"),
         requesting_uzi_number="123456",
+        organization_type="Hospital",
     )
     data = {
         "oprf_jwe": "jwe",
@@ -46,6 +49,7 @@ def test_serialize_create_referral_request_should_succeed() -> None:
         "data_domain": "domain",
         "ura_number": "00000123",
         "requesting_uzi_number": "123456",
+        "organization_type": "Hospital",
     }
 
     actual = CreateReferralRequest.model_validate(data)
@@ -62,6 +66,7 @@ def test_serialize_create_referral_request_should_succeed() -> None:
             "data_domain": "domain",
             "ura_number": "abcd",
             "requesting_uzi_number": "123456",
+            "oganization_type": "Pharmacy",
         },
         {
             "oprf_jwe": "jwe",
@@ -69,6 +74,7 @@ def test_serialize_create_referral_request_should_succeed() -> None:
             "data_domain": "domain",
             "ura_number": "00000000000123",
             "requesting_uzi_number": "123456",
+            "oganization_type": "Hospital",
         },
     ],
 )
@@ -85,12 +91,14 @@ def test_serialize_referral_query_should_succeed() -> None:
         blind_factor="factor",
         data_domain=DataDomain("domain"),
         ura_number=UraNumber(123),
+        organization_type="Hospital",
     )
     expected = {
         "oprf_jwe": "jwe",
         "blind_factor": "factor",
         "data_domain": "domain",
         "ura_number": "00000123",
+        "organization_type": "Hospital",
     }
 
     actual = data.model_dump()
@@ -104,12 +112,14 @@ def test_deserialize_referral_query_should_succeeds() -> None:
         "blind_factor": "factor",
         "data_domain": "domain",
         "ura_number": "00000123",
+        "organization_type": "Hospital",
     }
     expected = ReferralQuery(
         oprf_jwe="jwe",
         blind_factor="factor",
         data_domain=DataDomain("domain"),
         ura_number=UraNumber(123),
+        organization_type="Hospital",
     )
 
     actual = ReferralQuery.model_validate(data)
