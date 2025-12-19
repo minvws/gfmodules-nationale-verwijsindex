@@ -26,7 +26,7 @@ def get_test_config() -> Config:
             timeout=30,
             mtls_cert="",
             mtls_key="",
-            mtls_ca="",
+            verify_ca=True,
         ),
         telemetry=ConfigTelemetry(
             enabled=False,
@@ -36,7 +36,9 @@ def get_test_config() -> Config:
         ),
         stats=ConfigStats(enabled=False, host=None, port=None, module_name=None),
         ura_middleware=ConfigUraMiddleware(
-            override_authentication_ura=None, use_authentication_ura_allowlist=False, allowlist_cache_in_seconds=40
+            override_authentication_ura=None,
+            use_authentication_ura_allowlist=False,
+            allowlist_cache_in_seconds=40,
         ),
         dezi_register=ConfigDeziRegister(
             uzi_server_certificate_ca_cert_path="/test/secrets/ca.crt",

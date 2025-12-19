@@ -58,7 +58,7 @@ class ConfigPseudonymApi(BaseModel):
     timeout: int = Field(default=30, gt=0)
     mtls_cert: str
     mtls_key: str
-    mtls_ca: str
+    verify_ca: str | bool = Field(default=True)
 
 
 class ConfigUvicorn(BaseModel):
