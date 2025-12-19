@@ -10,6 +10,7 @@ class ReferralRequest(BaseModel):
     oprf_jwe: str
     blind_factor: str
     data_domain: DataDomain
+    organization_type: str | None = None
 
     @field_validator("data_domain", mode="before")
     @classmethod
@@ -46,6 +47,7 @@ class ReferralQuery(BaseModel):
     blind_factor: str | None = None
     data_domain: DataDomain | None = None
     ura_number: UraNumber
+    organization_type: str | None = None
 
     @model_validator(mode="after")
     @classmethod
