@@ -24,8 +24,6 @@ class ReferralRequest(BaseModel):
 class CreateReferralRequest(ReferralRequest):
     ura_number: UraNumber
     requesting_uzi_number: str
-    encrypted_lmr_id: str
-    lmr_endpoint: str
 
     @field_validator("ura_number", mode="before")
     @classmethod

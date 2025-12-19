@@ -11,8 +11,6 @@ def mock_referral_entity() -> ReferralEntity:
         ura_number="0000123",
         pseudonym="some-pseudonym",
         data_domain="ImagingStudy",
-        encrypted_lmr_id="some-id",
-        lmr_endpoint="http://example.com",
         organization_type="Hospital",
     )
 
@@ -40,8 +38,6 @@ def test_find_many_should_return_two_item(
         ura_number="0000123",
         pseudonym="some-pseudonym",
         data_domain="MedicationStatement",
-        encrypted_lmr_id="some-id",
-        lmr_endpoint="http://example.com",
     )
     with referral_repository.db_session:
         referral_repository.add_one(mock_referral_entity)
@@ -86,8 +82,6 @@ def test_add_one_with_same_values_should_raise_exception(
             ura_number=mock_referral_entity.ura_number,
             pseudonym=mock_referral_entity.pseudonym,
             data_domain=mock_referral_entity.data_domain,
-            encrypted_lmr_id=mock_referral_entity.encrypted_lmr_id,
-            lmr_endpoint=mock_referral_entity.lmr_endpoint,
         )
         referral_repository.add_one(mock_referral_entity)
         with pytest.raises(SQLAlchemyError) as exec:

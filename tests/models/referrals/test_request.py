@@ -17,8 +17,6 @@ def test_deserialize_create_referral_request_should_succed() -> None:
         "data_domain": "domain",
         "ura_number": "00000123",
         "requesting_uzi_number": "123456",
-        "encrypted_lmr_id": "some-id",
-        "lmr_endpoint": "http://example.com",
     }
 
     data = CreateReferralRequest(
@@ -27,8 +25,6 @@ def test_deserialize_create_referral_request_should_succed() -> None:
         data_domain=DataDomain("domain"),
         ura_number=UraNumber("123"),
         requesting_uzi_number="123456",
-        encrypted_lmr_id="some-id",
-        lmr_endpoint="http://example.com",
     )
 
     actual = data.model_dump()
@@ -43,8 +39,6 @@ def test_serialize_create_referral_request_should_succeed() -> None:
         data_domain=DataDomain("domain"),
         ura_number=UraNumber("123"),
         requesting_uzi_number="123456",
-        encrypted_lmr_id="some-id",
-        lmr_endpoint="http://example.com",
     )
     data = {
         "oprf_jwe": "jwe",
@@ -52,8 +46,6 @@ def test_serialize_create_referral_request_should_succeed() -> None:
         "data_domain": "domain",
         "ura_number": "00000123",
         "requesting_uzi_number": "123456",
-        "encrypted_lmr_id": "some-id",
-        "lmr_endpoint": "http://example.com",
     }
 
     actual = CreateReferralRequest.model_validate(data)
@@ -70,8 +62,6 @@ def test_serialize_create_referral_request_should_succeed() -> None:
             "data_domain": "domain",
             "ura_number": "abcd",
             "requesting_uzi_number": "123456",
-            "encrypted_lmr_id": "some-id",
-            "lmr_endpoint": "http://example.com",
         },
         {
             "oprf_jwe": "jwe",
@@ -79,8 +69,6 @@ def test_serialize_create_referral_request_should_succeed() -> None:
             "data_domain": "domain",
             "ura_number": "00000000000123",
             "requesting_uzi_number": "123456",
-            "encrypted_lmr_id": "some-id",
-            "lmr_endpoint": "http://example.com",
         },
     ],
 )
