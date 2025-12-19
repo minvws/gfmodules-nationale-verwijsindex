@@ -14,16 +14,12 @@ def test_serialize_should_succeed() -> None:
         "pseudonym": "encrypted data",
         "data_domain": "ImagingStudy",
         "ura_number": "00000123",
-        "encrypted_lmr_id": "encrypted id",
-        "lmr_endpoint": "http://example.com",
         "organization_type": "Hospital",
     }
     data = ReferralEntry(
         pseudonym=Pseudonym("encrypted data"),
         data_domain=DataDomain("ImagingStudy"),
         ura_number=UraNumber("123"),
-        encrypted_lmr_id="encrypted id",
-        lmr_endpoint="http://example.com",
         organization_type="Hospital",
     )
 
@@ -37,15 +33,11 @@ def test_deserialize_should_succeed() -> None:
         "pseudonym": "data",
         "data_domain": "ImagingStudy",
         "ura_number": 123,
-        "encrypted_lmr_id": "encrypted id",
-        "lmr_endpoint": "http://example.com",
     }
     expected = ReferralEntry(
         pseudonym=Pseudonym("data"),
         data_domain=DataDomain("ImagingStudy"),
         ura_number=UraNumber("123"),
-        encrypted_lmr_id="encrypted id",
-        lmr_endpoint="http://example.com",
     )
 
     actual = ReferralEntry.model_validate(data)
@@ -63,15 +55,11 @@ def test_deserialize_should_succeed() -> None:
             "pseudonym": "value",
             "data_domain": "value",
             "ura_number": "abc123",
-            "encrypted_lmr_id": "value",
-            "lmr_endpoint": "value",
         },
         {
             "pseudonym": "value",
             "data_domain": "value",
             "ura_number": 123456789010,
-            "encrypted_lmr_id": "value",
-            "lmr_endpoint": "value",
         },
     ],
 )
@@ -87,15 +75,11 @@ def test_from_entity_should_succeed() -> None:
         ura_number="00000123",
         pseudonym="some-pseudonym",
         data_domain="ImagingStudy",
-        encrypted_lmr_id="some-id",
-        lmr_endpoint="http://example.com",
     )
     expected = ReferralEntry(
         ura_number=UraNumber("123"),
         pseudonym=Pseudonym("some-pseudonym"),
         data_domain=DataDomain("ImagingStudy"),
-        encrypted_lmr_id="some-id",
-        lmr_endpoint="http://example.com",
     )
 
     actual = ReferralEntry.from_entity(data)

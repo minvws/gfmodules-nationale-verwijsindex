@@ -10,8 +10,6 @@ class ReferralEntry(BaseModel):
     pseudonym: Pseudonym
     data_domain: DataDomain
     ura_number: UraNumber
-    encrypted_lmr_id: str
-    lmr_endpoint: str
     organization_type: str | None = None
 
     @field_serializer("ura_number")
@@ -53,7 +51,5 @@ class ReferralEntry(BaseModel):
             ura_number=UraNumber(entity.ura_number),
             pseudonym=Pseudonym(value=entity.pseudonym),
             data_domain=DataDomain(value=entity.data_domain),
-            encrypted_lmr_id=entity.encrypted_lmr_id,
-            lmr_endpoint=entity.lmr_endpoint,
             organization_type=entity.organization_type,
         )

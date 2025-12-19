@@ -49,8 +49,6 @@ class ReferralService:
         ura_number: UraNumber,
         uzi_number: str,
         request_url: str,
-        encrypted_lmr_id: str,
-        lmr_endpoint: str,
         organization_type: str | None = None,
     ) -> ReferralEntry:
         """
@@ -66,8 +64,6 @@ class ReferralService:
                 payload={
                     "pseudonym": str(pseudonym),
                     "data_domain": str(data_domain),
-                    "encrypted_lmr_id": encrypted_lmr_id,
-                    "lmr_endpoint": lmr_endpoint,
                     "organization_type": organization_type,
                 },
             )
@@ -87,8 +83,6 @@ class ReferralService:
                     pseudonym=str(pseudonym),
                     data_domain=str(data_domain),
                     ura_number=str(ura_number),
-                    encrypted_lmr_id=encrypted_lmr_id,
-                    lmr_endpoint=lmr_endpoint,
                     organization_type=organization_type,
                 )
             )

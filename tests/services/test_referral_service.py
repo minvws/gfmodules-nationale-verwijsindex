@@ -14,8 +14,6 @@ def mock_referral() -> ReferralEntry:
         ura_number=UraNumber("123"),
         pseudonym=Pseudonym(value="6d87d96a-cb78-4f5c-823b-578095da2c4a"),
         data_domain=DataDomain(value="ImagingStudy"),
-        encrypted_lmr_id="encrypted_lmr_id_12345",
-        lmr_endpoint="https://example.com",
         organization_type="Hospital",
     )
 
@@ -25,8 +23,6 @@ def test_add_one_should_succeed(referral_service: ReferralService, mock_referral
         pseudonym=mock_referral.pseudonym,
         data_domain=mock_referral.data_domain,
         ura_number=mock_referral.ura_number,
-        encrypted_lmr_id=mock_referral.encrypted_lmr_id,
-        lmr_endpoint=mock_referral.lmr_endpoint,
         uzi_number="12345678",
         request_url="http://example.com",
         organization_type=mock_referral.organization_type,
@@ -42,8 +38,6 @@ def test_add_referral_should_raise_exception_with_duplicates(
         pseudonym=mock_referral.pseudonym,
         data_domain=mock_referral.data_domain,
         ura_number=mock_referral.ura_number,
-        encrypted_lmr_id=mock_referral.encrypted_lmr_id,
-        lmr_endpoint=mock_referral.lmr_endpoint,
         uzi_number="12345678",
         request_url="http://example.com",
         organization_type=mock_referral.organization_type,
@@ -53,8 +47,6 @@ def test_add_referral_should_raise_exception_with_duplicates(
             pseudonym=mock_referral.pseudonym,
             data_domain=mock_referral.data_domain,
             ura_number=mock_referral.ura_number,
-            encrypted_lmr_id=mock_referral.encrypted_lmr_id,
-            lmr_endpoint=mock_referral.lmr_endpoint,
             uzi_number="12345678",
             request_url="http://example.com",
             organization_type=mock_referral.organization_type,
@@ -70,8 +62,6 @@ def test_get_referral_by_domain_and_pseudonym_should_succeed(
         pseudonym=mock_referral.pseudonym,
         data_domain=mock_referral.data_domain,
         ura_number=mock_referral.ura_number,
-        encrypted_lmr_id=mock_referral.encrypted_lmr_id,
-        lmr_endpoint=mock_referral.lmr_endpoint,
         uzi_number="12345678",
         request_url="http://example.com",
         organization_type=mock_referral.organization_type,
@@ -102,8 +92,6 @@ def test_delete_referral_should_succeed(referral_service: ReferralService, mock_
         pseudonym=mock_referral.pseudonym,
         data_domain=mock_referral.data_domain,
         ura_number=mock_referral.ura_number,
-        encrypted_lmr_id=mock_referral.encrypted_lmr_id,
-        lmr_endpoint=mock_referral.lmr_endpoint,
         uzi_number="12345678",
         request_url="http://example.com",
         organization_type=mock_referral.organization_type,
@@ -145,8 +133,6 @@ def test_query_referral_single_item(referral_service: ReferralService, mock_refe
         ura_number=mock_referral.ura_number,
         uzi_number="testuzinumber",
         request_url="https://test",
-        lmr_endpoint="https://example.com",
-        encrypted_lmr_id="encrypted_lmr_id_12345",
         organization_type=mock_referral.organization_type,
     )
 
@@ -168,8 +154,6 @@ def test_query_referral_two_items(referral_service: ReferralService, ura_number:
         data_domain=DataDomain("ImagingStudy"),
         ura_number=ura_number,
         request_url="http://example.com",
-        encrypted_lmr_id="encrypted_lmr_id_12345",
-        lmr_endpoint="https://example.com",
     )
 
     referral_service.add_one(
@@ -178,8 +162,6 @@ def test_query_referral_two_items(referral_service: ReferralService, ura_number:
         ura_number=ura_number,
         uzi_number="testuzi_number",
         request_url="http://example.com",
-        lmr_endpoint="https://example.com",
-        encrypted_lmr_id="encrypted_lmr_id_12345",
     )
 
     actual_referrals = referral_service.query_referrals(

@@ -50,14 +50,12 @@ def create_referral(
         logger.error(f"Failed to exchange pseudonym: {e}")
         return Response(status_code=404)
 
-    referral: ReferralEntry = referral_service.add_one(
+    referral = referral_service.add_one(
         pseudonym=localisation_pseudonym,
         data_domain=payload.data_domain,
         ura_number=payload.ura_number,
         uzi_number=payload.requesting_uzi_number,
         request_url=str(request.url),
-        encrypted_lmr_id=payload.encrypted_lmr_id,
-        lmr_endpoint=payload.lmr_endpoint,
     )
     span.set_attribute("data.referral", str(referral))
 
