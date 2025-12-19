@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from app import container
 from app.config import Config, load_default_config
 from app.dependencies import get_prs_registration_service
+from app.routers.data_reference import router as data_reference_router
 from app.routers.default import router as default_router
 from app.routers.health import router as health_router
 from app.routers.info_referrals import router as info_referral_router
@@ -60,7 +61,13 @@ def setup_fastapi(config: Config) -> FastAPI:
     )
     container.configure()
 
-    routers = [default_router, health_router, referral_router, info_referral_router]
+    routers = [
+        default_router,
+        health_router,
+        referral_router,
+        info_referral_router,
+        data_reference_router,
+    ]
     for router in routers:
         fastapi.include_router(router)
 
