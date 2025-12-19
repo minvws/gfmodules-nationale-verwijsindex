@@ -52,7 +52,7 @@ endpoint=http://localhost:8504
 timeout=10
 # mtls_cert=secrets/ssl/pseudonym_api.cert
 # mtls_key=secrets/ssl/pseudonym_api.key
-# mtls_ca=secrets/ssl/pseudonym_api_ca.cert
+# verify_ca=secrets/ssl/pseudonym_api_ca.cert
 
 [telemetry]
 # Telemetry is enabled or not
