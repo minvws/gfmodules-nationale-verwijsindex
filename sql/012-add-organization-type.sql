@@ -1,1 +1,1 @@
-ALTER TABLE referrals ADD COLUMN organizaton_type VARCHAR(150);
+ALTER TABLE referrals ADD COLUMN organization_type VARCHAR(150);
