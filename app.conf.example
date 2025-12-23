@@ -87,3 +87,11 @@ use_ssl = False
 ssl_base_dir = secrets/ssl
 ssl_cert_file = server.cert
 ssl_key_file = server.key
+
+[oauth]
+# OAuth is enabled or not
+enabled = True
+# Certificate Authority for OAuth server
+ca_cert = secrets/uzi-server-ca.crt
+# Token lifetime in seconds
+token_lifetime_seconds = 3600

@@ -87,6 +87,12 @@ class ConfigStats(BaseModel):
     module_name: str | None
 
 
+class ConfigOAuth(BaseModel):
+    enabled: bool = Field(default=False)
+    ca_cert: str | None = Field(default=None)
+    token_lifetime_seconds: int = Field(default=3600, gt=0)
+
+
 class Config(BaseModel):
     app: ConfigApp
     database: ConfigDatabase
@@ -95,6 +101,7 @@ class Config(BaseModel):
     stats: ConfigStats
     ura_middleware: ConfigUraMiddleware
     dezi_register: ConfigDeziRegister
+    oauth: ConfigOAuth
 
 
 def read_ini_file(path: Path) -> Any:

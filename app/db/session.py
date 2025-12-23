@@ -87,6 +87,15 @@ class DbSession:
         """
         self._retry(self.session.add, entry)
 
+    def merge(self, entry: Base) -> Base:
+        """
+        Merge a resource into the session, so it will be inserted/updated in the database on the next commit
+
+        :param entry:
+        :return:
+        """
+        return self._retry(self.session.merge, entry)
+
     def delete(self, entry: Base) -> None:
         """
         Delete a resource from the session, so it will be deleted from the database on the next commit

@@ -4,11 +4,11 @@ from fastapi import FastAPI
 
 from app import container
 from app.config import Config, load_default_config
-from app.dependencies import get_prs_registration_service
 from app.routers.data_reference import router as data_reference_router
 from app.routers.default import router as default_router
 from app.routers.health import router as health_router
 from app.routers.info_referrals import router as info_referral_router
+from app.routers.oauth import router as oauth_router
 from app.routers.referrals import router as referral_router
 from app.stats import StatsdMiddleware, setup_stats
 from app.telemetry import setup_telemetry
@@ -45,8 +45,9 @@ def setup_logging(config: Config) -> None:
 
 
 def register_at_prs() -> None:
-    prs_registration_service = get_prs_registration_service()
-    prs_registration_service.register_nvi_at_prs()
+    # prs_registration_service = get_prs_registration_service()
+    # prs_registration_service.register_nvi_at_prs()
+    pass
 
 
 def setup_fastapi(config: Config) -> FastAPI:
@@ -68,6 +69,9 @@ def setup_fastapi(config: Config) -> FastAPI:
         info_referral_router,
         data_reference_router,
     ]
+    if config.oauth.enabled:
+        routers.append(oauth_router)
+
     for router in routers:
         fastapi.include_router(router)
 

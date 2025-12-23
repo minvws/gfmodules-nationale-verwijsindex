@@ -10,6 +10,7 @@ from app.jwt_validator import JwtValidator
 from app.middleware.ura.factory import create_ura_middleware
 from app.middleware.ura.ura_middleware import UraMiddleware
 from app.services.decrypt_service import DecryptService
+from app.services.oauth import OAuthService
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.prs.registration_service import PrsRegistrationService
 from app.services.referral_service import ReferralService
@@ -80,6 +81,9 @@ def container_config(binder: inject.Binder) -> None:
 
     ura_middleware = create_ura_middleware(config.ura_middleware, db)
     binder.bind(UraMiddleware, ura_middleware)
+
+    oauth_service = OAuthService(db, config.oauth)
+    binder.bind(OAuthService, oauth_service)
 
 
 def configure() -> None:

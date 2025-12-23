@@ -3,6 +3,7 @@ from app.config import (
     ConfigApp,
     ConfigDatabase,
     ConfigDeziRegister,
+    ConfigOAuth,
     ConfigPseudonymApi,
     ConfigStats,
     ConfigTelemetry,
@@ -43,5 +44,10 @@ def get_test_config() -> Config:
         dezi_register=ConfigDeziRegister(
             uzi_server_certificate_ca_cert_path="/test/secrets/ca.crt",
             dezi_register_trusted_signing_certs_store_path="/test/secrets/nvi/",
+        ),
+        oauth=ConfigOAuth(
+            enabled=True,
+            ca_cert="/test/secrets/ca.crt",
+            token_lifetime_seconds=30,
         ),
     )
