@@ -10,16 +10,19 @@ from app.models.ura import UraNumber
 
 
 class DataReferenceRequestBase(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel)
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     source: str
 
     @field_validator("source", mode="before")
     @classmethod
-    def deserialize_ura(cls, val: object) -> UraNumber:
-        if not isinstance(val, UraNumber):
-            return UraNumber(val)
-        return val
+    def deserialize_source(cls, val: object) -> str:
+        if isinstance(val, UraNumber):
+            return str(UraNumber(val))
+
+        valid_ura = UraNumber(val)
+
+        return str(valid_ura)
 
     @field_serializer("source")
     def serialize_source(self, source: UraNumber) -> str:
@@ -28,5 +31,5 @@ class DataReferenceRequestBase(BaseModel):
 
 class DataReferenceRequestParams(DataReferenceRequestBase):
     pseudonym: str | None = None
-    oprfkey: str | None = None
+    oprf_key: str | None = None
     care_context: str | None = None

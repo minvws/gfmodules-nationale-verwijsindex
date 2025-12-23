@@ -23,9 +23,9 @@ def get_reference(
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
 ) -> List[ReferralEntry]:
-    if params.pseudonym and params.oprfkey:
+    if params.pseudonym and params.oprf_key:
         try:
-            localisation_pseudonym = pseudonym_service.exchange(oprf_jwe=params.pseudonym, blind_factor=params.oprfkey)
+            localisation_pseudonym = pseudonym_service.exchange(oprf_jwe=params.pseudonym, blind_factor=params.oprf_key)
         except Exception as e:
             logger.error(f"Failed to exchange pseudonym: {e}")
             raise HTTPException(status_code=404)
@@ -46,9 +46,9 @@ def delete_reference(
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
 ) -> Any:
-    if params.pseudonym and params.oprfkey:
+    if params.pseudonym and params.oprf_key:
         try:
-            localisation_pseudonym = pseudonym_service.exchange(oprf_jwe=params.pseudonym, blind_factor=params.oprfkey)
+            localisation_pseudonym = pseudonym_service.exchange(oprf_jwe=params.pseudonym, blind_factor=params.oprf_key)
         except Exception as e:
             logger.error(f"Failed to exchange pseudonym: {e}")
             raise HTTPException(status_code=404)

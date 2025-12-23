@@ -71,10 +71,11 @@ class ReferralRepository(RepositoryBase):
             if pseudonym:
                 stmt = stmt.where(ReferralEntity.pseudonym == pseudonym)
 
-            if pseudonym:
+            if data_domain:
                 stmt.where(ReferralEntity.data_domain == data_domain)
 
             self.db_session.session.execute(stmt)
+            self.db_session.commit()
         except SQLAlchemyError as exc:
             self.db_session.rollback()
             raise exc
