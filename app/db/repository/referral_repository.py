@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from sqlalchemy import exists, select
+from sqlalchemy import delete, exists, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db.decorator import repository
@@ -60,13 +60,42 @@ class ReferralRepository(RepositoryBase):
             self.db_session.rollback()
             raise exc
 
-    def exists(self, pseudonym: str, data_domain: str, ura_number: str) -> bool:
+    def delete(
+        self,
+        ura_number: str,
+        pseudonym: str | None = None,
+        data_domain: str | None = None,
+    ) -> None:
+        try:
+            stmt = delete(ReferralEntity).where(ReferralEntity.ura_number == ura_number)
+            if pseudonym:
+                stmt = stmt.where(ReferralEntity.pseudonym == pseudonym)
+
+            if data_domain:
+                stmt.where(ReferralEntity.data_domain == data_domain)
+
+            self.db_session.session.execute(stmt)
+            self.db_session.commit()
+        except SQLAlchemyError as exc:
+            self.db_session.rollback()
+            raise exc
+
+    def exists(
+        self,
+        ura_number: str,
+        pseudonym: str | None = None,
+        data_domain: str | None = None,
+    ) -> bool:
         stmt = select(
             exists().where(
-                ReferralEntity.pseudonym == pseudonym,
-                ReferralEntity.data_domain == data_domain,
                 ReferralEntity.ura_number == ura_number,
             )
         )
+        if pseudonym:
+            stmt = stmt.where(ReferralEntity.pseudonym == pseudonym)
+
+        if data_domain:
+            stmt = stmt.where(ReferralEntity.data_domain == data_domain)
+
         results = self.db_session.session.execute(stmt).scalar()
         return results or False

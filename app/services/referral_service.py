@@ -126,6 +126,64 @@ class ReferralService:
 
             referral_repository.delete_one(referral)
 
+    def get_specific_patient(
+        self, ura_number: UraNumber, pseudonym: Pseudonym, data_domain: DataDomain
+    ) -> List[ReferralEntry]:
+        with self.database.get_db_session() as session:
+            repo = session.get_repository(ReferralRepository)
+            data = repo.find_many(
+                pseudonym=str(pseudonym),
+                data_domain=str(data_domain),
+                ura_number=str(ura_number),
+            )
+
+        return [ReferralEntry.from_entity(e) for e in data]
+
+    def get_all_registrations(self, ura_number: UraNumber) -> List[ReferralEntry]:
+        with self.database.get_db_session() as session:
+            repo = session.get_repository(ReferralRepository)
+            data = repo.find_many(ura_number=str(ura_number))
+
+        return [ReferralEntry.from_entity(e) for e in data]
+
+    def delete_patient_registrations(self, ura_number: UraNumber, pseudonym: Pseudonym) -> None:
+        with self.database.get_db_session() as session:
+            repo = session.get_repository(ReferralRepository)
+            exists = repo.exists(ura_number=str(ura_number), pseudonym=str(pseudonym))
+            if not exists:
+                # this should be specific
+                raise HTTPException(status_code=404)
+
+            repo.delete(ura_number=str(ura_number), pseudonym=str(pseudonym))
+
+    def delete_specific_registration(
+        self, ura_number: UraNumber, data_domain: DataDomain, pseudonym: Pseudonym
+    ) -> None:
+        with self.database.get_db_session() as session:
+            repo = session.get_repository(ReferralRepository)
+            exists = repo.exists(
+                ura_number=str(ura_number),
+                data_domain=str(data_domain),
+                pseudonym=str(pseudonym),
+            )
+            if not exists:
+                raise HTTPException(status_code=404)
+
+            repo.delete(
+                ura_number=str(ura_number),
+                pseudonym=str(pseudonym),
+                data_domain=str(data_domain),
+            )
+
+    def delete_specific_organization(self, ura_number: UraNumber) -> None:
+        with self.database.get_db_session() as session:
+            repo = session.get_repository(ReferralRepository)
+            org_exists = repo.exists(ura_number=str(ura_number))
+            if not org_exists:
+                raise HTTPException(status_code=404)
+
+            repo.delete(ura_number=str(ura_number))
+
     def query_referrals(
         self,
         pseudonym: Pseudonym | None,
