@@ -1,14 +1,17 @@
 import logging
 from typing import Annotated, Any, List
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
 from app import dependencies
 from app.models.data_domain import DataDomain
 from app.models.data_reference.requests import (
     DataReferenceRequestParams,
 )
-from app.models.referrals.entry import ReferralEntry
+from app.models.data_reference.resource import (
+    NVIDataReferenceOutput,
+    NVIDataRefrenceInput,
+)
 from app.models.ura import UraNumber
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
@@ -22,7 +25,7 @@ def get_reference(
     params: Annotated[DataReferenceRequestParams, Query()],
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
-) -> List[ReferralEntry]:
+) -> List[NVIDataReferenceOutput]:
     if params.pseudonym and params.oprf_key:
         try:
             localisation_pseudonym = pseudonym_service.exchange(oprf_jwe=params.pseudonym, blind_factor=params.oprf_key)
@@ -69,3 +72,29 @@ def delete_reference(
 
     referral_service.delete_specific_organization(ura_number=UraNumber(params.source))
     return Response(status_code=204)
+
+
+@router.post("/")
+def create_reference(
+    request: Request,
+    data: NVIDataRefrenceInput,
+    referral_service: ReferralService = Depends(dependencies.get_referral_service),
+    pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
+) -> Response:
+    source_url = str(request.url)
+    try:
+        localisatin_pseudonym = pseudonym_service.exchange(oprf_jwe=data.subject.value, blind_factor=data.oprf_key)
+    except Exception as e:
+        logger.error(f"failed to exchange pseudonym: {e}")
+        raise HTTPException(status_code=404)
+
+    new_reference = referral_service.add_one(
+        pseudonym=localisatin_pseudonym,
+        data_domain=data.get_data_domain(),
+        ura_number=data.get_ura_number(),
+        organization_type=data.get_organization_type(),
+        uzi_number=data.source.value,
+        request_url=source_url,
+    )
+
+    return Response(status_code=201, content=new_reference)
