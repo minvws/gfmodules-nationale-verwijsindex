@@ -7,10 +7,10 @@ from app.db.models.referral import ReferralEntity
 from app.models.data_domain import DataDomain
 from app.models.ura import UraNumber
 
-SOURCE_SYSTEM: Final[str] = "urn:oid:2.16.528.1.1007.3.3"  # NO SONAR (S5322)
-SOURCE_TYPE_SYSTEM: Final[str] = "http://vws.nl/fhir/CodeSystem/nvi-organization-types"  # NO SONAR (S5322)
-SUBJECT_SYSTEM: Final[str] = "http://vws.nl/fhir/NamingSystem/nvi-pseudonym"  # NO SONAR (S5322)
-CARE_CONTEXT_SYSTEM: Final[str] = "http://nictiz.nl/fhir/hcim-2024"  # NO SONAR (S5322)
+SOURCE_SYSTEM: Final[str] = "urn:oid:2.16.528.1.1007.3.3"  # NOSONAR
+SOURCE_TYPE_SYSTEM: Final[str] = "http://vws.nl/fhir/CodeSystem/nvi-organization-types"  # NOSONAR
+SUBJECT_SYSTEM: Final[str] = "http://vws.nl/fhir/NamingSystem/nvi-pseudonym"  # NOSONAR
+CARE_CONTEXT_SYSTEM: Final[str] = "http://nictiz.nl/fhir/hcim-2024"  # NOSONAR
 
 
 class Coding(BaseModel):
@@ -40,62 +40,68 @@ class NVIDataReferenceBase(BaseModel):
     @classmethod
     def validate_source(cls, value: Any) -> Identifier:
         if value is None:
-            raise ValidationError("NVIDataReference.source is required")
+            raise ValueError("NVIDataReference.source is required")
 
-        if not isinstance(value, Identifier):
-            raise ValidationError("NVIDataReferece.source must be of type `Identifier`")
+        try:
+            source = Identifier.model_validate(value)
+        except ValidationError:
+            raise ValueError("NVIDataReferece.source must be a valid `Identifier`")
 
-        if value.system != SOURCE_SYSTEM:
-            raise ValidationError(f"NVIDataReferece.source.system unrecoginzed, system must be: {SOURCE_SYSTEM}")
+        if source.system != SOURCE_SYSTEM:
+            raise ValueError(f"NVIDataReferece.source.system unrecognized, system must be: {SOURCE_SYSTEM}")
 
-        return value
+        try:
+            UraNumber(source.value)
+        except ValueError as e:
+            raise ValueError(f"Invalid UraNumber: {e}")
+
+        return source
 
     @field_validator("source_type", mode="before")
     @classmethod
     def validate_source_type(cls, value: Any) -> CodeableConcept:
         if value is None:
-            raise ValidationError("NVIDataReference.sourceType is required")
+            raise ValueError("NVIDataReference.sourceType is required")
 
-        if not isinstance(value, CodeableConcept):
-            raise ValidationError("NVIDataReferece.sourceType must be of type `CodeableConcept`")
+        try:
+            source_type = CodeableConcept.model_validate(value)
+        except ValidationError:
+            raise ValueError("NVIDataReferece.sourceType must be a valid `CodeableConcept`")
 
-        if len(value.coding) != 1:
-            raise ValidationError("NVIDataReference.sourceType.coding must me of length `1`")
+        if len(source_type.coding) != 1:
+            raise ValueError("NVIDataReference.sourceType.coding must me of length `1`")
 
-        coding = value.coding[0]
-
-        if not isinstance(coding, Coding):
-            raise ValidationError("NVIReference.sourceType.coding must be of type `Coding`")
+        coding = source_type.coding[0]
 
         if coding.system != SOURCE_TYPE_SYSTEM:
-            raise ValidationError(
+            raise ValueError(
                 f"NVIDataReference.systemType.coding.system urecognized, system must be: {SOURCE_TYPE_SYSTEM}"
             )
 
-        return value
+        return source_type
 
     @field_validator("care_context", mode="before")
     @classmethod
     def validate_care_context(cls, value: Any) -> CodeableConcept:
         if value is None:
-            raise ValidationError("NVIDataReference.careContext is required")
+            raise ValueError("NVIDataReference.careContext is required")
 
-        if not isinstance(value, CodeableConcept):
-            raise ValidationError("NVIDataReference.careContext must be of type `CodeableConcept`")
+        try:
+            care_context = CodeableConcept.model_validate(value)
+        except ValidationError:
+            raise ValueError("NVIDataReference.careContext must be a valid `CodeableConcept`")
 
-        if len(value.coding) != 1:
-            raise ValidationError("NVIDataReference.careContext.coding must me of length `1`")
+        if len(care_context.coding) != 1:
+            raise ValueError("NVIDataReference.careContext.coding must me of length `1`")
 
-        coding = value.coding[0]
-        if not isinstance(coding, Coding):
-            raise ValidationError("NVIReference.careContext.coding must be of type `Coding`")
+        coding = care_context.coding[0]
 
         if coding.system != CARE_CONTEXT_SYSTEM:
-            raise ValidationError(
-                f"NVIReferenceData.careContext.coding.system unrecoginzed, system must be: {CARE_CONTEXT_SYSTEM}"
+            raise ValueError(
+                f"NVIReferenceData.careContext.coding.system unrecognized, system must be: {CARE_CONTEXT_SYSTEM}"
             )
 
-        return value
+        return care_context
 
     def get_ura_number(self) -> UraNumber:
         return UraNumber(self.source.value)
@@ -115,22 +121,20 @@ class NVIDataRefrenceInput(NVIDataReferenceBase):
     @classmethod
     def validate_subject(cls, value: Any) -> Identifier:
         if value is None:
-            raise ValidationError("NVIDataReference.subject is required")
+            raise ValueError("NVIDataReference.subject is required")
 
-        if not isinstance(value, Identifier):
-            raise ValidationError("NVIDataReference.subject must be of type `Identifier`")
+        try:
+            subject = Identifier.model_validate(value)
+        except ValidationError:
+            raise ValueError("NVIDataReference.subject must be a valid `Identifier`")
 
-        if value.system != SUBJECT_SYSTEM:
-            raise ValidationError(
-                f"NVIDataReference.subject.system unrecoginzed, ssssssssystem must be {SUBJECT_SYSTEM}"
-            )
+        if subject.system != SUBJECT_SYSTEM:
+            raise ValueError(f"NVIDataReference.subject.system unrecognized, system must be {SUBJECT_SYSTEM}")
 
-        return value
+        return subject
 
 
 class NVIDataReferenceOutput(NVIDataReferenceBase):
-    pass
-
     @classmethod
     def from_referral(cls, entity: ReferralEntity) -> "NVIDataReferenceOutput":
         return cls(
