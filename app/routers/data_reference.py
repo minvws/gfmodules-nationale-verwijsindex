@@ -1,5 +1,5 @@
 import logging
-from typing import Annotated, Any, List
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response

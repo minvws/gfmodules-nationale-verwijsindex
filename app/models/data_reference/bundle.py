@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Literal
 
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
@@ -21,7 +21,8 @@ class Bundle(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     id: str | None = None
-    type: str = "searchset"
+    resource_type: Literal["Bundle"] = "Bundle"
+    type: Literal["searchset"] = "searchset"
     timestamp: datetime = datetime.now()
     total: int | None = None
     entry: List[BundleEntry]
