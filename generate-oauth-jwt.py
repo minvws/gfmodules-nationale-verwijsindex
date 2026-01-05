@@ -9,6 +9,7 @@ from typing import List, Optional
 import jwt
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
+from uzireader.uziserver import UziServer
 
 """
 Utility to generate a client_assertion JWT for OAuth2 client_credentials
@@ -16,8 +17,7 @@ Utility to generate a client_assertion JWT for OAuth2 client_credentials
 Usage:
 
     poetry run python generate-oauth-jwt.py \
-        --client-id=ura:12341234 \
-        --mtls-cert secrets/otv-stub.crt \
+        --mtls-cert secrets/epd1.ldn.crt \
         --signing-cert secrets/nvi.crt \
         --signing-key secrets/nvi.key \
         --expires-in 86400 \
@@ -26,7 +26,6 @@ Usage:
         --token-url <url>/oauth/token \
         --out test.jwt
 
-    - client_id must be the URA number prefixed with "ura:". It is the URA found in the mtls-cert certificate.
     - Signing-cert and signing-key are the certificates that created the UZI server TLS cert (UZI server CA).
 
 The generated JWT can then be used as the client_assertion parameter in the token request.
@@ -63,7 +62,6 @@ def cert_to_x5c_b64(cert: x509.Certificate) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Generate OAuth2 client_assertion JWT for /token (client_credentials).")
-    ap.add_argument("--client-id", required=True, help="Client identifier (used for iss and sub).")
     ap.add_argument("--token-url", required=True, help="Audience: exact token endpoint URL (aud).")
     ap.add_argument("--mtls-cert", help="Path to mTLS PEM.")
 
@@ -89,6 +87,12 @@ def main() -> int:
     signing_cert = load_cert_pem(args.signing_cert)
     signing_key = load_private_key_pem(args.signing_key, password=None)
 
+    # Get the URA from the signing cert's subject CN
+    with open(args.signing_cert, "r", encoding="utf-8") as f:
+        cert_pem = f.read()
+    uzi_data = UziServer(verify="SUCCESS", cert=cert_pem)
+    ura_number = uzi_data["SubscriberNumber"]
+
     alg = "RS256"
 
     now = int(time.time())
@@ -96,8 +100,8 @@ def main() -> int:
 
     # Client Assertion claims (common RFC7523 pattern)
     claims = {
-        "iss": args.client_id,
-        "sub": args.client_id,
+        "iss": ura_number,
+        "sub": ura_number,
         "aud": args.token_url,
         "iat": now,
         "exp": now + int(args.expires_in),

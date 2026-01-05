@@ -1,19 +1,18 @@
 #!/bin/sh
 
+CLIENT_CERT="epd-1.ldn.crt"
+
 poetry run python generate-oauth-jwt.py \
-    --client-id=ura:12341234 \
-    --mtls-cert secrets/otv-stub.crt \
-    --signing-cert secrets/nvi.crt \
-    --signing-key secrets/nvi.key \
+    --mtls-cert secrets/${CLIENT_CERT} \
+    --signing-cert secrets/epd-uzi.crt \
+    --signing-key secrets/epd-uzi.key \
     --expires-in 86400 \
     --include-x5c \
-    --scope nvi:read \
     --token-url 'http://localhost:8501/oauth/token' \
     --out test.jwt
 
-
 JWT=$(tr -d '\n' < ./test.jwt)
-CERT=$(tr -d '\n' < ./secrets/otv-stub.crt)
+CERT=$(tr -d '\n' < ./secrets/${CLIENT_CERT})
 
 curl -X POST \
     localhost:8501/oauth/token \
