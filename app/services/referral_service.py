@@ -10,6 +10,7 @@ from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
 from app.logger.referral_request_database_logger import ReferralRequestDatabaseLogger
 from app.models.data_domain import DataDomain
+from app.models.data_reference.resource import NVIDataReferenceOutput
 from app.models.pseudonym import Pseudonym
 from app.models.referrals.entry import ReferralEntry
 from app.models.referrals.logging import ReferralLoggingPayload
@@ -50,7 +51,7 @@ class ReferralService:
         uzi_number: str,
         request_url: str,
         organization_type: str | None = None,
-    ) -> ReferralEntry:
+    ) -> NVIDataReferenceOutput:
         """
         Method that adds a referral to the database
         """
@@ -86,7 +87,7 @@ class ReferralService:
                     organization_type=organization_type,
                 )
             )
-            return ReferralEntry.from_entity(new_referral)
+            return NVIDataReferenceOutput.from_referral(new_referral)
 
     def delete_one(
         self,
@@ -128,7 +129,7 @@ class ReferralService:
 
     def get_specific_patient(
         self, ura_number: UraNumber, pseudonym: Pseudonym, data_domain: DataDomain
-    ) -> List[ReferralEntry]:
+    ) -> List[NVIDataReferenceOutput]:
         with self.database.get_db_session() as session:
             repo = session.get_repository(ReferralRepository)
             data = repo.find_many(
@@ -137,14 +138,14 @@ class ReferralService:
                 ura_number=str(ura_number),
             )
 
-        return [ReferralEntry.from_entity(e) for e in data]
+        return [NVIDataReferenceOutput.from_referral(e) for e in data]
 
-    def get_all_registrations(self, ura_number: UraNumber) -> List[ReferralEntry]:
+    def get_all_registrations(self, ura_number: UraNumber) -> List[NVIDataReferenceOutput]:
         with self.database.get_db_session() as session:
             repo = session.get_repository(ReferralRepository)
             data = repo.find_many(ura_number=str(ura_number))
 
-        return [ReferralEntry.from_entity(e) for e in data]
+        return [NVIDataReferenceOutput.from_referral(e) for e in data]
 
     def delete_patient_registrations(self, ura_number: UraNumber, pseudonym: Pseudonym) -> None:
         with self.database.get_db_session() as session:
