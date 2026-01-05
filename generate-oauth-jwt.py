@@ -22,7 +22,7 @@ Usage:
         --signing-key secrets/nvi.key \
         --expires-in 86400 \
         --include-x5c \
-        --scope nvi:read \
+        --scope nvi:all \
         --token-url <url>/oauth/token \
         --out test.jwt
 
@@ -71,7 +71,6 @@ def main() -> int:
 
     ap.add_argument("--expires-in", type=int, default=300, help="JWT lifetime in seconds (default 300).")
     ap.add_argument("--include-x5c", action="store_true", help="Include x5c certificate chain in JWT header.")
-    ap.add_argument("--scope", default=None, help="Optional scope claim.")
     ap.add_argument("--out", default="-", help="Output file (default: stdout).")
 
     args = ap.parse_args()
@@ -110,8 +109,6 @@ def main() -> int:
         # Certificate binding (mTLS fingerprint)
         "cnf": {"x5t#S256": mtls_x5t_s256},
     }
-    if args.scope:
-        claims["scope"] = args.scope
 
     # JWT header
     header = {

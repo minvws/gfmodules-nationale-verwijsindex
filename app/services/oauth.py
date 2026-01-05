@@ -143,18 +143,10 @@ class OAuthService:
         return claims
 
     @staticmethod
-    def _validate_issuer(claims: Any, ura_number: UraNumber) -> None:
+    def _validate_issuer(claims: Any) -> None:
         """
         Validate the issuer and subject claims in the JWT.
         """
-
-        # Check ISS and SUB claims against the ura number from the mTLS cert
-        iss = claims.get("iss")
-        sub = claims.get("sub")
-        if iss != f"ura:{ura_number}" or sub != f"ura:{ura_number}":
-            logger.debug("Unsupported issuer: iss: %s  sub: %s", iss, sub)
-            raise OAuthInvalidClientError("client_assertion iss/sub must match ura_number")
-
         # Check expiry and jti for replay protection
         jti = claims.get("jti")
         exp = claims.get("exp")
@@ -195,8 +187,7 @@ class OAuthService:
         client_assertion_type: Optional[str],
         client_assertion: Optional[str],
         request: Request,
-        ura_number: UraNumber,
-    ) -> Certificate:
+    ) -> Any:
         """
         Validate the OAuth2 client credentials request with mTLS and JWT client assertion.
         """
@@ -204,10 +195,10 @@ class OAuthService:
         self._validate_globals(grant_type, scope)
         cert = self._validate_client_assertion(client_assertion_type, client_assertion, request)
         claims = self._validate_claims(cert, request, client_assertion or "")
-        self._validate_issuer(claims, ura_number)
+        self._validate_issuer(claims)
         self._validate_fingerprint(claims, request)
 
-        return cert
+        return claims
 
     def generate_token(self, ura_number: UraNumber, scopes: List[str]) -> str:
         """
@@ -340,7 +331,7 @@ def verify_chain_from_x5c(token: str, *, ca_bundle_path: str | None = None) -> x
     ctx = crypto.X509StoreContext(store, leaf, intermediates)
     ctx.verify_certificate()  # raises on failure
 
-    # Return the leaf cert as a cryptography object too (handy for extracting key)
+    # Return the leaf cert as a cryptography object too
     leaf_crypto = x509.load_der_x509_certificate(ders[0])
     return leaf_crypto
 

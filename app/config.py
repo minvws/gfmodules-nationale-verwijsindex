@@ -91,6 +91,8 @@ class ConfigOAuth(BaseModel):
     enabled: bool = Field(default=False)
     ca_cert: str | None = Field(default=None)
     token_lifetime_seconds: int = Field(default=3600, gt=0)
+    ldn_ca_cert: str | None = Field(default=None)
+    uzi_ca_cert: str | None = Field(default=None)
 
 
 class Config(BaseModel):

@@ -8,6 +8,7 @@ from app.db.db import Database
 from app.jwt_validator import JwtValidator
 from app.middleware.ura.ura_middleware import UraMiddleware
 from app.models.ura import UraNumber
+from app.services.ca import CaService
 from app.services.oauth import OAuthService
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.prs.registration_service import PrsRegistrationService
@@ -48,3 +49,6 @@ def authenticated_ura(request: Request) -> UraNumber:
 
 def get_oauth_service() -> OAuthService:
     return inject.instance(OAuthService)
+
+def get_ca_service() -> CaService:
+    return inject.instance(CaService)

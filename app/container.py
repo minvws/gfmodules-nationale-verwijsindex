@@ -9,6 +9,7 @@ from app.db.db import Database
 from app.jwt_validator import JwtValidator
 from app.middleware.ura.factory import create_ura_middleware
 from app.middleware.ura.ura_middleware import UraMiddleware
+from app.services.ca import CaService
 from app.services.decrypt_service import DecryptService
 from app.services.oauth import OAuthService
 from app.services.prs.pseudonym_service import PseudonymService
@@ -84,6 +85,9 @@ def container_config(binder: inject.Binder) -> None:
 
     oauth_service = OAuthService(db, config.oauth)
     binder.bind(OAuthService, oauth_service)
+
+    ca_service = CaService(config.oauth)
+    binder.bind(CaService, ca_service)
 
 
 def configure() -> None:
