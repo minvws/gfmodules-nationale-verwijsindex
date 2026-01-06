@@ -95,3 +95,21 @@ enabled = True
 ca_cert = secrets/uzi-server-ca.crt
 # Token lifetime in seconds
 token_lifetime_seconds = 3600
+
+
+[oauth]
+# OAuth is enabled or not
+enabled = True
+# If OAuth is disabled, we MUST set the override_authentication_ura to a valid URA for testing
+override_authentication_ura = 87654321
+# Lifetime of a oauth token in seconds
+token_lifetime_seconds = 3600
+# The CA cert that is allowed to sign JWTs for exchanging with OAuth. This is normally the UZI server CA. Meaning
+# that all uzi-server certificates can generate a valid JWT for OAuth exchange.
+ca_cert = secrets/uzi-server-ca.crt
+
+# When using MTLS towards the OAuth server, certificates signed by this CA MUST use a JWT for OAuth token exchange.
+ldn_ca_cert = secrets/ldn-chain.crt
+# When using MTLS towards the OAuth server, certificates signed by this CA do not need a JWT for token exchange. The
+URA number will be directly extracted from the MTLS certificate.
+uzi_ca_cert = secrets/uzi-server-ca.crt

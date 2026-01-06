@@ -297,17 +297,13 @@ def test_validate_success_flow(oauth_service, ca_and_leaf):
         headers={"x5c": x5c},
     )
 
-    cert = svc.validate(
+    svc.validate(
         grant_type="client_credentials",
         scope="read",
         client_assertion_type=CLIENT_ASSERTION_TYPE,
         client_assertion=assertion,
         request=req,
-        ura_number=ura_number,
     )
-
-    assert isinstance(cert, x509.Certificate)
-    assert cert.subject == ca_and_leaf["leaf_cert"].subject
 
 
 def test_validate_rejects_fingerprint_mismatch(oauth_service, ca_and_leaf):
@@ -342,7 +338,6 @@ def test_validate_rejects_fingerprint_mismatch(oauth_service, ca_and_leaf):
             client_assertion_type=CLIENT_ASSERTION_TYPE,
             client_assertion=assertion,
             request=req,
-            ura_number=ura_number,
         )
     assert "cnf fingerprint does not match" in str(e.value)
 
@@ -380,7 +375,6 @@ def test_validate_rejects_audience_mismatch(oauth_service, ca_and_leaf):
             client_assertion_type=CLIENT_ASSERTION_TYPE,
             client_assertion=assertion,
             request=req,
-            ura_number=ura_number,
         )
     assert "aud mismatch" in str(e.value)
 

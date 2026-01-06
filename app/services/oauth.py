@@ -61,6 +61,18 @@ class OAuthService:
         self.oauth_config = oauth_config
         self.database = database
 
+    def enabled(self) -> bool:
+        """
+        Check if the OAuth2 service is enabled.
+        """
+        return self.oauth_config.enabled
+
+    def get_override_ura(self) -> str:
+        """
+        Get the override URA number when OAuth2 is disabled.
+        """
+        return self.oauth_config.override_authentication_ura or "00000000"
+
     @staticmethod
     def _validate_globals(grant_type: str, scope: Optional[str]) -> None:
         """

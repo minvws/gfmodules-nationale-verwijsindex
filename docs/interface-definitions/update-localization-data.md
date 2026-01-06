@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD060 -->
 # Interface Specification National Referral Index - Update localization data
 
 ## Disclaimer

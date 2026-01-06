@@ -7,7 +7,6 @@ from app.config import (
     ConfigPseudonymApi,
     ConfigStats,
     ConfigTelemetry,
-    ConfigUraMiddleware,
     LogLevel,
 )
 
@@ -36,11 +35,6 @@ def get_test_config() -> Config:
             tracer_name=None,
         ),
         stats=ConfigStats(enabled=False, host=None, port=None, module_name=None),
-        ura_middleware=ConfigUraMiddleware(
-            override_authentication_ura=None,
-            use_authentication_ura_allowlist=False,
-            allowlist_cache_in_seconds=40,
-        ),
         dezi_register=ConfigDeziRegister(
             uzi_server_certificate_ca_cert_path="/test/secrets/ca.crt",
             dezi_register_trusted_signing_certs_store_path="/test/secrets/nvi/",
@@ -49,5 +43,6 @@ def get_test_config() -> Config:
             enabled=True,
             ca_cert="/test/secrets/ca.crt",
             token_lifetime_seconds=30,
+            override_authentication_ura=None,
         ),
     )

@@ -9,7 +9,6 @@ from cryptography.x509 import Certificate
 
 from app.config import ConfigDatabase
 from app.db.db import Database
-from app.middleware.ura.allowlisted_ura_middleware import AllowlistedUraMiddleware
 from app.models.ura import UraNumber
 from app.services.http import HttpService
 from app.services.prs.registration_service import PrsRegistrationService
@@ -42,11 +41,6 @@ def http_service() -> HttpService:
 @pytest.fixture(scope="session")
 def ura_number() -> UraNumber:
     return UraNumber("00000123")
-
-
-@pytest.fixture()
-def ura_filter_service(database: Database) -> AllowlistedUraMiddleware:
-    return AllowlistedUraMiddleware(database, 10)
 
 
 @pytest.fixture()

@@ -2,9 +2,9 @@ import configparser
 import logging
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, model_validator
 
 logger = logging.getLogger(__name__)
 
@@ -35,12 +35,6 @@ class ConfigApp(BaseModel):
 class ConfigDeziRegister(BaseModel):
     uzi_server_certificate_ca_cert_path: str
     dezi_register_trusted_signing_certs_store_path: str
-
-
-class ConfigUraMiddleware(BaseModel):
-    override_authentication_ura: str | None = Field(default=None)
-    use_authentication_ura_allowlist: bool = Field(default=True)
-    allowlist_cache_in_seconds: int = Field(default=30)
 
 
 class ConfigDatabase(BaseModel):
@@ -89,10 +83,18 @@ class ConfigStats(BaseModel):
 
 class ConfigOAuth(BaseModel):
     enabled: bool = Field(default=False)
-    ca_cert: str | None = Field(default=None)
+    override_authentication_ura: str | None = Field(default=None)
     token_lifetime_seconds: int = Field(default=3600, gt=0)
+    ca_cert: str | None = Field(default=None)
     ldn_ca_cert: str | None = Field(default=None)
     uzi_ca_cert: str | None = Field(default=None)
+
+    @model_validator(mode="after")
+    def _check_override_when_disabled(self) -> Self:
+        if not self.enabled:
+            if not self.override_authentication_ura or not self.override_authentication_ura.strip():
+                raise ValueError("override_authentication_ura must be set when oauth is disabled (enabled=false)")
+        return self
 
 
 class Config(BaseModel):
@@ -101,7 +103,6 @@ class Config(BaseModel):
     pseudonym_api: ConfigPseudonymApi
     telemetry: ConfigTelemetry
     stats: ConfigStats
-    ura_middleware: ConfigUraMiddleware
     dezi_register: ConfigDeziRegister
     oauth: ConfigOAuth
 

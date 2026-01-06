@@ -1,7 +1,7 @@
 import uuid
 
 from sqlalchemy import Boolean, DateTime, String, func, text
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.models.base import Base
@@ -10,48 +10,13 @@ from app.db.models.base import Base
 class OAuthTokenEntity(Base):
     __tablename__ = "oauth_tokens"
 
-    # Postgres-native UUID type. If you're not on Postgres, use String(36) instead.
-    id: Mapped[uuid.UUID] = mapped_column(
-        PG_UUID(as_uuid=True),
-        primary_key=True,
-        server_default=text("gen_random_uuid()"),  # requires pgcrypto extension
-    )
-
-    # Store SHA-256 as hex string (64 chars).
-    token_sha256: Mapped[str] = mapped_column(
-        String(64),
-        unique=True,
-        nullable=False,
-    )
-
-    # 8-digit string
-    ura_number: Mapped[str] = mapped_column(
-        String(8),
-        nullable=False,
-    )
-
-    revoked: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        server_default=text("false"),
-    )
-
-    scopes: Mapped[str] = mapped_column(
-        String,
-        nullable=False,
-        server_default=text("''"),
-    )
-
-    expires_at: Mapped[DateTime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-    )
-
-    created_at: Mapped[DateTime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        server_default=func.now(),
-    )
+    id: Mapped[uuid.UUID] = mapped_column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    token_sha256: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    ura_number: Mapped[str] = mapped_column(String(8), nullable=False)
+    revoked: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+    scopes: Mapped[str] = mapped_column(String, nullable=False, server_default=text("''"))
+    expires_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     def __repr__(self) -> str:
         return (

@@ -1,9 +1,11 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
 from app import container
+from app.auth import get_auth_ctx
 from app.config import Config, load_default_config
+from app.dependencies import get_prs_registration_service
 from app.routers.data_reference import router as data_reference_router
 from app.routers.default import router as default_router
 from app.routers.health import router as health_router
@@ -45,9 +47,8 @@ def setup_logging(config: Config) -> None:
 
 
 def register_at_prs() -> None:
-    # prs_registration_service = get_prs_registration_service()
-    # prs_registration_service.register_nvi_at_prs()
-    pass
+    prs_registration_service = get_prs_registration_service()
+    prs_registration_service.register_nvi_at_prs()
 
 
 def setup_fastapi(config: Config) -> FastAPI:
@@ -62,18 +63,27 @@ def setup_fastapi(config: Config) -> FastAPI:
     )
     container.configure()
 
-    routers = [
+    # These routes are not protected by OAuth
+    public_routers = [
         default_router,
         health_router,
+    ]
+
+    # These routes are protected by OAuth
+    oauth_protected_routers = [
         referral_router,
         info_referral_router,
         data_reference_router,
     ]
-    if config.oauth.enabled:
-        routers.append(oauth_router)
 
-    for router in routers:
+    for router in public_routers:
         fastapi.include_router(router)
+
+    for router in oauth_protected_routers:
+        fastapi.include_router(router, dependencies=[Depends(get_auth_ctx)])
+
+    if config.oauth.enabled:
+        fastapi.include_router(oauth_router)
 
     if config.stats.enabled:
         fastapi.add_middleware(StatsdMiddleware, module_name=config.stats.module_name or "default")

@@ -7,8 +7,6 @@ from pydantic import ValidationError
 from app.config import PROJECT_ROOT, Config, read_ini_file
 from app.db.db import Database
 from app.jwt_validator import JwtValidator
-from app.middleware.ura.factory import create_ura_middleware
-from app.middleware.ura.ura_middleware import UraMiddleware
 from app.services.ca import CaService
 from app.services.decrypt_service import DecryptService
 from app.services.oauth import OAuthService
@@ -79,9 +77,6 @@ def container_config(binder: inject.Binder) -> None:
         dezi_register_signing_certificates=dezi_signing_certificates,
     )
     binder.bind(JwtValidator, jwt_validator)
-
-    ura_middleware = create_ura_middleware(config.ura_middleware, db)
-    binder.bind(UraMiddleware, ura_middleware)
 
     oauth_service = OAuthService(db, config.oauth)
     binder.bind(OAuthService, oauth_service)

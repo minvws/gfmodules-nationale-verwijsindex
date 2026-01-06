@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD060 -->
 # Interface Specification National Referral Index - Lookup
 
 ## Disclaimer
@@ -66,7 +67,7 @@ The following endpoints are provided:
 The info endpoint gets information about the referrals by pseudonym and data domain.
 
 |  |  |
-|---|---|
+| --- | --- |
 | Path | /info |
 | Type | POST |
 | Query Parameters | None |

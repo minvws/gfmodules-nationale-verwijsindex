@@ -16,6 +16,7 @@ router = APIRouter(
     prefix="/oauth",
 )
 
+
 class JsonException(Exception):
     def __init__(self, response: JSONResponse):
         self.response = response
@@ -46,35 +47,6 @@ def oauth_error(code: str, desc: str, status: int = 400) -> JSONResponse:
     return JSONResponse(status_code=status, content={"error": code, "error_description": desc})
 
 
-@router.get(
-    "/test-endpoint",
-    summary="Test OAuth endpoint",
-    response_model=None,
-)
-def oauth_test_endpoint(
-    request: Request,
-    oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
-) -> JSONResponse:
-    """
-    A simple test endpoint to verify that the OAuth router is working. This will be removed in production.
-    """
-    try:
-        token = oauth_service.verify(request)
-    except OAuthError as e:
-        return JSONResponse(status_code=e.status_code, content={"error": e.code, "error_description": e.description})
-
-    ret = {
-        "message": "OAuth endpoint is working.",
-        "token_id": str(token.id),
-        "ura_number": token.ura_number,
-        "scopes": token.scopes,
-    }
-    return JSONResponse(
-        status_code=200,
-        content=ret,
-    )
-
-
 @router.post(
     "/token",
     summary="Creates a new token",
@@ -87,7 +59,7 @@ def oauth_token(
     client_assertion_type: Optional[str] = Form(None),
     client_assertion: Optional[str] = Form(None),
     oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
-    ca_service: CaService = Depends(dependencies.get_ca_service)
+    ca_service: CaService = Depends(dependencies.get_ca_service),
 ) -> JSONResponse:
     """
     OAuth2 token endpoint. Validates OAuth client and generates access tokens.
@@ -95,20 +67,21 @@ def oauth_token(
 
     if ca_service.is_uzi_server_certificate(request):
         # UZI server certificates do not require OAuth validation
-        print("UZI certificate detected")
         cert_pem = ca_service.get_pem_from_request(request)
         uzi_data = UziServer(verify="SUCCESS", cert=cert_pem)
         ura_number = uzi_data["SubscriberNumber"]
     elif ca_service.is_ldn_server_certificate(request):
-        print("LDN certificate detected")
         # LDN server certificates require OAuth validation
         try:
-            ura_number = get_ura_from_oauth(grant_type, scope, client_assertion_type, client_assertion, request, oauth_service)
+            ura_number = get_ura_from_oauth(
+                grant_type, scope, client_assertion_type, client_assertion, request, oauth_service
+            )
         except JsonException as e:
+            logger.error("OAuth validation failed for LDN certificate.")
             return e.response
     else:
+        logger.error("Unknown client certificate authority.")
         return invalid_client("Unknown client certificate authority.")
-
 
     granted_scope = ["nvi:all"]
     logger.debug("Generating access token for URA number: %s with scope: %s", ura_number, granted_scope)
@@ -138,13 +111,21 @@ def get_ura_from_oauth(
     """
     try:
         jwt_claims = oauth_service.validate(grant_type, scope, client_assertion_type, client_assertion, request)
-        return jwt_claims["iss"]
+        return UraNumber(jwt_claims["iss"])
 
     except OAuthInvalidClientError as e:
+        logger.error(f"Invalid OAuth client: {e}")
         raise JsonException(invalid_client(str(e)))
     except OAuthInvalidRequestError as e:
-        raise JsonException(JSONResponse(status_code=400, content={"error": "invalid_request", "error_description": str(e)}))
+        logger.error(f"Invalid OAuth request: {e}")
+        raise JsonException(
+            JSONResponse(status_code=400, content={"error": "invalid_request", "error_description": str(e)})
+        )
     except OAuthError as e:
-        raise JsonException(JSONResponse(status_code=e.status_code, content={"error": e.code, "error_description": e.description}))
+        logger.error(f"OAuth error: {e.description}")
+        raise JsonException(
+            JSONResponse(status_code=e.status_code, content={"error": e.code, "error_description": e.description})
+        )
     except Exception as e:
+        logger.error(f"OAuth error: {e}")
         raise JsonException(JSONResponse(status_code=500, content={"error": "generic_error", "error_description": e}))
