@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
@@ -15,6 +17,29 @@ def mock_referral_entity() -> ReferralEntity:
         data_domain="ImagingStudy",
         organization_type="Hospital",
     )
+
+
+def test_find_by_id_should_succeed(
+    referral_repository: ReferralRepository, mock_referral_entity: ReferralEntity
+) -> None:
+    with referral_repository.db_session:
+        referral_repository.add_one(mock_referral_entity)
+
+        actual = referral_repository.find_by_id(mock_referral_entity.id)
+
+        assert mock_referral_entity == actual
+
+
+def test_find_by_id_should_return_none_when_no_match_found(
+    referral_repository: ReferralRepository, mock_referral_entity: ReferralEntity
+) -> None:
+    with referral_repository.db_session:
+        some_id = uuid4()
+        referral_repository.add_one(mock_referral_entity)
+
+        actual = referral_repository.find_by_id(some_id)
+
+        assert actual is None
 
 
 def test_find_many_should_return_one_item(
@@ -101,7 +126,23 @@ def test_add_one_should_succeed(referral_repository: ReferralRepository, mock_re
     assert mock_referral_entity == actual
 
 
-def test_add_one_with_same_values_should_raise_exception(
+def test_add_one_with_same_id_should_raise_exception(
+    referral_repository: ReferralRepository, mock_referral_entity: ReferralEntity
+) -> None:
+    with referral_repository.db_session:
+        mock_referral_entity_2 = ReferralEntity(
+            id=mock_referral_entity.id,
+            pseudonym="some-other-pseudonym",
+            data_domain="some-other-data-domain",
+        )
+        referral_repository.add_one(mock_referral_entity)
+        with pytest.raises(SQLAlchemyError) as exec:
+            referral_repository.add_one(mock_referral_entity_2)
+
+        assert isinstance(exec.value, IntegrityError)
+
+
+def test_add_one_with_same_unique_index_should_raise_exception(
     referral_repository: ReferralRepository, mock_referral_entity: ReferralEntity
 ) -> None:
     with referral_repository.db_session:
