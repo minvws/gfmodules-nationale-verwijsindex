@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 
 from app.db.models.referral import ReferralEntity
@@ -69,7 +71,9 @@ def test_deserialize_identifier_should_succeed() -> None:
 
 
 def test_serialize_nvi_data_reference_input_should_succeed() -> None:
+    resource_id = uuid4()
     data = NVIDataRefrenceInput(
+        id=resource_id,
         source=Identifier(system=SOURCE_SYSTEM, value="00000123"),
         source_type=CodeableConcept(coding=[Coding(system=SOURCE_TYPE_SYSTEM, code="Hospital")]),
         care_context=CodeableConcept(coding=[Coding(system=CARE_CONTEXT_SYSTEM, code="ImagingStudy")]),
@@ -77,6 +81,7 @@ def test_serialize_nvi_data_reference_input_should_succeed() -> None:
         oprf_key="some-key",
     )
     expected = {
+        "id": resource_id,
         "source": {"system": SOURCE_SYSTEM, "value": "00000123"},
         "sourceType": {"coding": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
         "careContext": {"coding": [{"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
@@ -90,7 +95,9 @@ def test_serialize_nvi_data_reference_input_should_succeed() -> None:
 
 
 def test_deserialize_nvi_data_reference_input_should_succeed() -> None:
+    resource_id = uuid4()
     expected = NVIDataRefrenceInput(
+        id=resource_id,
         source=Identifier(system=SOURCE_SYSTEM, value="00000123"),
         source_type=CodeableConcept(coding=[Coding(system=SOURCE_TYPE_SYSTEM, code="Hospital")]),
         care_context=CodeableConcept(coding=[Coding(system=CARE_CONTEXT_SYSTEM, code="ImagingStudy")]),
@@ -98,6 +105,7 @@ def test_deserialize_nvi_data_reference_input_should_succeed() -> None:
         oprf_key="some-key",
     )
     data = {
+        "id": resource_id,
         "source": {"system": SOURCE_SYSTEM, "value": "00000123"},
         "sourceType": {"coding": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
         "careContext": {"coding": [{"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
@@ -111,12 +119,15 @@ def test_deserialize_nvi_data_reference_input_should_succeed() -> None:
 
 
 def test_serialize_nvi_data_reference_output_should_succeed() -> None:
+    resource_id = uuid4()
     data = NVIDataReferenceOutput(
+        id=resource_id,
         source=Identifier(system=SOURCE_SYSTEM, value="00000123"),
         source_type=CodeableConcept(coding=[Coding(system=SOURCE_TYPE_SYSTEM, code="Hospital")]),
         care_context=CodeableConcept(coding=[Coding(system=CARE_CONTEXT_SYSTEM, code="ImagingStudy")]),
     )
     expected = {
+        "id": resource_id,
         "source": {"system": SOURCE_SYSTEM, "value": "00000123"},
         "sourceType": {"coding": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
         "careContext": {"coding": [{"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
@@ -128,12 +139,15 @@ def test_serialize_nvi_data_reference_output_should_succeed() -> None:
 
 
 def test_deserialize_nvi_data_reference_output_should_succeed() -> None:
+    resource_id = uuid4()
     expected = NVIDataReferenceOutput(
+        id=resource_id,
         source=Identifier(system=SOURCE_SYSTEM, value="00000123"),
         source_type=CodeableConcept(coding=[Coding(system=SOURCE_TYPE_SYSTEM, code="Hospital")]),
         care_context=CodeableConcept(coding=[Coding(system=CARE_CONTEXT_SYSTEM, code="ImagingStudy")]),
     )
     data = {
+        "id": resource_id,
         "source": {"system": SOURCE_SYSTEM, "value": "00000123"},
         "sourceType": {"coding": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
         "careContext": {"coding": [{"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
@@ -146,6 +160,7 @@ def test_deserialize_nvi_data_reference_output_should_succeed() -> None:
 
 def test_create_nvi_data_reference_input_shoulf_fail_when_source_is_abscent() -> None:
     data = {
+        "id": uuid4(),
         "sourceType": {"coding": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
         "careContext": {"coding": [{"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
         "subject": {"system": SUBJECT_SYSTEM, "value": "some-jwe"},
@@ -158,6 +173,7 @@ def test_create_nvi_data_reference_input_shoulf_fail_when_source_is_abscent() ->
 
 def test_create_nvi_data_reference_input_should_fail_with_incorrect_source() -> None:
     data = {
+        "id": uuid4(),
         "source": {"system": "WRONG SOURCE", "value": "00000123"},
         "sourceType": {"coding": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
         "careContext": {"coding": [{"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
@@ -171,6 +187,7 @@ def test_create_nvi_data_reference_input_should_fail_with_incorrect_source() -> 
 
 def test_create_nvi_data_reference_input_should_fail_when_source_is_not_identifier() -> None:
     data = {
+        "id": uuid4(),
         "source": {"WRONG_PROPETY": "some-value"},
         "sourceType": {"coding": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
         "careContext": {"coding": [{"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
@@ -181,6 +198,7 @@ def test_create_nvi_data_reference_input_should_fail_when_source_is_not_identifi
 
 def test_create_nvi_data_reference_input_should_fail_when_source_type_is_abscent() -> None:
     data = {
+        "id": uuid4(),
         "source": {"system": SOURCE_SYSTEM, "value": "00000123"},
         "careContext": {"coding": [{"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
     }
@@ -191,6 +209,7 @@ def test_create_nvi_data_reference_input_should_fail_when_source_type_is_abscent
 
 def test_create_nvi_data_reference_input_should_fail_when_source_type_is_not_codeable_concept() -> None:
     data = {
+        "id": uuid4(),
         "source": {"system": SOURCE_SYSTEM, "value": "00000123"},
         "sourceType": {"WRONG_PROPETY": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
         "careContext": {"coding": [{"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
@@ -201,6 +220,7 @@ def test_create_nvi_data_reference_input_should_fail_when_source_type_is_not_cod
 
 def test_create_nvi_data_reference_should_fail_when_more_than_one_value_in_source_type() -> None:
     data = {
+        "id": uuid4(),
         "source": {"system": SOURCE_SYSTEM, "value": "00000123"},
         "sourceType": {
             "coding": [
@@ -217,6 +237,7 @@ def test_create_nvi_data_reference_should_fail_when_more_than_one_value_in_sourc
 
 def test_create_nvi_data_reference_input_should_fail_when_source_type_has_wrong_system() -> None:
     data = {
+        "id": uuid4(),
         "source": {"system": SOURCE_SYSTEM, "value": "00000123"},
         "sourceType": {"coding": [{"system": "WRONG SYSTEM", "code": "Hospital"}]},
         "careContext": {"coding": [{"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
@@ -229,6 +250,7 @@ def test_create_nvi_data_reference_input_should_fail_when_source_type_has_wrong_
 
 def test_create_nvi_data_reference_should_fail_care_context_is_abscent() -> None:
     data = {
+        "id": uuid4(),
         "source": {"system": SOURCE_SYSTEM, "value": "00000123"},
         "sourceType": {"coding": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
         "subject": {"system": SUBJECT_SYSTEM, "value": "some-jwe"},
@@ -240,6 +262,7 @@ def test_create_nvi_data_reference_should_fail_care_context_is_abscent() -> None
 
 def test_create_nvi_data_reference_should_fail_when_care_context_is_not_codeable_concept() -> None:
     data = {
+        "id": uuid4(),
         "source": {"system": SOURCE_SYSTEM, "value": "00000123"},
         "sourceType": {"coding": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
         "careContext": {"coding": [{"WRONG_PROPETY": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
@@ -252,6 +275,7 @@ def test_create_nvi_data_reference_should_fail_when_care_context_is_not_codeable
 
 def test_create_nvi_data_reference_should_fail_when_care_context_has_more_than_one_coding() -> None:
     data = {
+        "id": uuid4(),
         "source": {"system": SOURCE_SYSTEM, "value": "00000123"},
         "sourceType": {"coding": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
         "careContext": {
@@ -269,6 +293,7 @@ def test_create_nvi_data_reference_should_fail_when_care_context_has_more_than_o
 
 def test_create_nvi_data_reference_should_fail_when_care_context_has_wrong_system() -> None:
     data = {
+        "id": uuid4(),
         "source": {"system": SOURCE_SYSTEM, "value": "00000123"},
         "sourceType": {"coding": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
         "careContext": {"coding": [{"system": "WRONG SYSTEM", "code": "ImagingStudy"}]},
@@ -282,6 +307,7 @@ def test_create_nvi_data_reference_should_fail_when_care_context_has_wrong_syste
 
 def test_create_nvi_data_reference_input_should_fail_when_subject_is_abscent() -> None:
     data = {
+        "id": uuid4(),
         "source": {"system": SOURCE_SYSTEM, "value": "00000123"},
         "sourceType": {"coding": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
         "careContext": {"coding": [{"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
@@ -293,6 +319,7 @@ def test_create_nvi_data_reference_input_should_fail_when_subject_is_abscent() -
 
 def test_create_nvi_data_reference_input_should_fail_when_subject_is_not_identifier() -> None:
     data = {
+        "id": uuid4(),
         "source": {"system": SOURCE_SYSTEM, "value": "00000123"},
         "sourceType": {"coding": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
         "careContext": {"coding": [{"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
@@ -305,6 +332,7 @@ def test_create_nvi_data_reference_input_should_fail_when_subject_is_not_identif
 
 def test_create_nvi_data_reference_input_should_fail_when_subject_has_wrong_system() -> None:
     data = {
+        "id": uuid4(),
         "source": {"system": SOURCE_SYSTEM, "value": "00000123"},
         "sourceType": {"coding": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
         "careContext": {"coding": [{"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
@@ -317,6 +345,7 @@ def test_create_nvi_data_reference_input_should_fail_when_subject_has_wrong_syst
 
 def test_create_nvi_data_reference_input_should_fail_with_invalid_ura_number() -> None:
     data = {
+        "id": uuid4(),
         "source": {"system": SOURCE_SYSTEM, "value": "INVALID_URA_NUMBER_WITH_CHARS"},
         "sourceType": {"coding": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
         "careContext": {"coding": [{"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
@@ -328,12 +357,15 @@ def test_create_nvi_data_reference_input_should_fail_with_invalid_ura_number() -
 
 
 def test_from_entity_should_succeed() -> None:
+    resource_id = uuid4()
     expected = NVIDataReferenceOutput(
+        id=resource_id,
         source=Identifier(system=SOURCE_SYSTEM, value="00000123"),
         source_type=CodeableConcept(coding=[Coding(system=SOURCE_TYPE_SYSTEM, code="Hospital")]),
         care_context=CodeableConcept(coding=[Coding(system=CARE_CONTEXT_SYSTEM, code="ImagingStudy")]),
     )
     referral = ReferralEntity(
+        id=resource_id,
         ura_number="00000123",
         organization_type="Hospital",
         data_domain="ImagingStudy",

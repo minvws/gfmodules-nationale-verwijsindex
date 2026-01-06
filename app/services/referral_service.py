@@ -1,5 +1,6 @@
 import logging
 from typing import List
+from uuid import UUID
 
 import inject
 from fastapi.exceptions import HTTPException
@@ -23,6 +24,16 @@ class ReferralService:
     @inject.autoparams()
     def __init__(self, database: Database) -> None:
         self.database = database
+
+    def get_by_id(self, id: UUID) -> NVIDataReferenceOutput:
+        with self.database.get_db_session() as session:
+            repo = session.get_repository(ReferralRepository)
+            referral = repo.find_by_id(id)
+
+            if referral is None:
+                raise HTTPException(status_code=404, detail="Record not found")
+
+            return NVIDataReferenceOutput.from_referral(referral)
 
     def get_referrals_by_domain_and_pseudonym(
         self,
@@ -184,6 +195,15 @@ class ReferralService:
                 raise HTTPException(status_code=404)
 
             repo.delete(ura_number=str(ura_number))
+
+    def delete_by_id(self, id: UUID) -> None:
+        with self.database.get_db_session() as session:
+            repo = session.get_repository(ReferralRepository)
+            target = repo.find_by_id(id)
+            if target is None:
+                raise HTTPException(status_code=404, detail="Record not found")
+
+            repo.delete_one(target)
 
     def query_referrals(
         self,

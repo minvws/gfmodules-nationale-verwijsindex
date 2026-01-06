@@ -1,4 +1,5 @@
 from typing import Sequence
+from uuid import UUID
 
 from sqlalchemy import delete, exists, select
 from sqlalchemy.exc import SQLAlchemyError
@@ -18,6 +19,11 @@ class ReferralRepository(RepositoryBase):
         )
         result = self.db_session.execute(stmt).scalars().first()
         return result
+
+    def find_by_id(self, id: UUID) -> ReferralEntity | None:
+        stmt = select(ReferralEntity).where(ReferralEntity.id == id)
+        results = self.db_session.execute(stmt).scalars().first()
+        return results
 
     def find_many(
         self,
