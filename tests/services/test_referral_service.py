@@ -1,16 +1,9 @@
+from uuid import uuid4
+
 import pytest
 from fastapi import HTTPException
 
 from app.models.data_domain import DataDomain
-from app.models.data_reference.resource import (
-    CARE_CONTEXT_SYSTEM,
-    SOURCE_SYSTEM,
-    SOURCE_TYPE_SYSTEM,
-    CodeableConcept,
-    Coding,
-    Identifier,
-    NVIDataReferenceOutput,
-)
 from app.models.pseudonym import Pseudonym
 from app.models.referrals.entry import ReferralEntry
 from app.models.ura import UraNumber
@@ -27,28 +20,22 @@ def mock_referral() -> ReferralEntry:
     )
 
 
-@pytest.fixture()
-def mock_nvi_reference_data(ura_number: UraNumber) -> NVIDataReferenceOutput:
-    return NVIDataReferenceOutput(
-        source=Identifier(system=SOURCE_SYSTEM, value=str(ura_number)),
-        source_type=CodeableConcept(coding=[Coding(system=SOURCE_TYPE_SYSTEM, code="Hospital")]),
-        care_context=CodeableConcept(coding=[Coding(system=CARE_CONTEXT_SYSTEM, code="ImagingStudy")]),
-    )
-
-
 def test_add_one_should_succeed(
-    referral_service: ReferralService, mock_nvi_reference_data: NVIDataReferenceOutput
+    referral_service: ReferralService,
+    ura_number: UraNumber,
 ) -> None:
-    actual = referral_service.add_one(
+    expected = referral_service.add_one(
         pseudonym=Pseudonym("ps-1"),
-        data_domain=mock_nvi_reference_data.get_data_domain(),
-        ura_number=mock_nvi_reference_data.get_ura_number(),
+        data_domain=DataDomain("ImagingStudy"),
+        ura_number=ura_number,
         uzi_number="12345678",
         request_url="http://example.com",
-        organization_type=mock_nvi_reference_data.get_organization_type(),
+        organization_type="Hospital",
     )
 
-    assert mock_nvi_reference_data == actual
+    actual = referral_service.get_by_id(expected.id)
+
+    assert expected == actual
 
 
 def test_add_referral_should_raise_exception_with_duplicates(
@@ -108,29 +95,29 @@ def test_get_referral_by_domain_and_pseudonym_should_raise_exception_when_not_fo
 
 
 def test_delete_one_should_succeed(
-    referral_service: ReferralService, mock_nvi_reference_data: NVIDataReferenceOutput
+    referral_service: ReferralService,
+    ura_number: UraNumber,
 ) -> None:
     patient = Pseudonym("ps-1")
+    data_domain = DataDomain("MedicationStatement")
     data = referral_service.add_one(
         pseudonym=patient,
-        data_domain=mock_nvi_reference_data.get_data_domain(),
-        ura_number=mock_nvi_reference_data.get_ura_number(),
+        data_domain=data_domain,
+        ura_number=ura_number,
         uzi_number="12345678",
         request_url="http://example.com",
-        organization_type=mock_nvi_reference_data.get_organization_type(),
+        organization_type="Pharmacy",
     )
-    assert data == mock_nvi_reference_data
+    nvi_reference = referral_service.get_by_id(data.id)
+    assert data == nvi_reference
     referral_service.delete_one(
         pseudonym=patient,
-        data_domain=mock_nvi_reference_data.get_data_domain(),
-        ura_number=mock_nvi_reference_data.get_ura_number(),
+        data_domain=data_domain,
+        ura_number=ura_number,
         request_url="http://example.com",
     )
     with pytest.raises(HTTPException) as exec:
-        referral_service.get_referrals_by_domain_and_pseudonym(
-            pseudonym=patient,
-            data_domain=mock_nvi_reference_data.get_data_domain(),
-        )
+        referral_service.get_referrals_by_domain_and_pseudonym(pseudonym=patient, data_domain=data_domain)
 
     assert exec.value.status_code == 404
 
@@ -150,24 +137,27 @@ def test_delete_one_should_raise_exception_when_not_found(
 
 
 def test_get_specific_patient_should_succeed(
-    referral_service: ReferralService, mock_nvi_reference_data: NVIDataReferenceOutput
+    referral_service: ReferralService,
+    ura_number: UraNumber,
 ) -> None:
     localisation_pseudonym = Pseudonym("ps-1")
-    referral_service.add_one(
+    data_domain = DataDomain("ImagingStudy")
+
+    data = referral_service.add_one(
         pseudonym=localisation_pseudonym,
-        data_domain=mock_nvi_reference_data.get_data_domain(),
-        ura_number=mock_nvi_reference_data.get_ura_number(),
+        data_domain=data_domain,
+        ura_number=ura_number,
         uzi_number="12345678",
         request_url="http://example.com",
-        organization_type=mock_nvi_reference_data.get_organization_type(),
+        organization_type="Hospital",
     )
 
-    expected = [mock_nvi_reference_data]
+    expected = [data]
 
     actual = referral_service.get_specific_patient(
-        ura_number=UraNumber(mock_nvi_reference_data.source.value),
+        ura_number=data.get_ura_number(),
         pseudonym=localisation_pseudonym,
-        data_domain=DataDomain(mock_nvi_reference_data.care_context.coding[0].code),
+        data_domain=data.get_data_domain(),
     )
 
     assert expected == actual
@@ -186,34 +176,29 @@ def test_get_specific_patient_should_return_empty_list_when_no_match_found(
 
 
 def test_get_all_registrations_should_succeed(referral_service: ReferralService, ura_number: UraNumber) -> None:
-    nvi_reference_1 = NVIDataReferenceOutput(
-        source=Identifier(system=SOURCE_SYSTEM, value=str(ura_number)),
-        source_type=CodeableConcept(coding=[Coding(system=SOURCE_TYPE_SYSTEM, code="Hospital")]),
-        care_context=CodeableConcept(coding=[Coding(system=CARE_CONTEXT_SYSTEM, code="ImagingStudy")]),
-    )
-    nvi_reference_2 = NVIDataReferenceOutput(
-        source=Identifier(system=SOURCE_SYSTEM, value=str(ura_number)),
-        source_type=CodeableConcept(coding=[Coding(system=SOURCE_TYPE_SYSTEM, code="Hospital")]),
-        care_context=CodeableConcept(coding=[Coding(system=CARE_CONTEXT_SYSTEM, code="MedicationStatement")]),
-    )
-    expected = [nvi_reference_1, nvi_reference_2]
+    patient_1 = Pseudonym("ps-1")
+    patient_2 = Pseudonym("ps-2")
+    data_domain_1 = DataDomain("ImagingStudy")
+    data_domain_2 = DataDomain("MedicationStatement")
+    org_type = "Hospital"
 
-    referral_service.add_one(
-        pseudonym=Pseudonym("ps-1"),
-        data_domain=nvi_reference_1.get_data_domain(),
+    expected_1 = referral_service.add_one(
+        pseudonym=patient_1,
+        data_domain=data_domain_1,
         ura_number=ura_number,
         uzi_number="12345678",
         request_url="http://example.com",
-        organization_type=nvi_reference_1.get_organization_type(),
+        organization_type=org_type,
     )
-    referral_service.add_one(
-        pseudonym=Pseudonym("ps-2"),
-        data_domain=nvi_reference_2.get_data_domain(),
+    expected_2 = referral_service.add_one(
+        pseudonym=patient_2,
+        data_domain=data_domain_2,
         ura_number=ura_number,
         uzi_number="12345678",
         request_url="http://example.com",
-        organization_type=nvi_reference_2.get_organization_type(),
+        organization_type=org_type,
     )
+    expected = [expected_1, expected_2]
     actual = referral_service.get_all_registrations(ura_number=ura_number)
 
     assert expected == actual
@@ -223,57 +208,34 @@ def test_delete_patient_registrations_should_succeed(
     referral_service: ReferralService,
     ura_number: UraNumber,
 ) -> None:
-    pseudonym_1 = Pseudonym("ps-1")
-    ps1_reference_1 = NVIDataReferenceOutput(
-        source=Identifier(system=SOURCE_SYSTEM, value=str(ura_number)),
-        source_type=CodeableConcept(coding=[Coding(system=SOURCE_TYPE_SYSTEM, code="Hospital")]),
-        care_context=CodeableConcept(coding=[Coding(system=CARE_CONTEXT_SYSTEM, code="ImagingStudy")]),
-    )
-    ps1_reference_2 = NVIDataReferenceOutput(
-        source=Identifier(system=SOURCE_SYSTEM, value=str(ura_number)),
-        source_type=CodeableConcept(coding=[Coding(system=SOURCE_TYPE_SYSTEM, code="Hospital")]),
-        care_context=CodeableConcept(coding=[Coding(system=CARE_CONTEXT_SYSTEM, code="MedicationStatement")]),
-    )
-
-    pseudonym_2 = Pseudonym("ps-2")
-    ps2_reference = NVIDataReferenceOutput(
-        source=Identifier(system=SOURCE_SYSTEM, value=str(ura_number)),
-        source_type=CodeableConcept(coding=[Coding(system=SOURCE_TYPE_SYSTEM, code="Hospital")]),
-        care_context=CodeableConcept(coding=[Coding(system=CARE_CONTEXT_SYSTEM, code="Medication")]),
-    )
-    referral_3 = ReferralEntry(
-        pseudonym=Pseudonym("ps-2"),
-        data_domain=DataDomain("MedicationStatment"),
-        ura_number=ura_number,
-        organization_type="Hospital",
-    )
+    patient_1 = Pseudonym("ps-1")
     referral_service.add_one(
-        pseudonym=pseudonym_1,
-        data_domain=ps1_reference_1.get_data_domain(),
+        pseudonym=patient_1,
+        data_domain=DataDomain("ImagingStudy"),
         ura_number=ura_number,
         uzi_number="12345678",
         request_url="http://example.com",
     )
     referral_service.add_one(
-        pseudonym=pseudonym_1,
-        data_domain=ps1_reference_2.get_data_domain(),
+        pseudonym=patient_1,
+        data_domain=DataDomain("Medication"),
         ura_number=ura_number,
         uzi_number="12345678",
         request_url="http://example.com",
     )
 
-    referral_service.add_one(
-        pseudonym=pseudonym_2,
-        data_domain=ps2_reference.get_data_domain(),
+    patient_2 = Pseudonym("ps-2")
+    patient_2_reference_1 = referral_service.add_one(
+        pseudonym=patient_2,
+        data_domain=DataDomain("Medication"),
         ura_number=ura_number,
         uzi_number="12345678",
         request_url="http://example.com",
-        organization_type=referral_3.organization_type,
     )
 
-    expected = [ps2_reference]
+    expected = [patient_2_reference_1]
 
-    referral_service.delete_patient_registrations(ura_number=ura_number, pseudonym=pseudonym_1)
+    referral_service.delete_patient_registrations(ura_number=ura_number, pseudonym=patient_1)
 
     actual = referral_service.get_all_registrations(ura_number)
 
@@ -330,48 +292,43 @@ def test_delete_specific_registration_should_raise_exception_when_no_match_found
 
 def test_delete_organizaton_should_succeed(referral_service: ReferralService, ura_number: UraNumber) -> None:
     ura_a = ura_number
+    ura_a_type = "Hospital"
     patient_1 = Pseudonym("ps-1")
-    patient_1_ref = NVIDataReferenceOutput(
-        source=Identifier(system=SOURCE_SYSTEM, value=str(ura_a)),
-        source_type=CodeableConcept(coding=[Coding(system=SOURCE_TYPE_SYSTEM, code="Hospital")]),
-        care_context=CodeableConcept(coding=[Coding(system=CARE_CONTEXT_SYSTEM, code="ImagingStudy")]),
+    patient_1_data_domain = DataDomain("ImgaingStudy")
+    patient_1_referecne = referral_service.add_one(
+        pseudonym=patient_1,
+        data_domain=patient_1_data_domain,
+        ura_number=ura_a,
+        uzi_number="123456",
+        request_url="http://example.com",
+        organization_type=ura_a_type,
     )
     patient_2 = Pseudonym("ps-2")
-    patient_2_ref = NVIDataReferenceOutput(
-        source=Identifier(system=SOURCE_SYSTEM, value=str(ura_a)),
-        source_type=CodeableConcept(coding=[Coding(system=SOURCE_TYPE_SYSTEM, code="Hospital")]),
-        care_context=CodeableConcept(coding=[Coding(system=CARE_CONTEXT_SYSTEM, code="Medication")]),
+    patient_2_data_domain = DataDomain("MedicationStatment")
+    patient_2_reference = referral_service.add_one(
+        pseudonym=patient_2,
+        data_domain=patient_2_data_domain,
+        ura_number=ura_a,
+        uzi_number="123456",
+        request_url="http://example.com",
+        organization_type=ura_a_type,
     )
+    assert referral_service.get_all_registrations(ura_number=ura_a) == [
+        patient_1_referecne,
+        patient_2_reference,
+    ]
+
     ura_b = UraNumber("98765432")
     patient_3 = Pseudonym("ps-3")
-    patient_3_ref = NVIDataReferenceOutput(
-        source=Identifier(system=SOURCE_SYSTEM, value=str(ura_b)),
-        source_type=CodeableConcept(coding=[Coding(system=SOURCE_TYPE_SYSTEM, code="Pharmacy")]),
-        care_context=CodeableConcept(coding=[Coding(system=CARE_CONTEXT_SYSTEM, code="Medication")]),
-    )
-    referral_service.add_one(
-        pseudonym=patient_1,
-        data_domain=patient_1_ref.get_data_domain(),
-        ura_number=ura_a,
-        uzi_number="123456",
-        request_url="http://example.com",
-        organization_type=patient_3_ref.get_organization_type(),
-    )
-    referral_service.add_one(
-        pseudonym=patient_2,
-        data_domain=patient_2_ref.get_data_domain(),
-        ura_number=ura_a,
-        uzi_number="123456",
-        request_url="http://example.com",
-        organization_type=patient_3_ref.get_organization_type(),
-    )
-    referral_service.add_one(
+    patient_3_data_domain = DataDomain("Medication")
+    ura_b_type = "Hosopital"
+    patient_3_reference = referral_service.add_one(
         pseudonym=patient_3,
-        data_domain=patient_3_ref.get_data_domain(),
+        data_domain=patient_3_data_domain,
         ura_number=ura_b,
         uzi_number="123456",
         request_url="http://example.com",
-        organization_type=patient_3_ref.get_organization_type(),
+        organization_type=ura_b_type,
     )
 
     referral_service.delete_specific_organization(ura_number=ura_a)
@@ -379,7 +336,7 @@ def test_delete_organizaton_should_succeed(referral_service: ReferralService, ur
     actual_org_2 = referral_service.get_all_registrations(ura_number=ura_b)
 
     assert actual_org_1 == []
-    assert actual_org_2 == [patient_3_ref]
+    assert actual_org_2 == [patient_3_reference]
 
 
 def test_delete_specific_organization_should_raise_exception_when_no_match_found(
@@ -387,6 +344,33 @@ def test_delete_specific_organization_should_raise_exception_when_no_match_found
 ) -> None:
     with pytest.raises(HTTPException) as exec:
         referral_service.delete_specific_organization(ura_number)
+
+    assert exec.value.status_code == 404
+
+
+def test_delete_by_id_should_succeed(referral_service: ReferralService, ura_number: UraNumber) -> None:
+    patient = Pseudonym("ps-1")
+    data_domain = DataDomain("ImagingStudy")
+    patient_reference = referral_service.add_one(
+        pseudonym=patient,
+        data_domain=data_domain,
+        ura_number=ura_number,
+        uzi_number="123456789",
+        request_url="http://example.org",
+    )
+    referral_service.delete_by_id(patient_reference.id)
+    with pytest.raises(HTTPException) as exec:
+        referral_service.get_by_id(patient_reference.id)
+
+    assert exec.value.status_code == 404
+
+
+def test_delet_by_id_should_raise_exception_when_no_match_found(
+    referral_service: ReferralService,
+) -> None:
+    some_id = uuid4()
+    with pytest.raises(HTTPException) as exec:
+        referral_service.delete_by_id(some_id)
 
     assert exec.value.status_code == 404
 

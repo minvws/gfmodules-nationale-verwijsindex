@@ -1,4 +1,5 @@
 from typing import Any, Final, List
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 from pydantic.alias_generators import to_camel
@@ -32,6 +33,7 @@ class Identifier(BaseModel):
 class NVIDataReferenceBase(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
+    id: UUID
     source: Identifier
     source_type: CodeableConcept
     care_context: CodeableConcept
@@ -138,6 +140,7 @@ class NVIDataReferenceOutput(NVIDataReferenceBase):
     @classmethod
     def from_referral(cls, entity: ReferralEntity) -> "NVIDataReferenceOutput":
         return cls(
+            id=entity.id,
             source=Identifier(
                 system=SOURCE_SYSTEM,
                 value=entity.ura_number,

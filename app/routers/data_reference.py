@@ -1,5 +1,6 @@
 import logging
 from typing import Annotated, Any, List
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
@@ -98,3 +99,21 @@ def create_reference(
     )
 
     return Response(status_code=201, content=new_reference)
+
+
+@router.get("/{id}")
+def get_by_id(
+    id: UUID,
+    referral_service: ReferralService = Depends(dependencies.get_referral_service),
+) -> Response:
+    data_reference = referral_service.get_by_id(id)
+    return Response(status_code=200, content=data_reference)
+
+
+@router.delete("/{id}")
+def delete_by_id(
+    id: UUID,
+    referral_service: ReferralService = Depends(dependencies.get_referral_service),
+) -> Response:
+    referral_service.delete_by_id(id)
+    return Response(status_code=204)
