@@ -100,7 +100,7 @@ def create_reference(
         request_url=source_url,
     )
 
-    return Response(status_code=201, content=new_reference)
+    return Response(status_code=201, content=new_reference.model_dump_json(by_alias=True))
 
 
 @router.get("/{id}")

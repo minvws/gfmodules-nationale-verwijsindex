@@ -9,7 +9,7 @@ from app.models.data_reference.resource import (
     CodeableConcept,
     Coding,
     Identifier,
-    NVIDataReferenceBase,
+    NVIDataReferenceBaseId,
     NVIDataReferenceOutput,
 )
 
@@ -26,6 +26,7 @@ def test_serialize_should_succeed() -> None:
             {
                 "resource": {
                     "id": resource_id,
+                    "resourceType": "NVIDataReference",
                     "source": {"system": SOURCE_SYSTEM, "value": "00000123"},
                     "sourceType": {"coding": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
                     "careContext": {"coding": [{"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
@@ -78,7 +79,7 @@ def test_deserialize_should_succeed() -> None:
         total=1,
         entry=[
             BundleEntry(
-                resource=NVIDataReferenceBase(
+                resource=NVIDataReferenceBaseId(
                     id=resource_id,
                     source=Identifier(system=SOURCE_SYSTEM, value="00000123"),
                     source_type=CodeableConcept(coding=[Coding(system=SOURCE_TYPE_SYSTEM, code="Hospital")]),

@@ -32,8 +32,7 @@ class Identifier(BaseModel):
 
 class NVIDataReferenceBase(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
-    id: UUID
+    resource_type: str = "NVIDataReference"
     source: Identifier
     source_type: CodeableConcept
     care_context: CodeableConcept
@@ -58,6 +57,15 @@ class NVIDataReferenceBase(BaseModel):
             raise ValueError(f"Invalid UraNumber: {e}")
 
         return source
+
+    @field_validator("resource_type", mode="before")
+    @classmethod
+    def validate_resource_type(cls, value: Any) -> str:
+        if value is None:
+            raise ValueError("NVIDataReference.resourceType is required")
+        if not isinstance(value, str) or value != "NVIDataReference":
+            raise ValueError("NVIDataReference.resourceType must be 'NVIDataReference'")
+        return value
 
     @field_validator("source_type", mode="before")
     @classmethod
@@ -115,7 +123,13 @@ class NVIDataReferenceBase(BaseModel):
         return self.source_type.coding[0].code
 
 
+class NVIDataReferenceBaseId(NVIDataReferenceBase):
+    id: UUID
+
+
 class NVIDataRefrenceInput(NVIDataReferenceBase):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
     subject: Identifier
     oprf_key: str
 
@@ -136,7 +150,7 @@ class NVIDataRefrenceInput(NVIDataReferenceBase):
         return subject
 
 
-class NVIDataReferenceOutput(NVIDataReferenceBase):
+class NVIDataReferenceOutput(NVIDataReferenceBaseId):
     @classmethod
     def from_referral(cls, entity: ReferralEntity) -> "NVIDataReferenceOutput":
         return cls(
