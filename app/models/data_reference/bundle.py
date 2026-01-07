@@ -14,7 +14,6 @@ class BundleEntry(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     resource: NVIDataReferenceBase | None = None
-    full_url: str | None = None
 
 
 class Bundle(BaseModel):
