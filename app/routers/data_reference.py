@@ -1,16 +1,16 @@
 import logging
-from typing import Annotated, Any, List
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
 from app import dependencies
 from app.models.data_domain import DataDomain
+from app.models.data_reference.bundle import Bundle
 from app.models.data_reference.requests import (
     DataReferenceRequestParams,
 )
 from app.models.data_reference.resource import (
-    NVIDataReferenceOutput,
     NVIDataRefrenceInput,
 )
 from app.models.ura import UraNumber
@@ -26,7 +26,7 @@ def get_reference(
     params: Annotated[DataReferenceRequestParams, Query()],
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
-) -> List[NVIDataReferenceOutput]:
+) -> Bundle:
     if params.pseudonym and params.oprf_key:
         try:
             localisation_pseudonym = pseudonym_service.exchange(oprf_jwe=params.pseudonym, blind_factor=params.oprf_key)
@@ -35,13 +35,15 @@ def get_reference(
             raise HTTPException(status_code=404)
 
         if params.care_context:
-            return referral_service.get_specific_patient(
+            patient_reference = referral_service.get_specific_patient(
                 ura_number=UraNumber(params.source),
                 pseudonym=localisation_pseudonym,
                 data_domain=DataDomain(params.care_context),
             )
+            return Bundle.from_reference_outputs(patient_reference)
 
-    return referral_service.get_all_registrations(ura_number=UraNumber(params.source))
+    registrations = referral_service.get_all_registrations(ura_number=UraNumber(params.source))
+    return Bundle.from_reference_outputs(registrations)
 
 
 @router.delete("/")
