@@ -1,8 +1,6 @@
 import logging
 from typing import Optional
 
-from cryptography import x509
-from cryptography.x509 import Certificate
 from fastapi import Request
 from OpenSSL import crypto
 
@@ -71,19 +69,3 @@ class CaService:
         cert_pem = cert_pem.replace("-----BEGIN CERTIFICATE-----", "-----BEGIN CERTIFICATE-----\n")
         cert_pem = cert_pem.replace("-----END CERTIFICATE-----", "\n-----END CERTIFICATE-----\n")
         return cert_pem
-
-    @staticmethod
-    def get_client_certificate(request: Request) -> Optional[Certificate]:
-        """
-        Extracts and returns the client certificate from the request headers.
-        """
-        try:
-            cert_pem = CaService.get_pem_from_request(request)
-            if cert_pem is None:
-                logger.error("Client certificate PEM is None.")
-                return None
-            cert = x509.load_pem_x509_certificate(cert_pem.encode(), backend=None)
-            return cert
-        except Exception as e:
-            logger.error(f"Failed to load client certificate: {e}")
-            return None

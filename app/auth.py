@@ -23,7 +23,7 @@ class AuthContext:
 bearer = HTTPBearer(auto_error=False)
 
 
-async def get_auth_ctx(
+def get_auth_ctx(
     request: Request,
     creds: Optional[HTTPAuthorizationCredentials] = Depends(bearer),
     oauth_service: OAuthService = Depends(dependencies.get_oauth_service),

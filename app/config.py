@@ -86,14 +86,18 @@ class ConfigOAuth(BaseModel):
     override_authentication_ura: str | None = Field(default=None)
     token_lifetime_seconds: int = Field(default=3600, gt=0)
     ca_cert: str | None = Field(default=None)
-    ldn_ca_cert: str | None = Field(default=None)
-    uzi_ca_cert: str | None = Field(default=None)
+    ldn_ca_cert: str = Field(default="")
+    uzi_ca_cert: str = Field(default="")
 
     @model_validator(mode="after")
     def _check_override_when_disabled(self) -> Self:
         if not self.enabled:
             if not self.override_authentication_ura or not self.override_authentication_ura.strip():
                 raise ValueError("override_authentication_ura must be set when oauth is disabled (enabled=false)")
+        if self.ldn_ca_cert == "":
+            raise ValueError("ldn_ca_cert must be set in oauth configuration")
+        if self.uzi_ca_cert == "":
+            raise ValueError("uzi_ca_cert must be set in oauth configuration")
         return self
 
 
@@ -113,16 +117,19 @@ def read_ini_file(path: Path) -> Any:
 
     ret = {}
     for section in ini_data.sections():
-        ret[section] = dict(ini_data[section])
-        remove_empty_values(ret[section])
+        tmp = dict(ini_data[section])
+        tmp = remove_empty_values(tmp)
+        ret[section] = tmp
 
     return ret
 
 
-def remove_empty_values(section: dict[str, Any]) -> None:
+def remove_empty_values(section: dict[str, Any]) -> dict[str, Any]:
+    tmp = {}
     for key in section.keys():
-        if section[key] == "":
-            del section[key]
+        if section[key] != "":
+            tmp[key] = section[key]
+    return tmp
 
 
 def load_default_config(path: Path = DEFAULT_CONFIG_INI_FILE) -> Config:

@@ -26,13 +26,6 @@ uzi_server_certificate_ca_cert_path=
 dezi_register_trusted_signing_certs_store_path=
 
 
-[ura_middleware]
-# Override authentication URA for testing, or False when using the URA from the MTLS certificate
-override_authentication_ura=
-# override_authentication_ura=12345678
-# Set use_authentication_ura_allowlist to False when allowlist should be ignored, default is True
-use_authentication_ura_allowlist=
-
 [database]
 # Dsn for database connection
 dsn=postgresql+psycopg://postgres:postgres@postgres:5432/postgres

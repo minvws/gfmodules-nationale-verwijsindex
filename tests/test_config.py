@@ -44,5 +44,7 @@ def get_test_config() -> Config:
             ca_cert="/test/secrets/ca.crt",
             token_lifetime_seconds=30,
             override_authentication_ura=None,
+            ldn_ca_cert="/test/secrets/ldn_ca.crt",
+            uzi_ca_cert="/test/secrets/uzi_ca.crt",
         ),
     )

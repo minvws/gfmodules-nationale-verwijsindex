@@ -8,7 +8,7 @@ from uzireader.uziserver import UziServer
 from app import dependencies
 from app.models.ura import UraNumber
 from app.services.ca import CaService
-from app.services.oauth import OAuthError, OAuthInvalidClientError, OAuthInvalidRequestError, OAuthService
+from app.services.oauth import OAuthError, OAuthInvalidClientError, OAuthService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(
@@ -31,20 +31,6 @@ def invalid_client(msg: str = "invalid_client") -> JSONResponse:
         content={"error": "invalid_client", "error_description": msg},
         headers={"WWW-Authenticate": 'Basic realm="oauth"'},
     )
-
-
-def invalid_request(msg: str) -> JSONResponse:
-    """
-    Returns a 400 Bad Request response for invalid request errors.
-    """
-    return JSONResponse(status_code=400, content={"error": "invalid_request", "error_description": msg})
-
-
-def oauth_error(code: str, desc: str, status: int = 400) -> JSONResponse:
-    """
-    Returns a JSON response for (generic) OAuth errors.
-    """
-    return JSONResponse(status_code=status, content={"error": code, "error_description": desc})
 
 
 @router.post(
@@ -116,11 +102,6 @@ def get_ura_from_oauth(
     except OAuthInvalidClientError as e:
         logger.error(f"Invalid OAuth client: {e}")
         raise JsonException(invalid_client(str(e)))
-    except OAuthInvalidRequestError as e:
-        logger.error(f"Invalid OAuth request: {e}")
-        raise JsonException(
-            JSONResponse(status_code=400, content={"error": "invalid_request", "error_description": str(e)})
-        )
     except OAuthError as e:
         logger.error(f"OAuth error: {e.description}")
         raise JsonException(
