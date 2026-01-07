@@ -1,5 +1,5 @@
 import logging
-from typing import Annotated, Any
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
@@ -11,6 +11,7 @@ from app.models.data_reference.requests import (
     DataReferenceRequestParams,
 )
 from app.models.data_reference.resource import (
+    NVIDataReferenceOutput,
     NVIDataRefrenceInput,
 )
 from app.models.ura import UraNumber
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["NVI Data Reference"], prefix="/NVIDataReference")
 
 
-@router.get("")
+@router.get("", status_code=200)
 def get_reference(
     params: Annotated[DataReferenceRequestParams, Query()],
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
@@ -51,7 +52,7 @@ def delete_reference(
     params: Annotated[DataReferenceRequestParams, Query()],
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
-) -> Any:
+) -> Response:
     if params.pseudonym and params.oprf_key:
         try:
             localisation_pseudonym = pseudonym_service.exchange(oprf_jwe=params.pseudonym, blind_factor=params.oprf_key)
@@ -77,13 +78,13 @@ def delete_reference(
     return Response(status_code=204)
 
 
-@router.post("")
+@router.post("", response_model=NVIDataReferenceOutput, status_code=201)
 def create_reference(
-    request: Request,
     data: NVIDataRefrenceInput,
+    request: Request,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
-) -> Response:
+) -> NVIDataReferenceOutput:
     source_url = str(request.url)
     try:
         localisatin_pseudonym = pseudonym_service.exchange(oprf_jwe=data.subject.value, blind_factor=data.oprf_key)
@@ -99,17 +100,16 @@ def create_reference(
         uzi_number=data.source.value,
         request_url=source_url,
     )
+    return new_reference
 
-    return Response(status_code=201, content=new_reference)
 
-
-@router.get("/{id}")
+@router.get("/{id}", status_code=200)
 def get_by_id(
     id: UUID,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
-) -> Response:
+) -> NVIDataReferenceOutput:
     data_reference = referral_service.get_by_id(id)
-    return Response(status_code=200, content=data_reference)
+    return data_reference
 
 
 @router.delete("/{id}")
