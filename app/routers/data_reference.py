@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["NVI Data Reference"], prefix="/NVIDataReference")
 
 
-@router.get("/")
+@router.get("")
 def get_reference(
     params: Annotated[DataReferenceRequestParams, Query()],
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
@@ -46,7 +46,7 @@ def get_reference(
     return Bundle.from_reference_outputs(registrations)
 
 
-@router.delete("/")
+@router.delete("")
 def delete_reference(
     params: Annotated[DataReferenceRequestParams, Query()],
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
@@ -77,7 +77,7 @@ def delete_reference(
     return Response(status_code=204)
 
 
-@router.post("/")
+@router.post("")
 def create_reference(
     request: Request,
     data: NVIDataRefrenceInput,
