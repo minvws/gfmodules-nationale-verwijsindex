@@ -1,4 +1,4 @@
-from typing import Any, Final, List
+from typing import Any, Final, List, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
@@ -12,6 +12,10 @@ SOURCE_SYSTEM: Final[str] = "urn:oid:2.16.528.1.1007.3.3"  # NOSONAR
 SOURCE_TYPE_SYSTEM: Final[str] = "http://vws.nl/fhir/CodeSystem/nvi-organization-types"  # NOSONAR
 SUBJECT_SYSTEM: Final[str] = "http://vws.nl/fhir/NamingSystem/nvi-pseudonym"  # NOSONAR
 CARE_CONTEXT_SYSTEM: Final[str] = "http://nictiz.nl/fhir/hcim-2024"  # NOSONAR
+
+
+class DomainResource(BaseModel):
+    id: UUID
 
 
 class Coding(BaseModel):
@@ -33,7 +37,7 @@ class Identifier(BaseModel):
 class NVIDataReferenceBase(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
-    id: UUID
+    resource_type: Literal["NVIDataReference"] = "NVIDataReference"
     source: Identifier
     source_type: CodeableConcept
     care_context: CodeableConcept
@@ -136,7 +140,7 @@ class NVIDataRefrenceInput(NVIDataReferenceBase):
         return subject
 
 
-class NVIDataReferenceOutput(NVIDataReferenceBase):
+class NVIDataReferenceOutput(NVIDataReferenceBase, DomainResource):
     @classmethod
     def from_referral(cls, entity: ReferralEntity) -> "NVIDataReferenceOutput":
         return cls(

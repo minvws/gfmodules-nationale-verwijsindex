@@ -71,9 +71,7 @@ def test_deserialize_identifier_should_succeed() -> None:
 
 
 def test_serialize_nvi_data_reference_input_should_succeed() -> None:
-    resource_id = uuid4()
     data = NVIDataRefrenceInput(
-        id=resource_id,
         source=Identifier(system=SOURCE_SYSTEM, value="00000123"),
         source_type=CodeableConcept(coding=[Coding(system=SOURCE_TYPE_SYSTEM, code="Hospital")]),
         care_context=CodeableConcept(coding=[Coding(system=CARE_CONTEXT_SYSTEM, code="ImagingStudy")]),
@@ -81,7 +79,7 @@ def test_serialize_nvi_data_reference_input_should_succeed() -> None:
         oprf_key="some-key",
     )
     expected = {
-        "id": resource_id,
+        "resourceType": "NVIDataReference",
         "source": {"system": SOURCE_SYSTEM, "value": "00000123"},
         "sourceType": {"coding": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
         "careContext": {"coding": [{"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
@@ -95,9 +93,7 @@ def test_serialize_nvi_data_reference_input_should_succeed() -> None:
 
 
 def test_deserialize_nvi_data_reference_input_should_succeed() -> None:
-    resource_id = uuid4()
     expected = NVIDataRefrenceInput(
-        id=resource_id,
         source=Identifier(system=SOURCE_SYSTEM, value="00000123"),
         source_type=CodeableConcept(coding=[Coding(system=SOURCE_TYPE_SYSTEM, code="Hospital")]),
         care_context=CodeableConcept(coding=[Coding(system=CARE_CONTEXT_SYSTEM, code="ImagingStudy")]),
@@ -105,7 +101,6 @@ def test_deserialize_nvi_data_reference_input_should_succeed() -> None:
         oprf_key="some-key",
     )
     data = {
-        "id": resource_id,
         "source": {"system": SOURCE_SYSTEM, "value": "00000123"},
         "sourceType": {"coding": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
         "careContext": {"coding": [{"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
@@ -128,6 +123,7 @@ def test_serialize_nvi_data_reference_output_should_succeed() -> None:
     )
     expected = {
         "id": resource_id,
+        "resourceType": "NVIDataReference",
         "source": {"system": SOURCE_SYSTEM, "value": "00000123"},
         "sourceType": {"coding": [{"system": SOURCE_TYPE_SYSTEM, "code": "Hospital"}]},
         "careContext": {"coding": [{"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
