@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.models.data_reference.requests import DataReferenceRequestParams
+from app.models.fhir.resources.data_reference.requests import DataReferenceRequestParams
 
 
 def test_serialize_should_succeed() -> None:

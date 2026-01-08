@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
-from app.models.data_reference.resource import (
+from app.models.fhir.resources.data_reference.resource import (
     NVIDataReferenceOutput,
 )
 

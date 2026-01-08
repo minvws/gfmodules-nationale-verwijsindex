@@ -1,14 +1,14 @@
 from datetime import datetime
 from uuid import uuid4
 
-from app.models.data_reference.bundle import Bundle, BundleEntry
-from app.models.data_reference.resource import (
+from app.models.fhir.bundle import Bundle, BundleEntry
+from app.models.fhir.elements import CodeableConcept, Coding, Identifier
+from app.models.fhir.resources.data import (
     CARE_CONTEXT_SYSTEM,
     SOURCE_SYSTEM,
     SOURCE_TYPE_SYSTEM,
-    CodeableConcept,
-    Coding,
-    Identifier,
+)
+from app.models.fhir.resources.data_reference.resource import (
     NVIDataReferenceOutput,
 )
 

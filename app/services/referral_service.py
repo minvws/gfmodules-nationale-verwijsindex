@@ -11,7 +11,7 @@ from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
 from app.logger.referral_request_database_logger import ReferralRequestDatabaseLogger
 from app.models.data_domain import DataDomain
-from app.models.data_reference.resource import NVIDataReferenceOutput
+from app.models.fhir.resources.data_reference.resource import NVIDataReferenceOutput
 from app.models.pseudonym import Pseudonym
 from app.models.referrals.entry import ReferralEntry
 from app.models.referrals.logging import ReferralLoggingPayload

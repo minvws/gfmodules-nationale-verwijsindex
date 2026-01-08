@@ -6,11 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
 from app import dependencies
 from app.models.data_domain import DataDomain
-from app.models.data_reference.bundle import Bundle
-from app.models.data_reference.requests import (
-    DataReferenceRequestParams,
-)
-from app.models.data_reference.resource import (
+from app.models.fhir.bundle import Bundle
+from app.models.fhir.resources.data_reference.requests import DataReferenceRequestParams
+from app.models.fhir.resources.data_reference.resource import (
     NVIDataReferenceOutput,
     NVIDataRefrenceInput,
 )
