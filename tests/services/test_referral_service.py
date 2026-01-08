@@ -1,4 +1,4 @@
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi import HTTPException
@@ -32,7 +32,7 @@ def test_add_one_should_succeed(
         request_url="http://example.com",
         organization_type="Hospital",
     )
-
+    assert isinstance(expected.id, UUID)
     actual = referral_service.get_by_id(expected.id)
 
     assert expected == actual
@@ -108,6 +108,7 @@ def test_delete_one_should_succeed(
         request_url="http://example.com",
         organization_type="Pharmacy",
     )
+    assert isinstance(data.id, UUID)
     nvi_reference = referral_service.get_by_id(data.id)
     assert data == nvi_reference
     referral_service.delete_one(
@@ -358,6 +359,7 @@ def test_delete_by_id_should_succeed(referral_service: ReferralService, ura_numb
         uzi_number="123456789",
         request_url="http://example.org",
     )
+    assert isinstance(patient_reference.id, UUID)
     referral_service.delete_by_id(patient_reference.id)
     with pytest.raises(HTTPException) as exec:
         referral_service.get_by_id(patient_reference.id)

@@ -1,5 +1,4 @@
 from typing import Any, Literal
-from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 from pydantic.alias_generators import to_camel
@@ -13,11 +12,8 @@ from app.models.fhir.resources.data import (
     SOURCE_TYPE_SYSTEM,
     SUBJECT_SYSTEM,
 )
+from app.models.fhir.resources.domain_resource import DomainResource
 from app.models.ura import UraNumber
-
-
-class DomainResource(BaseModel):
-    id: UUID
 
 
 class NVIDataReferenceBase(BaseModel):

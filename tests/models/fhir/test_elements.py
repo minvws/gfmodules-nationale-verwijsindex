@@ -2,8 +2,8 @@ from app.models.fhir.elements import CodeableConcept, Coding, Identifier
 
 
 def test_serialize_coding_should_suceed() -> None:
-    expected = {"system": "some-system", "code": "some-code"}
-    data = Coding(system="some-system", code="some-code")
+    expected = {"system": "some-system", "code": "some-code", "display": "some-display"}
+    data = Coding(system="some-system", code="some-code", display="some-display")
 
     actual = data.model_dump()
 
@@ -11,8 +11,8 @@ def test_serialize_coding_should_suceed() -> None:
 
 
 def test_deserialize_coding_should_succeed() -> None:
-    expected = Coding(system="some-system", code="some-code")
-    data = {"system": "some-system", "code": "some-code"}
+    expected = Coding(system="some-system", code="some-code", display="some-display")
+    data = {"system": "some-system", "code": "some-code", "display": "some-display"}
 
     actual = Coding.model_validate(data)
 
@@ -20,8 +20,8 @@ def test_deserialize_coding_should_succeed() -> None:
 
 
 def test_serialize_codeable_concept_should_succeed() -> None:
-    expected = {"coding": [{"system": "some-system", "code": "some-code"}]}
-    data = CodeableConcept(coding=[Coding(system="some-system", code="some-code")])
+    expected = {"coding": [{"system": "some-system", "code": "some-code", "display": "some-display"}]}
+    data = CodeableConcept(coding=[Coding(system="some-system", code="some-code", display="some-display")])
 
     actual = data.model_dump()
 

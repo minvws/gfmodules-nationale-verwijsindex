@@ -33,7 +33,7 @@ def test_serialize_nvi_data_reference_input_should_succeed() -> None:
         "oprfKey": "some-key",
     }
 
-    actual = data.model_dump(by_alias=True)
+    actual = data.model_dump(by_alias=True, exclude_none=True)
 
     assert expected == actual
 
@@ -75,7 +75,7 @@ def test_serialize_nvi_data_reference_output_should_succeed() -> None:
         "careContext": {"coding": [{"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"}]},
     }
 
-    actual = data.model_dump(by_alias=True)
+    actual = data.model_dump(by_alias=True, exclude_none=True)
 
     assert expected == actual
 
