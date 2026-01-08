@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import List, Literal
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
@@ -26,9 +27,12 @@ class Bundle(BaseModel):
     entry: List[BundleEntry]
 
     @classmethod
-    def from_reference_outputs(cls, nvi_references: List[NVIDataReferenceOutput]) -> "Bundle":
+    def from_reference_outputs(
+        cls, nvi_references: List[NVIDataReferenceOutput], bundle_id: UUID | None = None
+    ) -> "Bundle":
+        target_id = str(bundle_id) if bundle_id else str(uuid4())
         entries = [BundleEntry(resource=nvi_ref) for nvi_ref in nvi_references]
-        obj = cls(entry=entries)
+        obj = cls(entry=entries, id=target_id)
         obj.total = len(obj.entry)
 
         return obj

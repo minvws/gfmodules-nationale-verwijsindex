@@ -94,14 +94,15 @@ def test_deserialize_should_succeed() -> None:
 
 
 def test_from_reference_output_should_succeed() -> None:
+    bundle_id = uuid4()
     output = NVIDataReferenceOutput(
         id=uuid4(),
         source=Identifier(system=SOURCE_SYSTEM, value="00000123"),
         source_type=CodeableConcept(coding=[Coding(system=SOURCE_TYPE_SYSTEM, code="Hospital")]),
         care_context=CodeableConcept(coding=[Coding(system=CARE_CONTEXT_SYSTEM, code="ImagingStudy")]),
     )
-    expected = Bundle(total=1, entry=[BundleEntry(resource=output)])
+    expected = Bundle(total=1, entry=[BundleEntry(resource=output)], id=str(bundle_id))
 
-    actual = Bundle.from_reference_outputs([output])
+    actual = Bundle.from_reference_outputs([output], bundle_id)
 
     assert expected == actual
