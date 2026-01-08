@@ -2,9 +2,10 @@ import logging
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 
 from app import dependencies
+from app.exceptions.fhir_exception import FHIRException
 from app.models.data_domain import DataDomain
 from app.models.data_reference.bundle import Bundle
 from app.models.data_reference.requests import (
@@ -14,6 +15,7 @@ from app.models.data_reference.resource import (
     NVIDataReferenceOutput,
     NVIDataRefrenceInput,
 )
+from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
@@ -29,16 +31,16 @@ def get_reference(
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
 ) -> Bundle:
     if params.pseudonym and params.oprf_key:
-        try:
-            localisation_pseudonym = pseudonym_service.exchange(oprf_jwe=params.pseudonym, blind_factor=params.oprf_key)
-        except Exception as e:
-            logger.error(f"Failed to exchange pseudonym: {e}")
-            raise HTTPException(status_code=404)
+        pseudonym = exchange_oprf(
+            pseudonym_service=pseudonym_service,
+            oprf_jwe=params.pseudonym,
+            blind_factor=params.oprf_key,
+        )
 
         if params.care_context:
             patient_reference = referral_service.get_specific_patient(
                 ura_number=UraNumber(params.source),
-                pseudonym=localisation_pseudonym,
+                pseudonym=pseudonym,
                 data_domain=DataDomain(params.care_context),
             )
             return Bundle.from_reference_outputs(patient_reference)
@@ -54,22 +56,22 @@ def delete_reference(
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
 ) -> Response:
     if params.pseudonym and params.oprf_key:
-        try:
-            localisation_pseudonym = pseudonym_service.exchange(oprf_jwe=params.pseudonym, blind_factor=params.oprf_key)
-        except Exception as e:
-            logger.error(f"Failed to exchange pseudonym: {e}")
-            raise HTTPException(status_code=404)
+        pseudonym = exchange_oprf(
+            pseudonym_service=pseudonym_service,
+            oprf_jwe=params.pseudonym,
+            blind_factor=params.oprf_key,
+        )
 
         if params.care_context is None:
             referral_service.delete_patient_registrations(
                 ura_number=UraNumber(params.source),
-                pseudonym=localisation_pseudonym,
+                pseudonym=pseudonym,
             )
         else:
             referral_service.delete_specific_registration(
                 ura_number=UraNumber(params.source),
                 data_domain=DataDomain(params.care_context),
-                pseudonym=localisation_pseudonym,
+                pseudonym=pseudonym,
             )
 
         return Response(status_code=204)
@@ -86,14 +88,14 @@ def create_reference(
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
 ) -> NVIDataReferenceOutput:
     source_url = str(request.url)
-    try:
-        localisatin_pseudonym = pseudonym_service.exchange(oprf_jwe=data.subject.value, blind_factor=data.oprf_key)
-    except Exception as e:
-        logger.error(f"failed to exchange pseudonym: {e}")
-        raise HTTPException(status_code=404)
+    pseudonym = exchange_oprf(
+        pseudonym_service=pseudonym_service,
+        oprf_jwe=data.oprf_key,
+        blind_factor=data.subject.value,
+    )
 
     new_reference = referral_service.add_one(
-        pseudonym=localisatin_pseudonym,
+        pseudonym=pseudonym,
         data_domain=data.get_data_domain(),
         ura_number=data.get_ura_number(),
         organization_type=data.get_organization_type(),
@@ -102,6 +104,19 @@ def create_reference(
     )
     return new_reference
 
+def exchange_oprf(pseudonym_service: PseudonymService, oprf_jwe: str, blind_factor: str) -> Pseudonym:
+    try:
+        return pseudonym_service.exchange(oprf_jwe=oprf_jwe, blind_factor=blind_factor)
+    except Exception as e:
+        logger.error(f"failed to exchange pseudonym: {e}")
+        raise FHIRException(
+            status_code=500,
+            severity="error",
+            code="not-found",
+            msg="Pseudonym could not be exchanged",
+            diagnostics=str(e),
+            expression=["NVIDataReference.subject"],
+        )
 
 @router.get("/{id}", status_code=200)
 def get_by_id(
