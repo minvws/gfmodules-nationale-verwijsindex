@@ -2,18 +2,18 @@ import logging
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 
 from app import dependencies
+from app.exceptions.fhir_exception import FHIRException
 from app.models.data_domain import DataDomain
-from app.models.data_reference.bundle import Bundle
-from app.models.data_reference.requests import (
-    DataReferenceRequestParams,
-)
-from app.models.data_reference.resource import (
+from app.models.fhir.bundle import Bundle
+from app.models.fhir.resources.data_reference.requests import DataReferenceRequestParams
+from app.models.fhir.resources.data_reference.resource import (
     NVIDataReferenceOutput,
     NVIDataRefrenceInput,
 )
+from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
@@ -22,23 +22,38 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["NVI Data Reference"], prefix="/NVIDataReference")
 
 
-@router.get("", status_code=200)
+def exchange_oprf(pseudonym_service: PseudonymService, oprf_jwe: str, blind_factor: str) -> Pseudonym:
+    try:
+        return pseudonym_service.exchange(oprf_jwe=oprf_jwe, blind_factor=blind_factor)
+    except Exception as e:
+        logger.error(f"failed to exchange pseudonym: {e}")
+        raise FHIRException(
+            status_code=500,
+            severity="error",
+            code="not-found",
+            msg="Pseudonym could not be exchanged",
+            diagnostics=str(e),
+            expression=["NVIDataReference.subject"],
+        )
+
+
+@router.get("", status_code=200, response_model_exclude_none=True)
 def get_reference(
     params: Annotated[DataReferenceRequestParams, Query()],
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
-) -> Bundle:
+) -> Bundle[NVIDataReferenceOutput]:
     if params.pseudonym and params.oprf_key:
-        try:
-            localisation_pseudonym = pseudonym_service.exchange(oprf_jwe=params.pseudonym, blind_factor=params.oprf_key)
-        except Exception as e:
-            logger.error(f"Failed to exchange pseudonym: {e}")
-            raise HTTPException(status_code=404)
+        pseudonym = exchange_oprf(
+            pseudonym_service=pseudonym_service,
+            oprf_jwe=params.pseudonym,
+            blind_factor=params.oprf_key,
+        )
 
         if params.care_context:
             patient_reference = referral_service.get_specific_patient(
                 ura_number=UraNumber(params.source),
-                pseudonym=localisation_pseudonym,
+                pseudonym=pseudonym,
                 data_domain=DataDomain(params.care_context),
             )
             return Bundle.from_reference_outputs(patient_reference)
@@ -47,29 +62,29 @@ def get_reference(
     return Bundle.from_reference_outputs(registrations)
 
 
-@router.delete("")
+@router.delete("", response_model_exclude_none=True)
 def delete_reference(
     params: Annotated[DataReferenceRequestParams, Query()],
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
 ) -> Response:
     if params.pseudonym and params.oprf_key:
-        try:
-            localisation_pseudonym = pseudonym_service.exchange(oprf_jwe=params.pseudonym, blind_factor=params.oprf_key)
-        except Exception as e:
-            logger.error(f"Failed to exchange pseudonym: {e}")
-            raise HTTPException(status_code=404)
+        pseudonym = exchange_oprf(
+            pseudonym_service=pseudonym_service,
+            oprf_jwe=params.pseudonym,
+            blind_factor=params.oprf_key,
+        )
 
         if params.care_context is None:
             referral_service.delete_patient_registrations(
                 ura_number=UraNumber(params.source),
-                pseudonym=localisation_pseudonym,
+                pseudonym=pseudonym,
             )
         else:
             referral_service.delete_specific_registration(
                 ura_number=UraNumber(params.source),
                 data_domain=DataDomain(params.care_context),
-                pseudonym=localisation_pseudonym,
+                pseudonym=pseudonym,
             )
 
         return Response(status_code=204)
@@ -78,7 +93,12 @@ def delete_reference(
     return Response(status_code=204)
 
 
-@router.post("", response_model=NVIDataReferenceOutput, status_code=201)
+@router.post(
+    "",
+    response_model=NVIDataReferenceOutput,
+    status_code=201,
+    response_model_exclude_none=True,
+)
 def create_reference(
     data: NVIDataRefrenceInput,
     request: Request,
@@ -86,14 +106,14 @@ def create_reference(
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
 ) -> NVIDataReferenceOutput:
     source_url = str(request.url)
-    try:
-        localisatin_pseudonym = pseudonym_service.exchange(oprf_jwe=data.subject.value, blind_factor=data.oprf_key)
-    except Exception as e:
-        logger.error(f"failed to exchange pseudonym: {e}")
-        raise HTTPException(status_code=404)
+    pseudonym = exchange_oprf(
+        pseudonym_service=pseudonym_service,
+        oprf_jwe=data.subject.value,
+        blind_factor=data.oprf_key,
+    )
 
     new_reference = referral_service.add_one(
-        pseudonym=localisatin_pseudonym,
+        pseudonym=pseudonym,
         data_domain=data.get_data_domain(),
         ura_number=data.get_ura_number(),
         organization_type=data.get_organization_type(),
@@ -103,7 +123,7 @@ def create_reference(
     return new_reference
 
 
-@router.get("/{id}", status_code=200)
+@router.get("/{id}", status_code=200, response_model_exclude_none=True)
 def get_by_id(
     id: UUID,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
@@ -112,7 +132,7 @@ def get_by_id(
     return data_reference
 
 
-@router.delete("/{id}")
+@router.delete("/{id}", response_model_exclude_none=True)
 def delete_by_id(
     id: UUID,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
