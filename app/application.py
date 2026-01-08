@@ -74,13 +74,10 @@ def setup_fastapi(config: Config) -> FastAPI:
     for router in routers:
         fastapi.include_router(router)
 
-    fastapi.add_exception_handler(
-        Exception, 
-        default_fhir_exception_handler
-    )
+    fastapi.add_exception_handler(Exception, default_fhir_exception_handler)
     fastapi.add_exception_handler(
         RequestValidationError,
-        request_validation_fhir_exception_handler, # type: ignore
+        request_validation_fhir_exception_handler,  # type: ignore
     )
 
     if config.stats.enabled:
@@ -106,6 +103,7 @@ def default_fhir_exception_handler(_: Request, exc: Exception) -> JSONResponse:
     )
     return JSONResponse(status_code=500, content=outcome.model_dump(by_alias=True, exclude_none=True))
 
+
 def request_validation_fhir_exception_handler(
     _: Request,
     exc: RequestValidationError,
@@ -117,8 +115,9 @@ def request_validation_fhir_exception_handler(
             OperationOutcomeIssue(
                 severity="error",
                 code="required" if err["type"] == "missing" else "invalid",
-                diagnostics=".".join(map(str, err["loc"])) + " " + str(err["msg"])),
-            )
+                diagnostics=".".join(map(str, err["loc"])) + " " + str(err["msg"]),
+            ),
+        )
 
     outcome = OperationOutcome(issue=issues)
 

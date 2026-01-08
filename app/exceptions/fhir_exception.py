@@ -24,7 +24,15 @@ class OperationOutcome(BaseModel):
 
 
 class FHIRException(HTTPException):
-    def __init__(self, status_code: int, severity: str, code: str, msg: str, diagnostics: str | None = None, expression: list[str] | None = None):
+    def __init__(
+        self,
+        status_code: int,
+        severity: str,
+        code: str,
+        msg: str,
+        diagnostics: str | None = None,
+        expression: list[str] | None = None,
+    ):
         outcome = OperationOutcome(
             issue=[
                 OperationOutcomeIssue(

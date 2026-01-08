@@ -104,6 +104,7 @@ def create_reference(
     )
     return new_reference
 
+
 def exchange_oprf(pseudonym_service: PseudonymService, oprf_jwe: str, blind_factor: str) -> Pseudonym:
     try:
         return pseudonym_service.exchange(oprf_jwe=oprf_jwe, blind_factor=blind_factor)
@@ -117,6 +118,7 @@ def exchange_oprf(pseudonym_service: PseudonymService, oprf_jwe: str, blind_fact
             diagnostics=str(e),
             expression=["NVIDataReference.subject"],
         )
+
 
 @router.get("/{id}", status_code=200)
 def get_by_id(
