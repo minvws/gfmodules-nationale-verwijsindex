@@ -8,6 +8,7 @@ from app.db.db import Database
 from app.jwt_validator import JwtValidator
 from app.middleware.ura.ura_middleware import UraMiddleware
 from app.models.ura import UraNumber
+from app.services.organization import OrganizationService
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.prs.registration_service import PrsRegistrationService
 from app.services.referral_service import ReferralService
@@ -23,6 +24,10 @@ def get_database() -> Database:
 
 def get_referral_service() -> ReferralService:
     return inject.instance(ReferralService)  # type: ignore
+
+
+def get_organization_service() -> OrganizationService:
+    return inject.instance(OrganizationService)
 
 
 def get_pseudonym_service() -> PseudonymService:

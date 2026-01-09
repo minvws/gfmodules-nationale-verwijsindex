@@ -65,6 +65,7 @@ def test_find_many_should_return_two_item(
         ura_number="0000123",
         pseudonym="some-pseudonym",
         data_domain="MedicationStatement",
+        organization_type="hospital",
     )
     with referral_repository.db_session:
         referral_repository.add_one(mock_referral_entity)

@@ -3,7 +3,9 @@ from typing import List, Literal
 from pydantic import ConfigDict
 from pydantic.alias_generators import to_camel
 
-from app.models.fhir.elements import CodeableConcept, Identifier
+from app.db.models.referral import ReferralEntity
+from app.models.fhir.elements import CodeableConcept, Coding, Identifier
+from app.models.fhir.resources.data import SOURCE_SYSTEM, SOURCE_TYPE_SYSTEM
 from app.models.fhir.resources.domain_resource import DomainResource
 
 
@@ -12,6 +14,18 @@ class Organization(DomainResource):
 
     resource_type: Literal["Organization"] = "Organization"
     identifier: List[Identifier]
-    active: bool
-    type: List[CodeableConcept]
-    name: str | None = None
+    type: List[CodeableConcept] | None = None
+
+    @classmethod
+    def from_referral(cls, referral: ReferralEntity) -> "Organization":
+        identifier = Identifier(system=SOURCE_SYSTEM, value=referral.ura_number)
+        org_type = CodeableConcept(
+            coding=[
+                Coding(
+                    system=SOURCE_TYPE_SYSTEM,
+                    code=referral.organization_type,
+                    display=referral.organization_type.capitalize(),
+                )
+            ]
+        )
+        return cls(id=referral.ura_number, identifier=[identifier], type=[org_type])

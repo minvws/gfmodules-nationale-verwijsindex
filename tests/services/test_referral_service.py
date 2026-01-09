@@ -216,6 +216,7 @@ def test_delete_patient_registrations_should_succeed(
         ura_number=ura_number,
         uzi_number="12345678",
         request_url="http://example.com",
+        organization_type="hospital",
     )
     referral_service.add_one(
         pseudonym=patient_1,
@@ -223,6 +224,7 @@ def test_delete_patient_registrations_should_succeed(
         ura_number=ura_number,
         uzi_number="12345678",
         request_url="http://example.com",
+        organization_type="hospital",
     )
 
     patient_2 = Pseudonym("ps-2")
@@ -232,6 +234,7 @@ def test_delete_patient_registrations_should_succeed(
         ura_number=ura_number,
         uzi_number="12345678",
         request_url="http://example.com",
+        organization_type="hospital",
     )
 
     expected = [patient_2_reference_1]
@@ -358,6 +361,7 @@ def test_delete_by_id_should_succeed(referral_service: ReferralService, ura_numb
         ura_number=ura_number,
         uzi_number="123456789",
         request_url="http://example.org",
+        organization_type="hospital",
     )
     assert isinstance(patient_reference.id, UUID)
     referral_service.delete_by_id(patient_reference.id)
@@ -405,6 +409,7 @@ def test_query_referral_two_items(referral_service: ReferralService, ura_number:
         data_domain=DataDomain("ImagingStudy"),
         ura_number=ura_number,
         request_url="http://example.com",
+        organization_type="hospital",
     )
 
     referral_service.add_one(
@@ -413,6 +418,7 @@ def test_query_referral_two_items(referral_service: ReferralService, ura_number:
         ura_number=ura_number,
         uzi_number="testuzi_number",
         request_url="http://example.com",
+        organization_type="pharmacy",
     )
 
     actual_referrals = referral_service.query_referrals(

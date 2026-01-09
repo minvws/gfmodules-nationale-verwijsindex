@@ -10,6 +10,7 @@ from app.jwt_validator import JwtValidator
 from app.middleware.ura.factory import create_ura_middleware
 from app.middleware.ura.ura_middleware import UraMiddleware
 from app.services.decrypt_service import DecryptService
+from app.services.organization import OrganizationService
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.prs.registration_service import PrsRegistrationService
 from app.services.referral_service import ReferralService
@@ -52,6 +53,9 @@ def container_config(binder: inject.Binder) -> None:
 
     referral_service = ReferralService(database=db)
     binder.bind(ReferralService, referral_service)
+
+    organization_service = OrganizationService(database=db)
+    binder.bind(OrganizationService, organization_service)
 
     decrypt_service = DecryptService(mtls_key=config.pseudonym_api.mtls_key)
     binder.bind(DecryptService, decrypt_service)
