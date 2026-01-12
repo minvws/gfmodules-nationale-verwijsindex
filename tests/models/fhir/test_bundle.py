@@ -1,16 +1,17 @@
 from datetime import datetime
 from uuid import uuid4
 
-from app.models.data_reference.bundle import Bundle, BundleEntry
-from app.models.data_reference.resource import (
+from app.models.fhir.bundle import Bundle, BundleEntry
+from app.models.fhir.elements import CodeableConcept, Coding, Identifier
+from app.models.fhir.resources.data import (
     CARE_CONTEXT_SYSTEM,
     SOURCE_SYSTEM,
     SOURCE_TYPE_SYSTEM,
-    CodeableConcept,
-    Coding,
-    Identifier,
+)
+from app.models.fhir.resources.data_reference.resource import (
     NVIDataReferenceOutput,
 )
+from app.models.fhir.resources.organization.resource import Organization
 
 
 def test_serialize_should_succeed() -> None:
@@ -88,7 +89,7 @@ def test_deserialize_should_succeed() -> None:
         ],
     )
 
-    actual = Bundle.model_validate(data)
+    actual = Bundle[NVIDataReferenceOutput].model_validate(data)
 
     assert expected == actual
 
@@ -104,5 +105,14 @@ def test_from_reference_output_should_succeed() -> None:
     expected = Bundle(total=1, entry=[BundleEntry(resource=output)], id=str(bundle_id))
 
     actual = Bundle.from_reference_outputs([output], bundle_id)
+
+    assert expected == actual
+
+
+def test_from_organizations_should_succeed(mock_org: Organization) -> None:
+    bundle_id = uuid4()
+    expected = Bundle(total=1, entry=[BundleEntry(resource=mock_org)], id=str(bundle_id))
+
+    actual = Bundle.from_organizations([mock_org], bundle_id)
 
     assert expected == actual

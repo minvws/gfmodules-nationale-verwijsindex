@@ -9,16 +9,6 @@ from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
 
 
-@pytest.fixture()
-def mock_referral_entity() -> ReferralEntity:
-    return ReferralEntity(
-        ura_number="0000123",
-        pseudonym="some-pseudonym",
-        data_domain="ImagingStudy",
-        organization_type="Hospital",
-    )
-
-
 def test_find_by_id_should_succeed(
     referral_repository: ReferralRepository, mock_referral_entity: ReferralEntity
 ) -> None:
@@ -65,6 +55,7 @@ def test_find_many_should_return_two_item(
         ura_number="0000123",
         pseudonym="some-pseudonym",
         data_domain="MedicationStatement",
+        organization_type="hospital",
     )
     with referral_repository.db_session:
         referral_repository.add_one(mock_referral_entity)
@@ -117,6 +108,79 @@ def test_find_many_should_return_empty_list(
         )
 
     assert actual == []
+
+
+def test_find_should_return_one_referral(
+    referral_repository: ReferralRepository, mock_referral_entity: ReferralEntity
+) -> None:
+    with referral_repository.db_session:
+        referral_repository.add_one(mock_referral_entity)
+        expected = [mock_referral_entity]
+
+        actual = referral_repository.find(
+            pseudonym=mock_referral_entity.pseudonym,
+            data_domain=mock_referral_entity.data_domain,
+        )
+
+        assert expected == actual
+
+
+def test_find_should_return_two_referrals(
+    referral_repository: ReferralRepository, mock_referral_entity: ReferralEntity
+) -> None:
+    with referral_repository.db_session:
+        another_referral = ReferralEntity(
+            pseudonym=mock_referral_entity.pseudonym,
+            data_domain=mock_referral_entity.data_domain,
+            ura_number="00000123",
+            organization_type=mock_referral_entity.data_domain,
+        )
+        referral_repository.add_one(mock_referral_entity)
+        referral_2 = referral_repository.add_one(another_referral)
+        expected = [mock_referral_entity, referral_2]
+
+        actual = referral_repository.find(
+            pseudonym=mock_referral_entity.pseudonym,
+            data_domain=mock_referral_entity.data_domain,
+        )
+
+        assert expected == actual
+
+
+def test_find_should_return_two_referrals_from_different_organizations(
+    referral_repository: ReferralRepository, mock_referral_entity: ReferralEntity
+) -> None:
+    with referral_repository.db_session:
+        different_org_referral = ReferralEntity(
+            pseudonym=mock_referral_entity.pseudonym,
+            data_domain=mock_referral_entity.data_domain,
+            ura_number="00000123",
+            organization_type="pharmacy",
+        )
+        referral_repository.add_one(mock_referral_entity)
+        referral_2 = referral_repository.add_one(different_org_referral)
+        expected = [mock_referral_entity, referral_2]
+
+        actual = referral_repository.find(
+            pseudonym=mock_referral_entity.pseudonym,
+            data_domain=mock_referral_entity.data_domain,
+            org_types=[
+                mock_referral_entity.organization_type,
+                referral_2.organization_type,
+            ],
+        )
+
+        assert expected == actual
+
+
+def test_find_should_return_empty_list_when_conditions_are_no_match(
+    referral_repository: ReferralRepository, mock_referral_entity: ReferralEntity
+) -> None:
+    with referral_repository.db_session:
+        referral_repository.add_one(mock_referral_entity)
+        actual = referral_repository.find(pseudonym=mock_referral_entity.pseudonym, data_domain="SomeDataDomain")
+
+        assert actual == []
 
 
 def test_add_one_should_succeed(referral_repository: ReferralRepository, mock_referral_entity: ReferralEntity) -> None:

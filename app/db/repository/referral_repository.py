@@ -1,7 +1,7 @@
-from typing import Sequence
+from typing import List, Sequence
 from uuid import UUID
 
-from sqlalchemy import delete, exists, select
+from sqlalchemy import delete, exists, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db.decorator import repository
@@ -47,6 +47,28 @@ class ReferralRepository(RepositoryBase):
             stmt = stmt.where(ReferralEntity.organization_type == organization_type)
 
         results = self.db_session.execute(stmt).scalars().all()
+        return results
+
+    def find(
+        self,
+        pseudonym: str,
+        data_domain: str,
+        org_types: List[str] = [],
+    ) -> Sequence[ReferralEntity]:
+        stmt = select(ReferralEntity).where(
+            ReferralEntity.pseudonym == pseudonym,
+            ReferralEntity.data_domain == data_domain,
+        )
+
+        org_filter_condition = []
+        for t in org_types:
+            org_filter_condition.append(ReferralEntity.organization_type == t)
+
+        if len(org_filter_condition) > 0:
+            stmt = stmt.where(or_(*org_filter_condition))
+
+        results = self.db_session.execute(stmt).scalars().all()
+
         return results
 
     def add_one(self, referral_entity: ReferralEntity) -> ReferralEntity:

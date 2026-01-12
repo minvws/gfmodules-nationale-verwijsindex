@@ -9,6 +9,7 @@ from app.routers.data_reference import router as data_reference_router
 from app.routers.default import router as default_router
 from app.routers.health import router as health_router
 from app.routers.info_referrals import router as info_referral_router
+from app.routers.organization import router as organization_router
 from app.routers.referrals import router as referral_router
 from app.stats import StatsdMiddleware, setup_stats
 from app.telemetry import setup_telemetry
@@ -67,6 +68,7 @@ def setup_fastapi(config: Config) -> FastAPI:
         referral_router,
         info_referral_router,
         data_reference_router,
+        organization_router,
     ]
     for router in routers:
         fastapi.include_router(router)

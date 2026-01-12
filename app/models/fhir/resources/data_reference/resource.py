@@ -1,37 +1,19 @@
-from typing import Any, Final, List, Literal
-from uuid import UUID
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 from pydantic.alias_generators import to_camel
 
 from app.db.models.referral import ReferralEntity
 from app.models.data_domain import DataDomain
+from app.models.fhir.elements import CodeableConcept, Coding, Identifier
+from app.models.fhir.resources.data import (
+    CARE_CONTEXT_SYSTEM,
+    SOURCE_SYSTEM,
+    SOURCE_TYPE_SYSTEM,
+    SUBJECT_SYSTEM,
+)
+from app.models.fhir.resources.domain_resource import DomainResource
 from app.models.ura import UraNumber
-
-SOURCE_SYSTEM: Final[str] = "urn:oid:2.16.528.1.1007.3.3"  # NOSONAR
-SOURCE_TYPE_SYSTEM: Final[str] = "http://vws.nl/fhir/CodeSystem/nvi-organization-types"  # NOSONAR
-SUBJECT_SYSTEM: Final[str] = "http://vws.nl/fhir/NamingSystem/nvi-pseudonym"  # NOSONAR
-CARE_CONTEXT_SYSTEM: Final[str] = "http://nictiz.nl/fhir/hcim-2024"  # NOSONAR
-
-
-class DomainResource(BaseModel):
-    id: UUID
-
-
-class Coding(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel)
-
-    system: str
-    code: str
-
-
-class CodeableConcept(BaseModel):
-    coding: List[Coding]
-
-
-class Identifier(BaseModel):
-    system: str
-    value: str
 
 
 class NVIDataReferenceBase(BaseModel):
