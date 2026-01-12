@@ -137,7 +137,7 @@ def test_delete_one_should_raise_exception_when_not_found(
     assert exec.value.status_code == 404
 
 
-def test_get_specific_patient_should_succeed(
+def test_get_registration_with_specific_patient_should_succeed(
     referral_service: ReferralService,
     ura_number: UraNumber,
 ) -> None:
@@ -153,9 +153,18 @@ def test_get_specific_patient_should_succeed(
         organization_type="Hospital",
     )
 
+    referral_service.add_one(
+        pseudonym=Pseudonym("ps-2"),
+        data_domain=data_domain,
+        ura_number=ura_number,
+        uzi_number="12345678",
+        request_url="http://example.com",
+        organization_type="Hospital",
+    )
+
     expected = [data]
 
-    actual = referral_service.get_specific_patient(
+    actual = referral_service.get_registrations(
         ura_number=data.get_ura_number(),
         pseudonym=localisation_pseudonym,
         data_domain=data.get_data_domain(),
@@ -164,19 +173,7 @@ def test_get_specific_patient_should_succeed(
     assert expected == actual
 
 
-def test_get_specific_patient_should_return_empty_list_when_no_match_found(
-    referral_service: ReferralService,
-) -> None:
-    actual = referral_service.get_specific_patient(
-        ura_number=UraNumber("123"),
-        pseudonym=Pseudonym("ps-1"),
-        data_domain=DataDomain("ImagingStudy"),
-    )
-
-    assert actual == []
-
-
-def test_get_all_registrations_should_succeed(referral_service: ReferralService, ura_number: UraNumber) -> None:
+def test_get_registrations_should_succeed(referral_service: ReferralService, ura_number: UraNumber) -> None:
     patient_1 = Pseudonym("ps-1")
     patient_2 = Pseudonym("ps-2")
     data_domain_1 = DataDomain("ImagingStudy")
@@ -200,7 +197,7 @@ def test_get_all_registrations_should_succeed(referral_service: ReferralService,
         organization_type=org_type,
     )
     expected = [expected_1, expected_2]
-    actual = referral_service.get_all_registrations(ura_number=ura_number)
+    actual = referral_service.get_registrations(ura_number=ura_number)
 
     assert expected == actual
 
@@ -241,7 +238,7 @@ def test_delete_patient_registrations_should_succeed(
 
     referral_service.delete_patient_registrations(ura_number=ura_number, pseudonym=patient_1)
 
-    actual = referral_service.get_all_registrations(ura_number)
+    actual = referral_service.get_registrations(ura_number)
 
     assert expected == actual
 
@@ -272,7 +269,7 @@ def test_delete_specific_registration_should_suceed(
         data_domain=mock_referral.data_domain,
         pseudonym=mock_referral.pseudonym,
     )
-    actual = referral_service.get_specific_patient(
+    actual = referral_service.get_registrations(
         ura_number=mock_referral.ura_number,
         data_domain=mock_referral.data_domain,
         pseudonym=mock_referral.pseudonym,
@@ -317,7 +314,7 @@ def test_delete_organizaton_should_succeed(referral_service: ReferralService, ur
         request_url="http://example.com",
         organization_type=ura_a_type,
     )
-    assert referral_service.get_all_registrations(ura_number=ura_a) == [
+    assert referral_service.get_registrations(ura_number=ura_a) == [
         patient_1_referecne,
         patient_2_reference,
     ]
@@ -336,8 +333,8 @@ def test_delete_organizaton_should_succeed(referral_service: ReferralService, ur
     )
 
     referral_service.delete_specific_organization(ura_number=ura_a)
-    actual_org_1 = referral_service.get_all_registrations(ura_number=ura_a)
-    actual_org_2 = referral_service.get_all_registrations(ura_number=ura_b)
+    actual_org_1 = referral_service.get_registrations(ura_number=ura_a)
+    actual_org_2 = referral_service.get_registrations(ura_number=ura_b)
 
     assert actual_org_1 == []
     assert actual_org_2 == [patient_3_reference]
