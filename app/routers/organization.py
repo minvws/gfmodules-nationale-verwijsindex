@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Organization"], prefix="/Organization")
 
 
-@router.post("/$localize")
+@router.post("/$localize", response_model_exclude_none=True)
 def localise(
     parameters: Parameters,
     pseudonym_service: PseudonymService = Depends(get_pseudonym_service),
