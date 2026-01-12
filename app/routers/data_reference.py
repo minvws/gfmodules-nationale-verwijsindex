@@ -88,8 +88,8 @@ def create_reference(
     source_url = str(request.url)
     pseudonym = exchange_oprf(
         pseudonym_service=pseudonym_service,
-        oprf_jwe=data.oprf_key,
-        blind_factor=data.subject.value,
+        oprf_jwe=data.subject.value,
+        blind_factor=data.oprf_key,
     )
 
     new_reference = referral_service.add_one(
