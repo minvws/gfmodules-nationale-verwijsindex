@@ -1,10 +1,13 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from app import container
 from app.config import Config, load_default_config
 from app.dependencies import get_prs_registration_service
+from app.exceptions.fhir_exception import OperationOutcome, OperationOutcomeDetail, OperationOutcomeIssue
 from app.routers.data_reference import router as data_reference_router
 from app.routers.default import router as default_router
 from app.routers.health import router as health_router
@@ -73,7 +76,54 @@ def setup_fastapi(config: Config) -> FastAPI:
     for router in routers:
         fastapi.include_router(router)
 
+    fastapi.add_exception_handler(Exception, default_fhir_exception_handler)
+    fastapi.add_exception_handler(
+        RequestValidationError,
+        request_validation_fhir_exception_handler,  # type: ignore
+    )
+
     if config.stats.enabled:
         fastapi.add_middleware(StatsdMiddleware, module_name=config.stats.module_name or "default")
 
     return fastapi
+
+
+def default_fhir_exception_handler(_: Request, exc: Exception) -> JSONResponse:
+    """
+    Default handler to convert generic exceptions to FHIR exceptions
+    """
+    outcome = OperationOutcome(
+        issue=[
+            OperationOutcomeIssue(
+                severity="error",
+                code="exception",
+                details=OperationOutcomeDetail(text="An unexpected error occurred"),
+                diagnostics=str(exc),
+                expression=[type(exc).__name__],
+            )
+        ]
+    )
+    return JSONResponse(status_code=500, content=outcome.model_dump(by_alias=True, exclude_none=True))
+
+
+def request_validation_fhir_exception_handler(
+    _: Request,
+    exc: RequestValidationError,
+) -> JSONResponse:
+    issues = []
+
+    for err in exc.errors():
+        issues.append(
+            OperationOutcomeIssue(
+                severity="error",
+                code="required" if err["type"] == "missing" else "invalid",
+                diagnostics=".".join(map(str, err["loc"])) + " " + str(err["msg"]),
+            ),
+        )
+
+    outcome = OperationOutcome(issue=issues)
+
+    return JSONResponse(
+        status_code=422,
+        content=outcome.model_dump(by_alias=True, exclude_none=True),
+    )
