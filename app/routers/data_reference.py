@@ -22,7 +22,22 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["NVI Data Reference"], prefix="/NVIDataReference")
 
 
-@router.get("", status_code=200)
+def exchange_oprf(pseudonym_service: PseudonymService, oprf_jwe: str, blind_factor: str) -> Pseudonym:
+    try:
+        return pseudonym_service.exchange(oprf_jwe=oprf_jwe, blind_factor=blind_factor)
+    except Exception as e:
+        logger.error(f"failed to exchange pseudonym: {e}")
+        raise FHIRException(
+            status_code=500,
+            severity="error",
+            code="not-found",
+            msg="Pseudonym could not be exchanged",
+            diagnostics=str(e),
+            expression=["NVIDataReference.subject"],
+        )
+
+
+@router.get("", status_code=200, response_model_exclude_none=True)
 def get_reference(
     params: Annotated[DataReferenceRequestParams, Query()],
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
@@ -47,7 +62,7 @@ def get_reference(
     return Bundle.from_reference_outputs(registrations)
 
 
-@router.delete("")
+@router.delete("", response_model_exclude_none=True)
 def delete_reference(
     params: Annotated[DataReferenceRequestParams, Query()],
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
@@ -78,7 +93,12 @@ def delete_reference(
     return Response(status_code=204)
 
 
-@router.post("", response_model=NVIDataReferenceOutput, status_code=201)
+@router.post(
+    "",
+    response_model=NVIDataReferenceOutput,
+    status_code=201,
+    response_model_exclude_none=True,
+)
 def create_reference(
     data: NVIDataRefrenceInput,
     request: Request,
@@ -103,22 +123,7 @@ def create_reference(
     return new_reference
 
 
-def exchange_oprf(pseudonym_service: PseudonymService, oprf_jwe: str, blind_factor: str) -> Pseudonym:
-    try:
-        return pseudonym_service.exchange(oprf_jwe=oprf_jwe, blind_factor=blind_factor)
-    except Exception as e:
-        logger.error(f"failed to exchange pseudonym: {e}")
-        raise FHIRException(
-            status_code=500,
-            severity="error",
-            code="not-found",
-            msg="Pseudonym could not be exchanged",
-            diagnostics=str(e),
-            expression=["NVIDataReference.subject"],
-        )
-
-
-@router.get("/{id}", status_code=200)
+@router.get("/{id}", status_code=200, response_model_exclude_none=True)
 def get_by_id(
     id: UUID,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
@@ -127,7 +132,7 @@ def get_by_id(
     return data_reference
 
 
-@router.delete("/{id}")
+@router.delete("/{id}", response_model_exclude_none=True)
 def delete_by_id(
     id: UUID,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
