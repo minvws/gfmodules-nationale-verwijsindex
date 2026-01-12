@@ -9,9 +9,13 @@ from cryptography.x509 import Certificate
 
 from app.config import ConfigDatabase
 from app.db.db import Database
+from app.db.models.referral import ReferralEntity
+from app.db.repository.referral_repository import ReferralRepository
 from app.middleware.ura.allowlisted_ura_middleware import AllowlistedUraMiddleware
+from app.models.fhir.resources.organization.resource import Organization
 from app.models.ura import UraNumber
 from app.services.http import HttpService
+from app.services.organization import OrganizationService
 from app.services.prs.registration_service import PrsRegistrationService
 from app.services.referral_service import ReferralService
 from app.utils.certificates.utils import load_certificate
@@ -34,6 +38,11 @@ def database() -> Generator[Database, Any, None]:
 
 
 @pytest.fixture()
+def referral_repository(database: Database) -> ReferralRepository:
+    return ReferralRepository(db_session=database.get_db_session())
+
+
+@pytest.fixture()
 def http_service() -> HttpService:
     config = get_test_config()
     return HttpService(**config.pseudonym_api.model_dump())
@@ -42,6 +51,21 @@ def http_service() -> HttpService:
 @pytest.fixture(scope="session")
 def ura_number() -> UraNumber:
     return UraNumber("00000123")
+
+
+@pytest.fixture()
+def mock_referral_entity() -> ReferralEntity:
+    return ReferralEntity(
+        ura_number="0000123",
+        pseudonym="some-pseudonym",
+        data_domain="ImagingStudy",
+        organization_type="Hospital",
+    )
+
+
+@pytest.fixture()
+def mock_org(mock_referral_entity: ReferralEntity) -> Organization:
+    return Organization.from_referral(mock_referral_entity)
 
 
 @pytest.fixture()
@@ -58,6 +82,11 @@ def prs_registration_service(ura_number: UraNumber) -> PrsRegistrationService:
 @pytest.fixture()
 def referral_service(database: Database) -> ReferralService:
     return ReferralService(database=database)  # type: ignore
+
+
+@pytest.fixture()
+def organization_service(database: Database) -> OrganizationService:
+    return OrganizationService(database=database)
 
 
 @pytest.fixture(scope="session")

@@ -1,11 +1,11 @@
 import logging
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.dependencies import get_organization_service, get_pseudonym_service
 from app.models.fhir.bundle import Bundle
 from app.models.fhir.resources.organization.parameters import Parameters
+from app.models.fhir.resources.organization.resource import Organization
 from app.services.organization import OrganizationService
 from app.services.prs.pseudonym_service import PseudonymService
 
@@ -18,7 +18,7 @@ def localise(
     parameters: Parameters,
     pseudonym_service: PseudonymService = Depends(get_pseudonym_service),
     organization_service: OrganizationService = Depends(get_organization_service),
-) -> Any:
+) -> Bundle[Organization]:
     localization_dto = parameters.get_org_lokalization_dto()
     try:
         localisation_pseudonym = pseudonym_service.exchange(
