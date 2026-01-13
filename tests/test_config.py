@@ -1,12 +1,12 @@
 from app.config import (
     Config,
     ConfigApp,
+    ConfigClientOAuth,
     ConfigDatabase,
     ConfigDeziRegister,
     ConfigPseudonymApi,
     ConfigStats,
     ConfigTelemetry,
-    ConfigUraMiddleware,
     LogLevel,
 )
 
@@ -35,13 +35,15 @@ def get_test_config() -> Config:
             tracer_name=None,
         ),
         stats=ConfigStats(enabled=False, host=None, port=None, module_name=None),
-        ura_middleware=ConfigUraMiddleware(
-            override_authentication_ura=None,
-            use_authentication_ura_allowlist=False,
-            allowlist_cache_in_seconds=40,
-        ),
         dezi_register=ConfigDeziRegister(
             uzi_server_certificate_ca_cert_path="/test/secrets/ca.crt",
             dezi_register_trusted_signing_certs_store_path="/test/secrets/nvi/",
+        ),
+        client_oauth=ConfigClientOAuth(
+            jwks_url="http://example.com/.well-known/jwks.json",
+            issuer="http://example.com/",
+            audience="test-audience",
+            enabled=True,
+            override_ura_number="12345678",
         ),
     )
