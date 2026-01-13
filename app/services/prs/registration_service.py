@@ -45,8 +45,8 @@ class PrsRegistrationService:
             response.raise_for_status()
 
         except (HTTPError, ConnectionError, Timeout) as e:
-            logger.error(f"Failed to register orgnizaton: {e}")
-            raise PseudonymError("Failed to register orgnizaton")
+            logger.error(f"Failed to register organization: {e}")
+            raise PseudonymError("Failed to register organization")
 
     def _register_certificate(self) -> None:
         """

@@ -7,8 +7,7 @@ from pydantic import ValidationError
 from app.config import PROJECT_ROOT, Config, read_ini_file
 from app.db.db import Database
 from app.jwt_validator import JwtValidator
-from app.middleware.ura.factory import create_ura_middleware
-from app.middleware.ura.ura_middleware import UraMiddleware
+from app.services.client_oauth import ClientOAuthService
 from app.services.decrypt_service import DecryptService
 from app.services.organization import OrganizationService
 from app.services.prs.pseudonym_service import PseudonymService
@@ -82,8 +81,8 @@ def container_config(binder: inject.Binder) -> None:
     )
     binder.bind(JwtValidator, jwt_validator)
 
-    ura_middleware = create_ura_middleware(config.ura_middleware, db)
-    binder.bind(UraMiddleware, ura_middleware)
+    client_oauth_service = ClientOAuthService(config.client_oauth)
+    binder.bind(ClientOAuthService, client_oauth_service)
 
 
 def configure() -> None:

@@ -1,10 +1,11 @@
 import logging
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app import container
+from app.auth import get_auth_ctx
 from app.config import Config, load_default_config
 from app.dependencies import get_prs_registration_service
 from app.exceptions.fhir_exception import OperationOutcome, OperationOutcomeDetail, OperationOutcomeIssue
@@ -65,16 +66,21 @@ def setup_fastapi(config: Config) -> FastAPI:
     )
     container.configure()
 
-    routers = [
+    public_routers = [
         default_router,
         health_router,
+    ]
+    for router in public_routers:
+        fastapi.include_router(router)
+
+    routers = [
         referral_router,
         info_referral_router,
         data_reference_router,
         organization_router,
     ]
     for router in routers:
-        fastapi.include_router(router)
+        fastapi.include_router(router, dependencies=[Depends(get_auth_ctx)])
 
     fastapi.add_exception_handler(Exception, default_fhir_exception_handler)
     fastapi.add_exception_handler(
