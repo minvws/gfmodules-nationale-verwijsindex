@@ -159,7 +159,7 @@ def test_get_registration_with_specific_patient_should_succeed(
         ura_number=ura_number,
         uzi_number="12345678",
         request_url="http://example.com",
-        organization_type="Hospital",
+        organization_type="ziekenhuis",
     )
 
     expected = [data]
