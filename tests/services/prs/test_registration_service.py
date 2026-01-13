@@ -106,7 +106,7 @@ def test_register_certificate_should_succeed(
 
     response.assert_called_once_with(
         method="POST",
-        sub_route="/register/certificate",
+        sub_route="register/certificate",
         data={"scope": ["nationale-verwijsindex"]},
     )
 
@@ -123,7 +123,7 @@ def test_register_certificate_should_succeed_even_if_it_is_registered(
 
     response.assert_called_once_with(
         method="POST",
-        sub_route="/register/certificate",
+        sub_route="register/certificate",
         data={"scope": ["nationale-verwijsindex"]},
     )
 

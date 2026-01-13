@@ -53,6 +53,7 @@ def application_init() -> None:
 def create_fastapi_app() -> FastAPI:
     application_init()
     fastapi = setup_fastapi()
+    register_at_prs()
 
     return fastapi
 

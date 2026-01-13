@@ -2,6 +2,7 @@ import base64
 import hashlib
 import hmac
 import logging
+import ssl
 from typing import Any, Dict
 
 import jwt
@@ -13,7 +14,7 @@ from jwt import PyJWKClient
 from app.config import ConfigClientOAuth
 from app.models.ura import UraNumber
 
-SSL_CLIENT_CERT_HEADER_NAME = "x-forwarded-tls-client-cert"
+SSL_CLIENT_CERT_HEADER_NAME = "x-forwarded-tls-client-cert"  # "x-proxy-ssl_client_cert"
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,28 @@ class ClientOAuthService:
 
     def __init__(self, config: ConfigClientOAuth) -> None:
         self.config = config
+        self._ssl_context = self._create_ssl_context()
+
+    def _create_ssl_context(self) -> ssl.SSLContext:
+        """
+        Create an SSL context for mTLS connections to the JWKS endpoint.
+        """
+        if (
+            self.config.mtls_cert is None
+            or self.config.mtls_key is None
+            or self.config.verify_ca is None
+            or not isinstance(self.config.verify_ca, str)
+        ):
+            raise ValueError("mTLS certificate and key must be provided for Client OAuth2")
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
+        context.verify_mode = ssl.CERT_REQUIRED
+        context.check_hostname = True
+
+        context.load_cert_chain(certfile=self.config.mtls_cert, keyfile=self.config.mtls_key)
+        context.load_verify_locations(cafile=self.config.verify_ca)
+
+        return context
 
     def enabled(self) -> bool:
         """
@@ -56,7 +79,7 @@ class ClientOAuthService:
         """
         Verify JWT token and return claims.
         """
-        jwk_client = PyJWKClient(self.config.jwks_url, cache_keys=True)
+        jwk_client = PyJWKClient(self.config.jwks_url, cache_keys=True, ssl_context=self._ssl_context)
         signing_key = jwk_client.get_signing_key_from_jwt(token).key
 
         try:
@@ -87,6 +110,7 @@ class ClientOAuthService:
         # Extract presented client certificate thumbprint from request
         cert_pem = request.headers.get(SSL_CLIENT_CERT_HEADER_NAME)
         if not cert_pem:
+            logger.error("Client certificate not presented or verification failed")
             raise HTTPException(status_code=401, detail="Client certificate not presented or verification failed")
 
         # Calculate thumbprint of presented certificate

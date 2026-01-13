@@ -55,7 +55,7 @@ class PrsRegistrationService:
         try:
             response = self._http_service.do_request(
                 method="POST",
-                sub_route="/register/certificate",
+                sub_route="register/certificate",
                 data={"scope": ["nationale-verwijsindex"]},
             )
 

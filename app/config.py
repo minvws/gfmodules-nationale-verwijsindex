@@ -91,6 +91,9 @@ class ConfigClientOAuth(BaseModel):
     jwks_url: str
     issuer: str
     audience: str
+    mtls_cert: str | None = Field(default=None)
+    mtls_key: str | None = Field(default=None)
+    verify_ca: str | bool = Field(default=True)
 
 
 class Config(BaseModel):
