@@ -83,7 +83,7 @@ ssl_key_file = server.key
 
 [client_oauth]
 enabled = True
-override_ura = 12345600
+override_ura_number = 12345600
 audience = nvi.service
 issuer = https://localhost:8443/
 jwks_url = https://localhost:8443/oauth/jwks.json
