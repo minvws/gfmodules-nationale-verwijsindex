@@ -1,10 +1,8 @@
 import logging
-from pathlib import Path
 
 import inject
-from pydantic import ValidationError
 
-from app.config import PROJECT_ROOT, Config, read_ini_file
+from app.config import Config, get_config
 from app.db.db import Database
 from app.jwt_validator import JwtValidator
 from app.services.client_oauth import ClientOAuthService
@@ -21,30 +19,10 @@ from app.utils.certificates.utils import load_certificate
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_CONFIG_INI_FILE = PROJECT_ROOT / "app.conf"
-
-
-def _load_default_config(config_path: Path) -> Config:
-    # To be inline with other python code, we use INI-type files for configuration. Since this isn't
-    # a standard format for pydantic, we need to do some manual parsing first.
-    ini_data = read_ini_file(config_path)
-
-    try:
-        # Convert database.retry_backoff to a list of floats
-        if "retry_backoff" in ini_data["database"] and isinstance(ini_data["database"]["retry_backoff"], str):
-            # convert the string to a list of floats
-            ini_data["database"]["retry_backoff"] = [float(i) for i in ini_data["database"]["retry_backoff"].split(",")]
-
-        config = Config(**ini_data)
-    except ValidationError as e:
-        logger.error(f"Configuration validation error: {e}")
-        raise e
-
-    return config
-
 
 def container_config(binder: inject.Binder) -> None:
-    config = _load_default_config(DEFAULT_CONFIG_INI_FILE)
+    config = get_config()
+
     binder.bind(Config, config)
 
     db = Database(config_database=config.database)

@@ -7,6 +7,7 @@ from app.config import (
     ConfigPseudonymApi,
     ConfigStats,
     ConfigTelemetry,
+    ConfigUvicorn,
     LogLevel,
 )
 
@@ -38,6 +39,14 @@ def get_test_config() -> Config:
         dezi_register=ConfigDeziRegister(
             uzi_server_certificate_ca_cert_path="/test/secrets/ca.crt",
             dezi_register_trusted_signing_certs_store_path="/test/secrets/nvi/",
+        ),
+        uvicorn=ConfigUvicorn(
+            docs_url="/docs",
+            redoc_url="/redoc",
+            swagger_enabled=True,
+            ssl_base_dir="/ssl",
+            ssl_cert_file="/file.cert",
+            ssl_key_file="/file.key",
         ),
         client_oauth=ConfigClientOAuth(
             jwks_url="http://example.com/.well-known/jwks.json",
