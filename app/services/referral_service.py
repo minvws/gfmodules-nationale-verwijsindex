@@ -100,6 +100,25 @@ class ReferralService:
             )
             return NVIDataReferenceOutput.from_referral(new_referral)
 
+    def get_one(
+        self,
+        pseudonym: Pseudonym,
+        data_domain: DataDomain,
+        ura_number: UraNumber,
+    ) -> NVIDataReferenceOutput | None:
+        with self.database.get_db_session() as session:
+            repo = session.get_repository(ReferralRepository)
+            referral = repo.find_one(
+                pseudonym=str(pseudonym),
+                data_domain=str(data_domain),
+                ura_number=str(ura_number),
+            )
+
+        if referral:
+            return NVIDataReferenceOutput.from_referral(referral)
+
+        return None
+
     def delete_one(
         self,
         pseudonym: Pseudonym,

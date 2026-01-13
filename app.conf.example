@@ -20,13 +20,6 @@ uzi_server_certificate_ca_cert_path=
 dezi_register_trusted_signing_certs_store_path=
 
 
-[ura_middleware]
-# Override authentication URA for testing, or False when using the URA from the MTLS certificate
-override_authentication_ura=
-# override_authentication_ura=12345678
-# Set use_authentication_ura_allowlist to False when allowlist should be ignored, default is True
-use_authentication_ura_allowlist=
-
 [database]
 # Dsn for database connection
 dsn=postgresql+psycopg://postgres:postgres@postgres:5432/postgres
@@ -87,3 +80,10 @@ use_ssl = False
 ssl_base_dir = secrets/ssl
 ssl_cert_file = server.cert
 ssl_key_file = server.key
+
+[client_oauth]
+enabled = True
+override_ura = 12345600
+audience = nvi.service
+issuer = https://localhost:8443/
+jwks_url = https://localhost:8443/oauth/jwks.json

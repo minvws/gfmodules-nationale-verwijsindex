@@ -11,7 +11,6 @@ from app.config import ConfigDatabase
 from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
-from app.middleware.ura.allowlisted_ura_middleware import AllowlistedUraMiddleware
 from app.models.fhir.resources.organization.resource import Organization
 from app.models.ura import UraNumber
 from app.services.http import HttpService
@@ -66,11 +65,6 @@ def mock_referral_entity() -> ReferralEntity:
 @pytest.fixture()
 def mock_org(mock_referral_entity: ReferralEntity) -> Organization:
     return Organization.from_referral(mock_referral_entity)
-
-
-@pytest.fixture()
-def ura_filter_service(database: Database) -> AllowlistedUraMiddleware:
-    return AllowlistedUraMiddleware(database, 10)
 
 
 @pytest.fixture()

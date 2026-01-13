@@ -85,15 +85,23 @@ class ConfigStats(BaseModel):
     module_name: str | None
 
 
+class ConfigClientOAuth(BaseModel):
+    enabled: bool = Field(default=False)
+    override_ura_number: str | None = Field(default=None)
+    jwks_url: str
+    issuer: str
+    audience: str
+
+
 class Config(BaseModel):
     app: ConfigApp
     database: ConfigDatabase
     pseudonym_api: ConfigPseudonymApi
     telemetry: ConfigTelemetry
     stats: ConfigStats
-    ura_middleware: ConfigUraMiddleware
     dezi_register: ConfigDeziRegister
     uvicorn: ConfigUvicorn
+    client_oauth: ConfigClientOAuth
 
 
 def read_ini_file(path: str) -> Any:

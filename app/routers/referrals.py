@@ -12,7 +12,6 @@ from app.models.referrals.requests import (
     DeleteReferralRequest,
     ReferralQuery,
 )
-from app.models.ura import UraNumber
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 
@@ -33,7 +32,6 @@ def create_referral(
     request: Request,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
-    _: UraNumber = Depends(dependencies.authenticated_ura),
 ) -> Response:
     """
     Creates a referral
@@ -73,7 +71,6 @@ def query_referrals(
     request: Request,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
-    _: UraNumber = Depends(dependencies.authenticated_ura),
 ) -> List[ReferralEntry] | Response:
     """
     Queries referrals by optional pseudonym or optional data domain
@@ -112,7 +109,6 @@ def delete_referral(
     req: DeleteReferralRequest,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
-    _: UraNumber = Depends(dependencies.authenticated_ura),
 ) -> Response:
     """
     Deletes a referral
