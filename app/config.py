@@ -139,7 +139,11 @@ def get_config(path: str | None = None) -> Config:
 
     try:
         # Convert database.retry_backoff to a list of floats
-        if "retry_backoff" in ini_data["database"] and isinstance(ini_data["database"]["retry_backoff"], str):
+        if (
+            "database" in ini_data
+            and "retry_backoff" in ini_data["database"]
+            and isinstance(ini_data["database"]["retry_backoff"], str)
+        ):
             # convert the string to a list of floats
             ini_data["database"]["retry_backoff"] = [float(i) for i in ini_data["database"]["retry_backoff"].split(",")]
 
