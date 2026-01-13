@@ -3,6 +3,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 from pydantic.alias_generators import to_camel
 
+from app.data import HCIM_2024_ZIBS, NVI_ORGANIZATION_TYPES
 from app.db.models.referral import ReferralEntity
 from app.models.data_domain import DataDomain
 from app.models.fhir.elements import CodeableConcept, Coding, Identifier
@@ -63,8 +64,10 @@ class NVIDataReferenceBase(BaseModel):
 
         if coding.system != SOURCE_TYPE_SYSTEM:
             raise ValueError(
-                f"NVIDataReference.systemType.coding.system urecognized, system must be: {SOURCE_TYPE_SYSTEM}"
+                f"NVIDataReference.sourceType.coding.system urecognized, system must be: {SOURCE_TYPE_SYSTEM}"
             )
+        if coding.code not in [types.code for types in NVI_ORGANIZATION_TYPES]:
+            raise ValueError(f"NVIDataReference.sourceType.coding.code unrecognized organization type {coding.code}")
 
         return source_type
 
@@ -88,6 +91,9 @@ class NVIDataReferenceBase(BaseModel):
             raise ValueError(
                 f"NVIReferenceData.careContext.coding.system unrecognized, system must be: {CARE_CONTEXT_SYSTEM}"
             )
+
+        if coding.code not in [zib.code for zib in HCIM_2024_ZIBS]:
+            raise ValueError(f"NVIDataReference.careContext.coding.code unrecognized care context {coding.code}")
 
         return care_context
 
@@ -135,7 +141,15 @@ class NVIDataReferenceOutput(NVIDataReferenceBase, DomainResource):
                 coding=[
                     Coding(
                         system=SOURCE_TYPE_SYSTEM,
-                        code=entity.organization_type or "",
+                        code=entity.organization_type,
+                        display=next(
+                            (
+                                types.display
+                                for types in NVI_ORGANIZATION_TYPES
+                                if types.code == entity.organization_type
+                            ),
+                            None,
+                        ),
                     )
                 ]
             ),
@@ -144,6 +158,10 @@ class NVIDataReferenceOutput(NVIDataReferenceBase, DomainResource):
                     Coding(
                         code=entity.data_domain,
                         system=CARE_CONTEXT_SYSTEM,
+                        display=next(
+                            (zib.display for zib in HCIM_2024_ZIBS if zib.code == entity.data_domain),
+                            None,
+                        ),
                     )
                 ]
             ),
