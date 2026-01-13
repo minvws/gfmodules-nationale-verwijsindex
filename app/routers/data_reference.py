@@ -95,7 +95,18 @@ def delete_reference(
     return Response(status_code=204)
 
 
-@router.post("", responses={201: {"model": NVIDataReferenceOutput}, 200: {"model": NVIDataReferenceOutput}})
+@router.post(
+    "",
+    responses={
+        201: {
+            "model": NVIDataReferenceOutput,
+            "headers": {"Location": {"description": "URL of the created resource", "schema": {"type": "string"}}},
+        },
+        200: {
+            "model": NVIDataReferenceOutput,
+        },
+    },
+)
 def create_reference(
     data: NVIDataRefrenceInput,
     request: Request,
@@ -116,8 +127,7 @@ def create_reference(
     )
     if referral:
         return JSONResponse(
-            status_code=200,
-            content=jsonable_encoder(referral.model_dump(by_alias=True, exclude_none=True)),
+            status_code=200, content=jsonable_encoder(referral.model_dump(by_alias=True, exclude_none=True))
         )
 
     new_reference = referral_service.add_one(
@@ -131,6 +141,7 @@ def create_reference(
     return JSONResponse(
         content=jsonable_encoder(new_reference.model_dump(exclude_none=True, by_alias=True)),
         status_code=201,
+        headers={"Location": source_url + f"/{new_reference.id}"},
     )
 
 
