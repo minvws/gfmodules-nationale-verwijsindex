@@ -1,1 +1,1 @@
-ALTER TABLE referral ALTER COLUMN organization_type SET NOT NULL;
+ALTER TABLE referrals ALTER COLUMN organization_type SET NOT NULL;
