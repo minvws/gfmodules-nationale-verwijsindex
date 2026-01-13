@@ -1,10 +1,4 @@
 [app]
-# If true, the api docs will be enabled
-swagger_enabled = True
-# Endpoint for swagger api docs
-docs_url = /docs
-# Endpoint for redoc api docs
-redoc_url = /redocs
 # Loglevel can be one of: debug, info, warning, error, critical
 loglevel=debug
 # Provider ID of this service
@@ -75,6 +69,12 @@ port = 8125
 module_name = localisation
 
 [uvicorn]
+# If true, the api docs will be enabled
+swagger_enabled = True
+# Endpoint for swagger api docs
+docs_url = /docs
+# Endpoint for redoc api docs
+redoc_url = /redocs
 # Host for the uvicorn server
 host = 0.0.0.0
 # Port for the uvicorn server

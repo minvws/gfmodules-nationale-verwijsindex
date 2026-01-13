@@ -1,7 +1,7 @@
 from pathlib import Path
 from unittest.mock import mock_open, patch
 
-from app.config import load_default_uvicorn_config
+from app.config import get_config
 
 
 def test_load_default_uvicorn_parmas():
@@ -28,7 +28,7 @@ def test_load_default_uvicorn_parmas():
     """
 
     with patch("builtins.open", mock_open(read_data=data)) as mock_file:
-        config = load_default_uvicorn_config(Path(__file__))
+        config = get_config()
 
     assert config is not None
     mock_file.assert_called_with(Path(__file__), encoding="locale")
