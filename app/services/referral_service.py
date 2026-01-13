@@ -157,23 +157,19 @@ class ReferralService:
 
             referral_repository.delete_one(referral)
 
-    def get_specific_patient(
-        self, ura_number: UraNumber, pseudonym: Pseudonym, data_domain: DataDomain
+    def get_registrations(
+        self,
+        ura_number: UraNumber,
+        data_domain: DataDomain | None = None,
+        pseudonym: Pseudonym | None = None,
     ) -> List[NVIDataReferenceOutput]:
         with self.database.get_db_session() as session:
             repo = session.get_repository(ReferralRepository)
             data = repo.find_many(
-                pseudonym=str(pseudonym),
-                data_domain=str(data_domain),
                 ura_number=str(ura_number),
+                data_domain=str(data_domain) if data_domain else None,
+                pseudonym=str(pseudonym) if pseudonym else None,
             )
-
-        return [NVIDataReferenceOutput.from_referral(e) for e in data]
-
-    def get_all_registrations(self, ura_number: UraNumber) -> List[NVIDataReferenceOutput]:
-        with self.database.get_db_session() as session:
-            repo = session.get_repository(ReferralRepository)
-            data = repo.find_many(ura_number=str(ura_number))
 
         return [NVIDataReferenceOutput.from_referral(e) for e in data]
 

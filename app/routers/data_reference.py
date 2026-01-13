@@ -45,6 +45,7 @@ def get_reference(
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
 ) -> Bundle[NVIDataReferenceOutput]:
+    pseudonym: Pseudonym | None = None
     if params.pseudonym and params.oprf_key:
         pseudonym = exchange_oprf(
             pseudonym_service=pseudonym_service,
@@ -52,15 +53,11 @@ def get_reference(
             blind_factor=params.oprf_key,
         )
 
-        if params.care_context:
-            patient_reference = referral_service.get_specific_patient(
-                ura_number=UraNumber(params.source),
-                pseudonym=pseudonym,
-                data_domain=DataDomain(params.care_context),
-            )
-            return Bundle.from_reference_outputs(patient_reference)
-
-    registrations = referral_service.get_all_registrations(ura_number=UraNumber(params.source))
+    registrations = referral_service.get_registrations(
+        ura_number=UraNumber(params.source),
+        pseudonym=pseudonym,
+        data_domain=DataDomain(params.care_context) if params.care_context else None,
+    )
     return Bundle.from_reference_outputs(registrations)
 
 
