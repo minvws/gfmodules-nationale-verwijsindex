@@ -3,6 +3,8 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Request, Response
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 
 from app import dependencies
 from app.exceptions.fhir_exception import FHIRException
@@ -93,24 +95,30 @@ def delete_reference(
     return Response(status_code=204)
 
 
-@router.post(
-    "",
-    response_model=NVIDataReferenceOutput,
-    status_code=201,
-    response_model_exclude_none=True,
-)
+@router.post("", responses={201: {"model": NVIDataReferenceOutput}, 200: {"model": NVIDataReferenceOutput}})
 def create_reference(
     data: NVIDataRefrenceInput,
     request: Request,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
-) -> NVIDataReferenceOutput:
+) -> JSONResponse:
     source_url = str(request.url)
     pseudonym = exchange_oprf(
         pseudonym_service=pseudonym_service,
         oprf_jwe=data.subject.value,
         blind_factor=data.oprf_key,
     )
+
+    referral = referral_service.get_one(
+        pseudonym=pseudonym,
+        data_domain=data.get_data_domain(),
+        ura_number=data.get_ura_number(),
+    )
+    if referral:
+        return JSONResponse(
+            status_code=200,
+            content=jsonable_encoder(referral.model_dump(by_alias=True, exclude_none=True)),
+        )
 
     new_reference = referral_service.add_one(
         pseudonym=pseudonym,
@@ -120,7 +128,10 @@ def create_reference(
         uzi_number=data.source.value,
         request_url=source_url,
     )
-    return new_reference
+    return JSONResponse(
+        content=jsonable_encoder(new_reference.model_dump(exclude_none=True, by_alias=True)),
+        status_code=201,
+    )
 
 
 @router.get("/{id}", status_code=200, response_model_exclude_none=True)

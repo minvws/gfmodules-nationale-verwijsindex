@@ -443,3 +443,42 @@ def test_query_referral_should_raise_exception_when_not_found(
         )
 
     assert exec.value.status_code == 404
+
+
+def test_get_one_should_succeed(
+    referral_service: ReferralService,
+    ura_number: UraNumber,
+) -> None:
+    pseudonym = Pseudonym("ps-1")
+    data_domain = DataDomain("ImagingStudy")
+
+    expected = referral_service.add_one(
+        pseudonym=pseudonym,
+        data_domain=data_domain,
+        ura_number=ura_number,
+        uzi_number="12345678",
+        request_url="http://example.com",
+        organization_type="ziekenhuis",
+    )
+
+    actual = referral_service.get_one(
+        pseudonym=pseudonym,
+        data_domain=data_domain,
+        ura_number=ura_number,
+    )
+
+    assert actual is not None
+    assert expected == actual
+
+
+def test_get_one_should_return_none_when_not_found(
+    referral_service: ReferralService,
+    mock_referral: ReferralEntry,
+) -> None:
+    actual = referral_service.get_one(
+        pseudonym=mock_referral.pseudonym,
+        data_domain=mock_referral.data_domain,
+        ura_number=mock_referral.ura_number,
+    )
+
+    assert actual is None
