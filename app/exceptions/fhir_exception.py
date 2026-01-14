@@ -44,4 +44,8 @@ class FHIRException(HTTPException):
                 )
             ]
         )
-        super().__init__(status_code=status_code, detail=outcome.model_dump(by_alias=True, exclude_none=True))
+        super().__init__(
+            status_code=status_code,
+            detail=outcome.model_dump(by_alias=True, exclude_none=True),
+            headers={"Content-Type": "application/fhir+json"},
+        )
