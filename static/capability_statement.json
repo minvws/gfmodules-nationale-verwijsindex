@@ -1,0 +1,97 @@
+{
+    "resourceType": "CapabilityStatement",
+    "url": "http://nvi.example.nl/fhir/metadata",
+    "version": "1.0.0",
+    "name": "NVICapabilityStatement",
+    "title": "NVI FHIR API",
+    "status": "active",
+    "date": "2024-12-08",
+    "publisher": "Ministerie van Volksgezondheid, Welzijn en Sport",
+    "kind": "instance",
+    "implementation": {
+        "description": "NVI Master Patient Index FHIR API",
+        "url": "https://nvi.example.nl/fhir"
+    },
+    "fhirVersion": "4.0.1",
+    "format": [
+        "json"
+    ],
+    "rest": [
+        {
+            "mode": "server",
+            "security": {
+                "cors": true,
+                "service": [
+                    {
+                        "coding": [
+                            {
+                                "system": "http://terminology.hl7.org/CodeSystem/restful-security-service",
+                                "code": "OAuth",
+                                "display": "OAuth2 using SMART-on-FHIR profile"
+                            }
+                        ]
+                    }
+                ],
+                "description": "OAuth 2.0 met Verifiable Credentials voor organisatie authenticatie. mTLS vereist voor transport security."
+            },
+            "resource": [
+                {
+                    "type": "NVIDataReference",
+                    "profile": "http://vws.nl/fhir/StructureDefinition/NVIDataReference-input",
+                    "supportedProfile": [
+                        "http://vws.nl/fhir/StructureDefinition/NVIDataReference-input",
+                        "http://vws.nl/fhir/StructureDefinition/NVIDataReference-output"
+                    ],
+                    "documentation": "Input profile wordt gebruikt voor POST requests (subject veld verplicht). Output profile wordt gebruikt voor GET/POST responses (subject veld verboden).",
+                    "interaction": [
+                        {
+                            "code": "create",
+                            "documentation": "Registreer nieuwe beschikbaarheid. Request valideert tegen input profile, response tegen output profile. Vereist scope: nvi:register"
+                        },
+                        {
+                            "code": "search-type",
+                            "documentation": "Zoek eigen registraties. Response valideert tegen output profile (subject veld wordt weggelaten). Vereist scope: nvi:read"
+                        },
+                        {
+                            "code": "delete",
+                            "documentation": "Verwijder registratie. Vereist scope: nvi:register"
+                        }
+                    ],
+                    "searchParam": [
+                        {
+                            "name": "source",
+                            "type": "token",
+                            "documentation": "URA van de bron organisatie (verplicht)"
+                        },
+                        {
+                            "name": "pseudonym",
+                            "type": "string",
+                            "documentation": "JWE encrypted pseudoniem (verplicht)"
+                        },
+                        {
+                            "name": "oprfKey",
+                            "type": "string",
+                            "documentation": "OPRF deblinding key van BSNk v2 (verplicht)"
+                        },
+                        {
+                            "name": "careContext",
+                            "type": "token",
+                            "documentation": "ZIB code van de zorgcontext (optioneel bij DELETE)"
+                        }
+                    ]
+                },
+                {
+                    "type": "Organization",
+                    "interaction": [],
+                    "operation": [
+                        {
+                            "name": "localize",
+                            "definition": "http://vws.nl/fhir/OperationDefinition/Organization-localize",
+                            "documentation": "Lokaliseer bronnen die gegevens hebben van een patiënt. Vereist scope: nvi:localize"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -13,6 +13,7 @@ from app.services.referral_service import ReferralService
 from app.utils.certificates.dezi import (
     get_ura_from_cert,
 )
+from app.utils.load_capability_statement import CapabilityStatement, load_capability_statement
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,9 @@ def container_config(binder: inject.Binder) -> None:
     config = get_config()
 
     binder.bind(Config, config)
+
+    capability_statement = load_capability_statement()
+    binder.bind(CapabilityStatement, capability_statement)
 
     db = Database(config_database=config.database)
     binder.bind(Database, db)

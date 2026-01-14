@@ -13,6 +13,7 @@ from app.dependencies import get_prs_registration_service
 from app.exceptions.fhir_exception import OperationOutcome, OperationOutcomeDetail, OperationOutcomeIssue
 from app.routers.data_reference import router as data_reference_router
 from app.routers.default import router as default_router
+from app.routers.fhir import router as fhir_router
 from app.routers.health import router as health_router
 from app.routers.info_referrals import router as info_referral_router
 from app.routers.organization import router as organization_router
@@ -91,6 +92,7 @@ def setup_fastapi() -> FastAPI:
     public_routers = [
         default_router,
         health_router,
+        fhir_router,
     ]
     for router in public_routers:
         fastapi.include_router(router)

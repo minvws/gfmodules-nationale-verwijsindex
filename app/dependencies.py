@@ -1,3 +1,5 @@
+from typing import Any
+
 import inject
 
 from app.config import Config
@@ -7,6 +9,7 @@ from app.services.organization import OrganizationService
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.prs.registration_service import PrsRegistrationService
 from app.services.referral_service import ReferralService
+from app.utils.load_capability_statement import CapabilityStatement
 
 
 def get_default_config() -> Config:
@@ -35,3 +38,7 @@ def get_prs_registration_service() -> PrsRegistrationService:
 
 def get_client_oauth_service() -> ClientOAuthService:
     return inject.instance(ClientOAuthService)
+
+
+def get_capability_statement() -> dict[str, Any]:
+    return inject.instance(CapabilityStatement)
