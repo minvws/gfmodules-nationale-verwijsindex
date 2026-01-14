@@ -24,18 +24,6 @@ class LogLevel(str, Enum):
 
 class ConfigApp(BaseModel):
     loglevel: LogLevel = Field(default=LogLevel.info)
-    provider_id: str
-
-
-class ConfigDeziRegister(BaseModel):
-    uzi_server_certificate_ca_cert_path: str
-    dezi_register_trusted_signing_certs_store_path: str
-
-
-class ConfigUraMiddleware(BaseModel):
-    override_authentication_ura: str | None = Field(default=None)
-    use_authentication_ura_allowlist: bool = Field(default=True)
-    allowlist_cache_in_seconds: int = Field(default=30)
 
 
 class ConfigDatabase(BaseModel):
@@ -102,7 +90,6 @@ class Config(BaseModel):
     pseudonym_api: ConfigPseudonymApi
     telemetry: ConfigTelemetry
     stats: ConfigStats
-    dezi_register: ConfigDeziRegister
     uvicorn: ConfigUvicorn
     client_oauth: ConfigClientOAuth
 

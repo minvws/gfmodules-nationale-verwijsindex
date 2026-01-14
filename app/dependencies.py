@@ -2,7 +2,6 @@ import inject
 
 from app.config import Config
 from app.db.db import Database
-from app.jwt_validator import JwtValidator
 from app.services.client_oauth import ClientOAuthService
 from app.services.organization import OrganizationService
 from app.services.prs.pseudonym_service import PseudonymService
@@ -32,10 +31,6 @@ def get_pseudonym_service() -> PseudonymService:
 
 def get_prs_registration_service() -> PrsRegistrationService:
     return inject.instance(PrsRegistrationService)
-
-
-def get_jwt_validator() -> JwtValidator:
-    return inject.instance(JwtValidator)
 
 
 def get_client_oauth_service() -> ClientOAuthService:

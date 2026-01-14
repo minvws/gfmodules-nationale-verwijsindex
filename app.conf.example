@@ -1,24 +1,6 @@
 [app]
 # Loglevel can be one of: debug, info, warning, error, critical
 loglevel=debug
-# Provider ID of this service
-provider_id=dcc2217b-600e-4587-b74a-6b04bf3a882b
-
-[dezi_register]
-# The Viewer sends the Dezi JWT or a Mock JWT of the authenticated user to the LRS.
-# The LRS wraps this JWT in another JWT and sends it to the NVI.
-# The WRAP JWT is signed with the UZI Server certificate of the relevant healthcare organization.
-# This WRAP JWT can be validated by the NVI using the Uzi Server CA.
-
-# This config has the path to the Uzi Server CA certificate for NVI JWT validation
-uzi_server_certificate_ca_cert_path=
-
-# The Dezi JWT (Inside the wrapped JWT), needs to be signed with a Dezi Register certificate.
-
-# This config set the directory of trusted signing certificates for JWT validation of the DEZI register for Healthcare professional identities.
-# For mock implementation the signing certificates of the Viewer needs to be placed here.
-dezi_register_trusted_signing_certs_store_path=
-
 
 [database]
 # Dsn for database connection

@@ -3,7 +3,6 @@ from app.config import (
     ConfigApp,
     ConfigClientOAuth,
     ConfigDatabase,
-    ConfigDeziRegister,
     ConfigPseudonymApi,
     ConfigStats,
     ConfigTelemetry,
@@ -16,7 +15,6 @@ def get_test_config() -> Config:
     return Config(
         app=ConfigApp(
             loglevel=LogLevel.error,
-            provider_id="84de3f9c-0113-4fbb-af4b-215715e631bd",
         ),
         database=ConfigDatabase(
             dsn="sqlite:///:memory:",
@@ -36,10 +34,6 @@ def get_test_config() -> Config:
             tracer_name=None,
         ),
         stats=ConfigStats(enabled=False, host=None, port=None, module_name=None),
-        dezi_register=ConfigDeziRegister(
-            uzi_server_certificate_ca_cert_path="/test/secrets/ca.crt",
-            dezi_register_trusted_signing_certs_store_path="/test/secrets/nvi/",
-        ),
         uvicorn=ConfigUvicorn(
             docs_url="/docs",
             redoc_url="/redoc",
