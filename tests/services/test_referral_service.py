@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi import HTTPException
 
+from app.exceptions.fhir_exception import FHIRException
 from app.models.data_domain import DataDomain
 from app.models.pseudonym import Pseudonym
 from app.models.referrals.entry import ReferralEntry
@@ -246,7 +247,7 @@ def test_delete_patient_registrations_should_succeed(
 def test_delete_patient_registrations_should_raise_exception_when_not_found(
     referral_service: ReferralService, ura_number: UraNumber
 ) -> None:
-    with pytest.raises(HTTPException) as exec:
+    with pytest.raises(FHIRException) as exec:
         referral_service.delete_patient_registrations(ura_number=ura_number, pseudonym=Pseudonym("ps-1"))
 
     assert exec.value.status_code == 404
@@ -343,7 +344,7 @@ def test_delete_organizaton_should_succeed(referral_service: ReferralService, ur
 def test_delete_specific_organization_should_raise_exception_when_no_match_found(
     referral_service: ReferralService, ura_number: UraNumber
 ) -> None:
-    with pytest.raises(HTTPException) as exec:
+    with pytest.raises(FHIRException) as exec:
         referral_service.delete_specific_organization(ura_number)
 
     assert exec.value.status_code == 404
@@ -362,7 +363,7 @@ def test_delete_by_id_should_succeed(referral_service: ReferralService, ura_numb
     )
     assert isinstance(patient_reference.id, UUID)
     referral_service.delete_by_id(patient_reference.id)
-    with pytest.raises(HTTPException) as exec:
+    with pytest.raises(FHIRException) as exec:
         referral_service.get_by_id(patient_reference.id)
 
     assert exec.value.status_code == 404
@@ -372,7 +373,7 @@ def test_delet_by_id_should_raise_exception_when_no_match_found(
     referral_service: ReferralService,
 ) -> None:
     some_id = uuid4()
-    with pytest.raises(HTTPException) as exec:
+    with pytest.raises(FHIRException) as exec:
         referral_service.delete_by_id(some_id)
 
     assert exec.value.status_code == 404

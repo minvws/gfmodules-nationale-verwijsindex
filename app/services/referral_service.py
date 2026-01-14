@@ -9,6 +9,7 @@ from app.data import ReferralRequestType
 from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
+from app.exceptions.fhir_exception import FHIRException
 from app.logger.referral_request_database_logger import ReferralRequestDatabaseLogger
 from app.models.data_domain import DataDomain
 from app.models.fhir.resources.data_reference.resource import NVIDataReferenceOutput
@@ -31,7 +32,12 @@ class ReferralService:
             referral = repo.find_by_id(id)
 
             if referral is None:
-                raise HTTPException(status_code=404, detail="Record not found")
+                raise FHIRException(
+                    status_code=404,
+                    code="not-found",
+                    severity="error",
+                    msg="NVIDataReference not found",
+                )
 
             return NVIDataReferenceOutput.from_referral(referral)
 
@@ -88,7 +94,12 @@ class ReferralService:
                 data_domain=str(data_domain),
                 ura_number=str(ura_number),
             ):
-                raise HTTPException(status_code=409)
+                raise FHIRException(
+                    status_code=409,
+                    code="conflict",
+                    severity="error",
+                    msg="NVIDataReference already exists",
+                )
 
             new_referral: ReferralEntity = referral_repository.add_one(
                 ReferralEntity(
@@ -178,8 +189,12 @@ class ReferralService:
             repo = session.get_repository(ReferralRepository)
             exists = repo.exists(ura_number=str(ura_number), pseudonym=str(pseudonym))
             if not exists:
-                # this should be specific
-                raise HTTPException(status_code=404)
+                raise FHIRException(
+                    status_code=404,
+                    code="not-found",
+                    severity="error",
+                    msg="NVIDataReference not found",
+                )
 
             repo.delete(ura_number=str(ura_number), pseudonym=str(pseudonym))
 
@@ -194,7 +209,12 @@ class ReferralService:
                 pseudonym=str(pseudonym),
             )
             if not exists:
-                raise HTTPException(status_code=404)
+                raise FHIRException(
+                    status_code=404,
+                    code="not-found",
+                    severity="error",
+                    msg="NVIDataReference not found",
+                )
 
             repo.delete(
                 ura_number=str(ura_number),
@@ -207,7 +227,12 @@ class ReferralService:
             repo = session.get_repository(ReferralRepository)
             org_exists = repo.exists(ura_number=str(ura_number))
             if not org_exists:
-                raise HTTPException(status_code=404)
+                raise FHIRException(
+                    status_code=404,
+                    code="not-found",
+                    severity="error",
+                    msg="NVIDataReference not found",
+                )
 
             repo.delete(ura_number=str(ura_number))
 
@@ -216,7 +241,12 @@ class ReferralService:
             repo = session.get_repository(ReferralRepository)
             target = repo.find_by_id(id)
             if target is None:
-                raise HTTPException(status_code=404, detail="Record not found")
+                raise FHIRException(
+                    status_code=404,
+                    code="not-found",
+                    severity="error",
+                    msg="NVIDataReference not found",
+                )
 
             repo.delete_one(target)
 
