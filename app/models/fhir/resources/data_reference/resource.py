@@ -67,7 +67,7 @@ class NVIDataReferenceBase(BaseModel):
                 f"NVIDataReference.sourceType.coding.system urecognized, system must be: {SOURCE_TYPE_SYSTEM}"
             )
         if coding.code not in [types.code for types in NVI_ORGANIZATION_TYPES]:
-            raise ValueError(f"NVIDataReference.sourceType.coding.code unrecognized organization type {coding.code}")
+            raise ValueError(f"Invalid SourceType code: '{coding.code}' is not in ValueSet nvi-organization-types")
 
         return source_type
 
@@ -93,7 +93,7 @@ class NVIDataReferenceBase(BaseModel):
             )
 
         if coding.code not in [zib.code for zib in HCIM_2024_ZIBS]:
-            raise ValueError(f"NVIDataReference.careContext.coding.code unrecognized care context {coding.code}")
+            raise ValueError(f"Invalid ZIB code: '{coding.code}' is not in ValueSet hcim-2024-zibs")
 
         return care_context
 
