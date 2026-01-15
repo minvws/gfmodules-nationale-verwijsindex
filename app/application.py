@@ -133,7 +133,11 @@ def default_fhir_exception_handler(_: Request, exc: Exception) -> JSONResponse:
             )
         ]
     )
-    return JSONResponse(status_code=500, content=outcome.model_dump(by_alias=True, exclude_none=True))
+    return JSONResponse(
+        status_code=500,
+        content=outcome.model_dump(by_alias=True, exclude_none=True),
+        headers={"Content-Type": "application/fhir+json"},
+    )
 
 
 def request_validation_fhir_exception_handler(
@@ -156,4 +160,5 @@ def request_validation_fhir_exception_handler(
     return JSONResponse(
         status_code=422,
         content=outcome.model_dump(by_alias=True, exclude_none=True),
+        headers={"Content-Type": "application/fhir+json"},
     )
