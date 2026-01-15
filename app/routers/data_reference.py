@@ -17,6 +17,7 @@ from app.models.fhir.resources.data_reference.resource import (
 )
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
+from app.services.client_oauth import ClientOAuthService
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 
@@ -42,9 +43,22 @@ def exchange_oprf(pseudonym_service: PseudonymService, oprf_jwe: str, blind_fact
 @router.get("", status_code=200, response_model_exclude_none=True)
 def get_reference(
     params: Annotated[DataReferenceRequestParams, Query()],
+    request: Request,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
+    client_oauth_service: ClientOAuthService = Depends(dependencies.get_client_oauth_service),
 ) -> Bundle[NVIDataReferenceOutput]:
+    auth_enabled = client_oauth_service.enabled()
+    if auth_enabled:
+        req_ura = str(request.state.auth.ura_number)
+        if req_ura != params.source:
+            raise FHIRException(
+                status_code=401,
+                severity="error",
+                code="security",
+                msg="Organization is not authorized to access requested NVIDataRefernce",
+            )
+
     pseudonym: Pseudonym | None = None
     if params.pseudonym and params.oprf_key:
         pseudonym = exchange_oprf(
@@ -64,9 +78,22 @@ def get_reference(
 @router.delete("", response_model_exclude_none=True)
 def delete_reference(
     params: Annotated[DataReferenceRequestParams, Query()],
+    request: Request,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
+    client_oauth_service: ClientOAuthService = Depends(dependencies.get_client_oauth_service),
 ) -> Response:
+    auth_enabled = client_oauth_service.enabled()
+    if auth_enabled:
+        req_ura = str(request.state.auth.ura_number)
+        if req_ura != params.source:
+            raise FHIRException(
+                status_code=401,
+                severity="error",
+                code="security",
+                msg="Organization is not authorized to access requested NVIDataRefernce",
+            )
+
     if params.pseudonym and params.oprf_key:
         pseudonym = exchange_oprf(
             pseudonym_service=pseudonym_service,
@@ -97,7 +124,12 @@ def delete_reference(
     responses={
         201: {
             "model": NVIDataReferenceOutput,
-            "headers": {"Location": {"description": "URL of the created resource", "schema": {"type": "string"}}},
+            "headers": {
+                "Location": {
+                    "description": "URL of the created resource",
+                    "schema": {"type": "string"},
+                }
+            },
         },
         200: {
             "model": NVIDataReferenceOutput,
@@ -109,7 +141,19 @@ def create_reference(
     request: Request,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
+    client_oauth_service: ClientOAuthService = Depends(dependencies.get_client_oauth_service),
 ) -> JSONResponse:
+    auth_enabled = client_oauth_service.enabled()
+    if auth_enabled:
+        req_ura: UraNumber = request.state.auth.ura_number
+        if req_ura != data.get_ura_number():
+            raise FHIRException(
+                status_code=401,
+                severity="error",
+                code="security",
+                msg="Organization is not authorized to create NVIDataRefernce",
+            )
+
     source_url = str(request.url)
     pseudonym = exchange_oprf(
         pseudonym_service=pseudonym_service,
@@ -124,7 +168,8 @@ def create_reference(
     )
     if referral:
         return JSONResponse(
-            status_code=200, content=jsonable_encoder(referral.model_dump(by_alias=True, exclude_none=True))
+            status_code=200,
+            content=jsonable_encoder(referral.model_dump(by_alias=True, exclude_none=True)),
         )
 
     new_reference = referral_service.add_one(
@@ -145,16 +190,43 @@ def create_reference(
 @router.get("/{id}", status_code=200, response_model_exclude_none=True)
 def get_by_id(
     id: UUID,
+    request: Request,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
+    client_oauth_service: ClientOAuthService = Depends(dependencies.get_client_oauth_service),
 ) -> NVIDataReferenceOutput:
     data_reference = referral_service.get_by_id(id)
+    auth_enabled = client_oauth_service.enabled()
+    if auth_enabled:
+        req_ura: UraNumber = request.state.auth.ura_number
+        if req_ura != data_reference.get_ura_number():
+            raise FHIRException(
+                status_code=401,
+                severity="error",
+                code="security",
+                msg="Organization is not authorized to access NVIDataRefernce",
+            )
+
     return data_reference
 
 
 @router.delete("/{id}", response_model_exclude_none=True)
 def delete_by_id(
     id: UUID,
+    request: Request,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
+    client_oauth_service: ClientOAuthService = Depends(dependencies.get_client_oauth_service),
 ) -> Response:
+    data_reference = referral_service.get_by_id(id)
+    auth_enabled = client_oauth_service.enabled()
+    if auth_enabled:
+        req_ura: UraNumber = request.state.auth.ura_number
+        if req_ura != data_reference.get_ura_number():
+            raise FHIRException(
+                status_code=401,
+                severity="error",
+                code="security",
+                msg="Organization is not authorized to access NVIDataRefernce",
+            )
+
     referral_service.delete_by_id(id)
     return Response(status_code=204)
