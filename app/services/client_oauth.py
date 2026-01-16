@@ -34,11 +34,10 @@ class ClientOAuthService:
         """
         if self.config.mtls_cert is None or self.config.mtls_key is None or self.config.verify_ca is None:
             raise ValueError("mTLS certificate and key must be provided for Client OAuth2")
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        context.minimum_version = ssl.TLSVersion.TLSv1_2
+
+        context = ssl.create_default_context()
         if isinstance(self.config.verify_ca, bool) and self.config.verify_ca is True:
             context.verify_mode = ssl.CERT_REQUIRED
-        context.check_hostname = True
 
         context.load_cert_chain(certfile=self.config.mtls_cert, keyfile=self.config.mtls_key)
         if isinstance(self.config.verify_ca, str):
