@@ -13,6 +13,7 @@ from jwt import PyJWKClient
 
 from app.config import ConfigClientOAuth
 from app.models.ura import UraNumber
+from app.utils.certificates.utils import enforce_cert_newlines
 
 SSL_CLIENT_CERT_HEADER_NAME = "x-forwarded-tls-client-cert"  # "x-proxy-ssl_client_cert"
 
@@ -108,6 +109,8 @@ class ClientOAuthService:
         if not cert_pem:
             logger.error("Client certificate not presented or verification failed")
             raise HTTPException(status_code=401, detail="Client certificate not presented or verification failed")
+
+        cert_pem = enforce_cert_newlines(cert_pem)
 
         # Calculate thumbprint of presented certificate
         presented_cert = x509.load_pem_x509_certificate(cert_pem.encode())
