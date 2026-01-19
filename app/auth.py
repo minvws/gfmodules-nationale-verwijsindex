@@ -8,7 +8,7 @@ from starlette.requests import Request
 
 from app import dependencies
 from app.models.ura import UraNumber
-from app.services.client_oauth import ClientOAuthService
+from app.services.oauth import OAuthService
 
 logger = logging.getLogger(__name__)
 
@@ -45,13 +45,13 @@ bearer = HTTPBearer(auto_error=False)
 def get_auth_ctx(
     request: Request,
     creds: Optional[HTTPAuthorizationCredentials] = Depends(bearer),
-    client_oauth_service: ClientOAuthService = Depends(dependencies.get_client_oauth_service),
+    oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
 ) -> AuthContext:
-    if not client_oauth_service.enabled():
+    if not oauth_service.enabled():
         ctx = AuthContext(
             claims={},
             scope=[],
-            ura_number=client_oauth_service.override_ura_number(),
+            ura_number=oauth_service.override_ura_number(),
         )
         request.state.auth = ctx
         return ctx
@@ -61,7 +61,7 @@ def get_auth_ctx(
         raise HTTPException(status_code=401, detail="Missing bearer token")
 
     try:
-        claims = client_oauth_service.verify(request)
+        claims = oauth_service.verify(request)
     except OAuthError as e:
         logger.error(f"OAuth verification failed: {e.description}")
         raise HTTPException(status_code=e.status_code, detail=e.description) from e

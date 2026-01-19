@@ -1,136 +1,60 @@
-import base64
-import hashlib
-import hmac
 import logging
-import ssl
-from typing import Any, Dict
 
-import jwt
-from cryptography import x509
-from cryptography.hazmat.primitives import serialization
-from fastapi import HTTPException, Request
-from jwt import PyJWKClient
+from fastapi import HTTPException
 
 from app.config import ConfigClientOAuth
-from app.models.ura import UraNumber
-from app.utils.certificates.utils import enforce_cert_newlines
-
-SSL_CLIENT_CERT_HEADER_NAME = "x-forwarded-tls-client-cert"  # "x-proxy-ssl_client_cert"
+from app.services.http import HttpService
 
 logger = logging.getLogger(__name__)
 
 
 class ClientOAuthService:
     """
-    Client OAuth2 service for verifying tokens and mTLS binding
+    Service that will connect to an OAuth2 provider to fetch access tokens for using external services.
     """
 
     def __init__(self, config: ConfigClientOAuth) -> None:
         self.config = config
-        self._ssl_context = self._create_ssl_context()
+        if self.config.enabled:
+            if config.issuer is None:
+                raise ValueError("Client OAuth2 issuer must be set if enabled")
 
-    def _create_ssl_context(self) -> ssl.SSLContext:
-        """
-        Create an SSL context for mTLS connections to the JWKS endpoint.
-        """
-        if self.config.mtls_cert is None or self.config.mtls_key is None or self.config.verify_ca is None:
-            raise ValueError("mTLS certificate and key must be provided for Client OAuth2")
-
-        context = ssl.create_default_context()
-        if isinstance(self.config.verify_ca, bool) and self.config.verify_ca is True:
-            context.verify_mode = ssl.CERT_REQUIRED
-
-        context.load_cert_chain(certfile=self.config.mtls_cert, keyfile=self.config.mtls_key)
-        if isinstance(self.config.verify_ca, str):
-            context.load_verify_locations(cafile=self.config.verify_ca)
-
-        return context
+            self._http_service = HttpService(
+                endpoint=config.issuer,
+                timeout=10,
+                mtls_cert=config.mtls_cert,
+                mtls_key=config.mtls_key,
+                verify_ca=config.verify_ca,
+            )
 
     def enabled(self) -> bool:
         """
-        Check if client OAuth2 is enabled.
+        Check if the OAuth2 client is enabled.
         """
         return self.config.enabled
 
-    def override_ura_number(self) -> UraNumber:
+    def get_access_token(self, scope: str, audience: str) -> str:
         """
-        Get the override URA number when OAuth2 is disabled.
+        Get an access token from the OAuth2 provider using client credentials.
         """
-        return UraNumber(self.config.override_ura_number)
-
-    def verify(self, request: Request) -> Dict[str, Any]:
-        """
-        Verify an incoming OAuth2 token from the Authorization header.
-        """
-        auth_header = request.headers.get("authorization")
-        if not auth_header or not auth_header.lower().startswith("bearer "):
-            raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
-
-        token = auth_header[7:]  # Remove "Bearer "
-        claims = self._verify_token(token)
-        self._verify_mtls(request, claims)
-
-        return claims
-
-    def _verify_token(self, token: str) -> Dict[str, Any]:
-        """
-        Verify JWT token and return claims.
-        """
-        jwk_client = PyJWKClient(self.config.jwks_url, cache_keys=True, ssl_context=self._ssl_context)
-        signing_key = jwk_client.get_signing_key_from_jwt(token).key
+        if not self.config.enabled:
+            raise ValueError("Client OAuth2 is not enabled")
 
         try:
-            claims = jwt.decode(
-                token,
-                signing_key,
-                leeway=30,
-                algorithms=["RS256"],
-                audience=self.config.audience,
-                issuer=self.config.issuer,
-                options={
-                    "require": ["exp", "iat", "sub", "aud", "iss", "scope", "cnf"],
+            response = self._http_service.do_request(
+                method="POST",
+                sub_route="/oauth/token",
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                form_data={
+                    "grant_type": "client_credentials",
+                    "scope": scope,
+                    "target_audience": audience,
                 },
             )
-
+            data = response.json()
+            token = data["access_token"]
         except Exception as e:
-            logger.debug("Failed to decode JWT: %s", e)
-            raise HTTPException(status_code=401, detail="Invalid token")
+            logger.error(f"Failed to obtain access token: {e}")
+            raise HTTPException(status_code=500, detail="Failed to obtain access token")
 
-        return claims  # type: ignore
-
-    @staticmethod
-    def _verify_mtls(request: Request, claims: Dict[str, Any]) -> None:
-        """
-        Verify mTLS binding by checking cnf.x5t#S256 against presented client certificate thumbprint.
-        """
-
-        # Extract presented client certificate thumbprint from request
-        cert_pem = request.headers.get(SSL_CLIENT_CERT_HEADER_NAME)
-        if not cert_pem:
-            logger.error("Client certificate not presented or verification failed")
-            raise HTTPException(status_code=401, detail="Client certificate not presented or verification failed")
-
-        cert_pem = enforce_cert_newlines(cert_pem)
-
-        # Calculate thumbprint of presented certificate
-        presented_cert = x509.load_pem_x509_certificate(cert_pem.encode())
-        cert_der = presented_cert.public_bytes(serialization.Encoding.DER)
-        sha256_hash = hashlib.sha256(cert_der).digest()
-        request_cert_fp = base64.urlsafe_b64encode(sha256_hash).rstrip(b"=").decode()
-
-        # Compare with cnf.x5t#S256 in token claims
-        cnf = claims.get("cnf")
-        if cnf is None:
-            fp = None
-        elif isinstance(cnf, dict):
-            fp = cnf.get("x5t#S256")
-        else:
-            fp = None
-
-        if fp is None:
-            logger.debug("mTLS binding failed")
-            raise HTTPException(status_code=401, detail="Invalid token")
-
-        if not hmac.compare_digest(fp, request_cert_fp):
-            logger.debug("mTLS binding failed")
-            raise HTTPException(status_code=401, detail="Invalid token")
+        return str(token)
