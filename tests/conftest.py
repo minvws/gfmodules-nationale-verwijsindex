@@ -17,7 +17,10 @@ from app.services.http import HttpService
 from app.services.organization import OrganizationService
 from app.services.prs.registration_service import PrsRegistrationService
 from app.services.referral_service import ReferralService
-from app.utils.certificates.utils import load_certificate
+from app.utils.certificates.utils import (
+    load_certificate,
+    load_one_certificate_file,
+)
 from tests.test_config import get_test_config
 
 TEST_SCRIPT_PATH: Final[str] = "tools/generate_test_certs.sh"
@@ -93,10 +96,7 @@ def certificate_str(ura_number: UraNumber) -> str:
     if exit_code != 0:
         raise Exception(f"script {TEST_SCRIPT_PATH} exited with error code: {exit_code}")
 
-    with open(TEST_CERTIFICATE_PATH, "r") as f:
-        data = f.read()
-
-    return data
+    return load_one_certificate_file(TEST_CERTIFICATE_PATH)
 
 
 @pytest.fixture()
