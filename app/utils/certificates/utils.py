@@ -24,40 +24,12 @@ def load_one_certificate_file(path: str) -> str:
     with open(file_path, "r") as file:
         try:
             cert_data = file.read()
+            return cert_data[: cert_data.index(_CERT_END) + len(_CERT_END)]
         except IsADirectoryError as e:
             logger.warning("Error occurred while reading file")
             raise e
 
     return cert_data
-
-
-def load_many_certificate_files(dir: str, allowed_extensions: List[AllowedFilesExtenions]) -> List[str]:
-    file_path = Path(dir)
-    if not file_path.exists():
-        raise FileNotFoundError(f"File not found at: {file_path}")
-
-    cert_files = []
-    for file in file_path.iterdir():
-        file_extension = str(file).split(".")[-1]
-
-        if file_extension in [e.value for e in allowed_extensions]:
-            certificate_file = load_one_certificate_file(str(file))
-            cert_files.append(certificate_file)
-
-    return cert_files
-
-
-def create_certificate(cert: str) -> x509.Certificate:
-    try:
-        return x509.load_pem_x509_certificate(cert.encode())
-    except ValueError as e:
-        raise CertificateLoadingError(f"Unable to create CA certificate from path certificate with error {e}")
-
-
-def load_certificate(cert_path: str) -> x509.Certificate:
-    """Load and parse CA certificate from file path."""
-    cert_str = load_one_certificate_file(cert_path)
-    return create_certificate(cert_str)
 
 
 def enforce_cert_newlines(cert_data: str) -> str:
