@@ -128,9 +128,9 @@ class ClientOAuthService:
             fp = None
 
         if fp is None:
-            logger.debug("mTLS binding failed")
+            logger.error("mTLS binding failed, no cnf.x5t#S256 claim found")
             raise HTTPException(status_code=401, detail="Invalid token")
 
         if not hmac.compare_digest(fp, request_cert_fp):
-            logger.debug("mTLS binding failed")
+            logger.error("mTLS binding failed, certificate thumbprint does not match cnf.x5t#S256 claim")
             raise HTTPException(status_code=401, detail="Invalid token")
