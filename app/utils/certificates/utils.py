@@ -2,12 +2,10 @@ import base64
 import logging
 import textwrap
 from pathlib import Path
-from typing import List
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 
-from app.data import AllowedFilesExtenions
 from app.utils.certificates.exceptions import CertificateLoadingError
 
 logger = logging.getLogger(__name__)
@@ -23,28 +21,13 @@ def load_one_certificate_file(path: str) -> str:
 
     with open(file_path, "r") as file:
         try:
-            cert_data = file.read()
+            file_data = file.read()
+            cert_data = file_data[: file_data.index(_CERT_END) + len(_CERT_END)]
         except IsADirectoryError as e:
             logger.warning("Error occurred while reading file")
             raise e
 
-    return cert_data
-
-
-def load_many_certificate_files(dir: str, allowed_extensions: List[AllowedFilesExtenions]) -> List[str]:
-    file_path = Path(dir)
-    if not file_path.exists():
-        raise FileNotFoundError(f"File not found at: {file_path}")
-
-    cert_files = []
-    for file in file_path.iterdir():
-        file_extension = str(file).split(".")[-1]
-
-        if file_extension in [e.value for e in allowed_extensions]:
-            certificate_file = load_one_certificate_file(str(file))
-            cert_files.append(certificate_file)
-
-    return cert_files
+    return cert_data.strip()
 
 
 def create_certificate(cert: str) -> x509.Certificate:
