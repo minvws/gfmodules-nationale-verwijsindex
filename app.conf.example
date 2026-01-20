@@ -82,9 +82,9 @@ override_ura_number = 11112222
 # Audience that an incoming OAuth should have
 audience = nvi.service
 # The issuer that issued the incoming OAuth tokens
-issuer = https://oauth.proeftuin.gf.irealisatie.nl
+issuer = 
 # The URL to fetch the JWKS keys for validating incoming tokens
-jwks_url = https://oauth.proeftuin.gf.irealisatie.nl/oauth/jwks.json
+jwks_url = 
 # Any MTLS settings for connecting to the oauth server (to fetch JWKS keys)
 mtls_cert = secrets/epd-1.ldn.crt
 mtls_key =  secrets/epd-1.ldn.key
