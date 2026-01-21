@@ -2,12 +2,10 @@ import base64
 import logging
 import textwrap
 from pathlib import Path
-from typing import List
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 
-from app.data import AllowedFilesExtenions
 from app.utils.certificates.exceptions import CertificateLoadingError
 
 logger = logging.getLogger(__name__)
@@ -23,13 +21,26 @@ def load_one_certificate_file(path: str) -> str:
 
     with open(file_path, "r") as file:
         try:
-            cert_data = file.read()
-            return cert_data[: cert_data.index(_CERT_END) + len(_CERT_END)]
+            file_data = file.read()
+            cert_data = file_data[: file_data.index(_CERT_END) + len(_CERT_END)]
         except IsADirectoryError as e:
             logger.warning("Error occurred while reading file")
             raise e
 
     return cert_data
+
+
+def create_certificate(cert: str) -> x509.Certificate:
+    try:
+        return x509.load_pem_x509_certificate(cert.encode())
+    except ValueError as e:
+        raise CertificateLoadingError(f"Unable to create CA certificate from path certificate with error {e}")
+
+
+def load_certificate(cert_path: str) -> x509.Certificate:
+    """Load and parse CA certificate from file path."""
+    cert_str = load_one_certificate_file(cert_path)
+    return create_certificate(cert_str)
 
 
 def enforce_cert_newlines(cert_data: str) -> str:
