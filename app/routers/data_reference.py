@@ -53,10 +53,10 @@ def get_reference(
         req_ura = str(request.state.auth.ura_number)
         if req_ura != params.source:
             raise FHIRException(
-                status_code=401,
+                status_code=403,
                 severity="error",
-                code="security",
-                msg="Organization is not authorized to access requested NVIDataRefernce",
+                code="forbidden",
+                msg="Organization is forbidden to access requested NVIDataReference",
             )
 
     pseudonym: Pseudonym | None = None
@@ -88,10 +88,10 @@ def delete_reference(
         req_ura = str(request.state.auth.ura_number)
         if req_ura != params.source:
             raise FHIRException(
-                status_code=401,
+                status_code=403,
                 severity="error",
-                code="security",
-                msg="Organization is not authorized to access requested NVIDataRefernce",
+                code="forbidden",
+                msg="Organization is forbidden to remove NVIDataReference.",
             )
 
     if params.pseudonym and params.oprf_key:
@@ -148,10 +148,10 @@ def create_reference(
         req_ura: UraNumber = request.state.auth.ura_number
         if req_ura != data.get_ura_number():
             raise FHIRException(
-                status_code=401,
+                status_code=403,
                 severity="error",
-                code="security",
-                msg="Organization is not authorized to create NVIDataRefernce",
+                code="forbidden",
+                msg="Organization is forbidden to create NVIDataReference",
             )
 
     source_url = str(request.url)
@@ -200,10 +200,10 @@ def get_by_id(
         req_ura: UraNumber = request.state.auth.ura_number
         if req_ura != data_reference.get_ura_number():
             raise FHIRException(
-                status_code=401,
+                status_code=403,
                 severity="error",
-                code="security",
-                msg="Organization is not authorized to access NVIDataRefernce",
+                code="forbidden",
+                msg="Organization is forbidden to access NVIDataReference",
             )
 
     return data_reference
@@ -222,10 +222,10 @@ def delete_by_id(
         req_ura: UraNumber = request.state.auth.ura_number
         if req_ura != data_reference.get_ura_number():
             raise FHIRException(
-                status_code=401,
+                status_code=403,
                 severity="error",
-                code="security",
-                msg="Organization is not authorized to access NVIDataRefernce",
+                code="forbidden",
+                msg="Organization is forbidden to remove NVIDataReference.",
             )
 
     referral_service.delete_by_id(id)
