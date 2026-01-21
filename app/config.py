@@ -73,12 +73,20 @@ class ConfigStats(BaseModel):
     module_name: str | None
 
 
-class ConfigClientOAuth(BaseModel):
+class ConfigOAuth(BaseModel):
     enabled: bool = Field(default=False)
     override_ura_number: str | None = Field(default=None)
     jwks_url: str
     issuer: str
     audience: str
+    mtls_cert: str | None = Field(default=None)
+    mtls_key: str | None = Field(default=None)
+    verify_ca: str | bool = Field(default=True)
+
+
+class ConfigClientOAuth(BaseModel):
+    enabled: bool = Field(default=False)
+    issuer: str | None = Field(default=None)
     mtls_cert: str | None = Field(default=None)
     mtls_key: str | None = Field(default=None)
     verify_ca: str | bool = Field(default=True)
@@ -91,6 +99,7 @@ class Config(BaseModel):
     telemetry: ConfigTelemetry
     stats: ConfigStats
     uvicorn: ConfigUvicorn
+    oauth: ConfigOAuth
     client_oauth: ConfigClientOAuth
 
 

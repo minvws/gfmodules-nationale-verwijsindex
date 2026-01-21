@@ -3,6 +3,7 @@ from app.config import (
     ConfigApp,
     ConfigClientOAuth,
     ConfigDatabase,
+    ConfigOAuth,
     ConfigPseudonymApi,
     ConfigStats,
     ConfigTelemetry,
@@ -42,11 +43,15 @@ def get_test_config() -> Config:
             ssl_cert_file="/file.cert",
             ssl_key_file="/file.key",
         ),
-        client_oauth=ConfigClientOAuth(
-            jwks_url="http://example.com/.well-known/jwks.json",
+        oauth=ConfigOAuth(
             issuer="http://example.com/",
+            jwks_url="http://example.com/.well-known/jwks.json",
             audience="test-audience",
-            enabled=True,
+            enabled=False,
             override_ura_number="12345678",
+        ),
+        client_oauth=ConfigClientOAuth(
+            issuer="http://example.com/",
+            enabled=False,
         ),
     )

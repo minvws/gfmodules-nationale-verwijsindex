@@ -6,6 +6,7 @@ from app.config import Config, get_config
 from app.db.db import Database
 from app.services.client_oauth import ClientOAuthService
 from app.services.decrypt_service import DecryptService
+from app.services.oauth import OAuthService
 from app.services.organization import OrganizationService
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.prs.registration_service import PrsRegistrationService
@@ -43,14 +44,18 @@ def container_config(binder: inject.Binder) -> None:
     )
     binder.bind(PseudonymService, pseudonym_service)
 
+    client_oauth_service = ClientOAuthService(config=config.client_oauth)
+    binder.bind(ClientOAuthService, client_oauth_service)
+
     prs_registration_service = PrsRegistrationService(
-        config=config.pseudonym_api,
-        ura_number=get_ura_from_cert(config.pseudonym_api.mtls_cert),
+        get_ura_from_cert(config.pseudonym_api.mtls_cert),
+        config.pseudonym_api,
+        client_oauth_service,
     )
     binder.bind(PrsRegistrationService, prs_registration_service)
 
-    client_oauth_service = ClientOAuthService(config.client_oauth)
-    binder.bind(ClientOAuthService, client_oauth_service)
+    oauth_service = OAuthService(config.oauth)
+    binder.bind(OAuthService, oauth_service)
 
 
 def configure() -> None:

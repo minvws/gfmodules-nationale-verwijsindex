@@ -4,7 +4,7 @@ import inject
 
 from app.config import Config
 from app.db.db import Database
-from app.services.client_oauth import ClientOAuthService
+from app.services.oauth import OAuthService
 from app.services.organization import OrganizationService
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.prs.registration_service import PrsRegistrationService
@@ -36,8 +36,8 @@ def get_prs_registration_service() -> PrsRegistrationService:
     return inject.instance(PrsRegistrationService)
 
 
-def get_client_oauth_service() -> ClientOAuthService:
-    return inject.instance(ClientOAuthService)
+def get_oauth_service() -> OAuthService:
+    return inject.instance(OAuthService)
 
 
 def get_capability_statement() -> dict[str, Any]:

@@ -17,7 +17,7 @@ from app.models.fhir.resources.data_reference.resource import (
 )
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
-from app.services.client_oauth import ClientOAuthService
+from app.services.oauth import OAuthService
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 
@@ -46,9 +46,9 @@ def get_reference(
     request: Request,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
-    client_oauth_service: ClientOAuthService = Depends(dependencies.get_client_oauth_service),
+    oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
 ) -> Bundle[NVIDataReferenceOutput]:
-    auth_enabled = client_oauth_service.enabled()
+    auth_enabled = oauth_service.enabled()
     if auth_enabled:
         req_ura = str(request.state.auth.ura_number)
         if req_ura != params.source:
@@ -81,9 +81,9 @@ def delete_reference(
     request: Request,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
-    client_oauth_service: ClientOAuthService = Depends(dependencies.get_client_oauth_service),
+    oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
 ) -> Response:
-    auth_enabled = client_oauth_service.enabled()
+    auth_enabled = oauth_service.enabled()
     if auth_enabled:
         req_ura = str(request.state.auth.ura_number)
         if req_ura != params.source:
@@ -141,9 +141,9 @@ def create_reference(
     request: Request,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
-    client_oauth_service: ClientOAuthService = Depends(dependencies.get_client_oauth_service),
+    oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
 ) -> JSONResponse:
-    auth_enabled = client_oauth_service.enabled()
+    auth_enabled = oauth_service.enabled()
     if auth_enabled:
         req_ura: UraNumber = request.state.auth.ura_number
         if req_ura != data.get_ura_number():
@@ -192,10 +192,10 @@ def get_by_id(
     id: UUID,
     request: Request,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
-    client_oauth_service: ClientOAuthService = Depends(dependencies.get_client_oauth_service),
+    oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
 ) -> NVIDataReferenceOutput:
     data_reference = referral_service.get_by_id(id)
-    auth_enabled = client_oauth_service.enabled()
+    auth_enabled = oauth_service.enabled()
     if auth_enabled:
         req_ura: UraNumber = request.state.auth.ura_number
         if req_ura != data_reference.get_ura_number():
@@ -214,10 +214,10 @@ def delete_by_id(
     id: UUID,
     request: Request,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
-    client_oauth_service: ClientOAuthService = Depends(dependencies.get_client_oauth_service),
+    oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
 ) -> Response:
     data_reference = referral_service.get_by_id(id)
-    auth_enabled = client_oauth_service.enabled()
+    auth_enabled = oauth_service.enabled()
     if auth_enabled:
         req_ura: UraNumber = request.state.auth.ura_number
         if req_ura != data_reference.get_ura_number():
