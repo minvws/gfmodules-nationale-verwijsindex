@@ -52,7 +52,7 @@ class OAuthService:
         """
         Check if OAuth2 is enabled.
         """
-        return self.config.enabled
+        return self.config.enable_incoming_oauth
 
     def override_ura_number(self) -> UraNumber:
         """

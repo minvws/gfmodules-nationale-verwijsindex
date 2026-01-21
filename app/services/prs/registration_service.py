@@ -3,6 +3,7 @@ import logging
 from requests.exceptions import ConnectionError, HTTPError, Timeout
 
 from app.config import ConfigPseudonymApi
+from app.models.token import AccessToken
 from app.models.ura import UraNumber
 from app.services.client_oauth import ClientOAuthService
 from app.services.http import HttpService
@@ -25,7 +26,6 @@ class PrsRegistrationService:
             verify_ca=self._config.verify_ca,
         )
         self._ura_number = ura_number
-        self._access_token: str | None = None
 
     def register_nvi_at_prs(self) -> None:
         """
@@ -40,15 +40,15 @@ class PrsRegistrationService:
         Register the NVI organization at the PRS.
         """
         try:
-            headers = {}
-            if self._oauth_service.enabled():
-                headers["Authorization"] = "Bearer " + self.fetch_oauth_token()
+            token = self.fetch_oauth_token()
 
             response = self._http_service.do_request(
                 method="POST",
                 sub_route="orgs",
-                headers=headers,
-                data={
+                headers={
+                    "Authorization": f"Bearer {token.access_token}",
+                },
+                json={
                     "ura": self._ura_number.value,
                     "name": "nationale-verwijsindex",
                     "max_key_usage": "bsn",
@@ -56,13 +56,11 @@ class PrsRegistrationService:
             )
             logger.debug("Response status code: %d", response.status_code)
 
-            # No authentication, we can retry by clearing the token. This will fetch a new access token on the next attempt
-            if response.status_code == 401:
-                self._access_token = None
-
             if response.status_code == 409:
                 logger.info("Organization already registered at PRS")
                 return
+
+            print(response.text)
 
             response.raise_for_status()
 
@@ -75,20 +73,16 @@ class PrsRegistrationService:
         Register the NVI certificate at the PRS.
         """
         try:
-            headers = {}
-            if self._oauth_service.enabled():
-                headers["Authorization"] = "Bearer " + self.fetch_oauth_token()
+            token = self.fetch_oauth_token()
 
             response = self._http_service.do_request(
                 method="POST",
-                headers=headers,
+                headers={
+                    "Authorization": f"Bearer {token.access_token}",
+                },
                 sub_route="register/certificate",
-                data={"scope": ["nationale-verwijsindex"]},
+                json={"scope": ["nationale-verwijsindex"]},
             )
-
-            # No authentication, we can retry by clearing the token. This will fetch a new access token on the next attempt
-            if response.status_code == 401:
-                self._access_token = None
 
             if response.status_code == 409:
                 logging.info("Certificate already registered at PRS")
@@ -100,11 +94,5 @@ class PrsRegistrationService:
             logger.error(f"Failed to register certificate: {e}")
             raise PseudonymError("Failed to register certificate")
 
-    def fetch_oauth_token(self) -> str:
-        if not self._oauth_service.enabled():
-            return ""
-
-        if self._access_token is None:
-            self._access_token = self._oauth_service.get_access_token("prs:read", self._config.endpoint)
-
-        return self._access_token
+    def fetch_oauth_token(self) -> AccessToken:
+        return self._oauth_service.fetch_token(scope="prs:read", target_audience=self._config.endpoint)

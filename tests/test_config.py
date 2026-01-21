@@ -1,7 +1,6 @@
 from app.config import (
     Config,
     ConfigApp,
-    ConfigClientOAuth,
     ConfigDatabase,
     ConfigOAuth,
     ConfigPseudonymApi,
@@ -47,11 +46,7 @@ def get_test_config() -> Config:
             issuer="http://example.com/",
             jwks_url="http://example.com/.well-known/jwks.json",
             audience="test-audience",
-            enabled=False,
-            override_ura_number="12345678",
-        ),
-        client_oauth=ConfigClientOAuth(
-            issuer="http://example.com/",
-            enabled=False,
+            endpoint="http://example.com/oauth/token",
+            timeout=10,
         ),
     )
