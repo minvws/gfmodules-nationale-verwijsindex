@@ -2,7 +2,7 @@ import logging
 
 from fastapi import HTTPException
 
-from app.config import ConfigOAuth
+from app.config import ConfigClientOAuth
 from app.services.http import HttpService
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ class ClientOAuthService:
     Service that will connect to an OAuth2 provider to fetch access tokens for using external services.
     """
 
-    def __init__(self, config: ConfigOAuth) -> None:
+    def __init__(self, config: ConfigClientOAuth) -> None:
         self.config = config
         if self.config.enabled:
             if config.issuer is None:
