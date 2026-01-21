@@ -22,6 +22,8 @@ timeout=10
 # mtls_cert=secrets/ssl/pseudonym_api.cert
 # mtls_key=secrets/ssl/pseudonym_api.key
 # verify_ca=secrets/ssl/pseudonym_api_ca.cert
+oauth_target_audience = http://pseudonym:8504
+
 
 [telemetry]
 # Telemetry is enabled or not
@@ -63,40 +65,21 @@ ssl_base_dir = secrets/ssl
 ssl_cert_file = server.cert
 ssl_key_file = server.key
 
-[client_oauth]
-enabled = True
-override_ura_number = 12345600
-audience = nvi.service
-issuer = https://localhost:8443/
-jwks_url = https://localhost:8443/oauth/jwks.json
-mtls_cert = secrets/ssl/client_oauth.cert
-mtls_key =  secrets/ssl/client_oauth.key
-verify_ca = secrets/ssl/client_oauth_ca.cert
-
-# Section for configuring the INCOMING OAuth connections (from external services to this service)
 [oauth]
 enabled = True
 # If not enabled, we assume this URA number is what is calling our service
 override_ura_number = 11112222
-
 # Audience that an incoming OAuth should have
-audience = nvi.service
+audience = service.nvi
 # The issuer that issued the incoming OAuth tokens
-issuer = 
-# The URL to fetch the JWKS keys for validating incoming tokens
-jwks_url = 
-# Any MTLS settings for connecting to the oauth server (to fetch JWKS keys)
-mtls_cert = secrets/epd-1.ldn.crt
-mtls_key =  secrets/epd-1.ldn.key
-verify_ca = secrets/ca.ldn.crt
-
-# Section for configuring the OUTGOING OAuth connections (from this service to external services)
-[client_oauth]
-# If not enabled, we don't connect to OAuth and thus we never add a Bearer JWT token to the called service
-enabled = True
-# The OAuth server that we will connect to to fetch an access token
 issuer = https://localhost:8443/
-# Any MTLS settings for connecting to the oauth server (to fetch access tokens)
-mtls_cert = secrets/client-uzi.crt
-mtls_key =  secrets/client-uzi.key
-verify_ca =
+# The URL to fetch the JWKS keys for validating incoming tokens
+jwks_url = https://localhost:8443/oauth/jwks.json
+
+[oauth_api]
+endpoint=https://localhost:8443/oauth/token
+timeout=10
+# MTLS settings for connecting to the oauth server (to fetch JWKS keys)
+mtls_cert=secrets/ssl/oauth.cert
+mtls_key=secrets/ssl/oauth.key
+verify_ca=secrets/ssl/oauth_ca.cert
