@@ -105,6 +105,6 @@ class PrsRegistrationService:
             return ""
 
         if self._access_token is None:
-            self._access_token = self._oauth_service.get_access_token("prs:read", "prs.service")
+            self._access_token = self._oauth_service.get_access_token("prs:read", self._config.endpoint)
 
         return self._access_token
