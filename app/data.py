@@ -1,6 +1,7 @@
 import enum
 from typing import Final, List
 
+from app.models.fhir.elements import Coding
 from app.models.fhir.value_set import Hcim2024Zibs, NviOrganizationTypes
 
 
@@ -64,4 +65,12 @@ NVI_ORGANIZATION_TYPES = [
         ("trombosedienst", "Trombosedienst"),
         ("laboratorium", "Laboratorium"),
     ]
+]
+
+OPERATION_OUTCOME_AUTHENTICATION_CODING = [
+    Coding(
+        system="http://hl7.org/fhir/issue-type",  # NOSONAR
+        code="login",
+        display="Authentication required",
+    )
 ]

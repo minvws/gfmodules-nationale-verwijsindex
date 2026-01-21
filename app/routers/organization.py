@@ -1,8 +1,9 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from app.dependencies import get_organization_service, get_pseudonym_service
+from app.exceptions.fhir_exception import FHIRException
 from app.models.fhir.bundle import Bundle
 from app.models.fhir.resources.organization.parameters import Parameters
 from app.models.fhir.resources.organization.resource import Organization
@@ -25,8 +26,13 @@ def localise(
             oprf_jwe=localization_dto.oprf_jwe, blind_factor=localization_dto.oprf_key
         )
     except Exception as e:
-        logger.error(f"Failed to exchange pseudonym: {e}")
-        raise HTTPException(status_code=404)
+        logger.error(f"Failed to decrypt OPRF JWE: {e}")
+        raise FHIRException(
+            status_code=403,
+            severity="error",
+            code="invalid",
+            msg="Subject invalid.",
+        )
 
     organizations = organization_service.get(
         pseudonym=str(localisation_pseudonym),

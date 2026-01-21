@@ -1,11 +1,19 @@
 import logging
 
-from fastapi import HTTPException
-
 from app.config import ConfigClientOAuth
+from app.exceptions.fhir_exception import FHIRException
 from app.services.http import HttpService
 
 logger = logging.getLogger(__name__)
+
+
+class OAuthError(Exception):
+    def __init__(
+        self,
+        message: str,
+    ) -> None:
+        super().__init__(message)
+        self.message = message
 
 
 class ClientOAuthService:
@@ -55,6 +63,6 @@ class ClientOAuthService:
             token = data["access_token"]
         except Exception as e:
             logger.error(f"Failed to obtain access token: {e}")
-            raise HTTPException(status_code=500, detail="Failed to obtain access token")
+            raise FHIRException(status_code=500, severity="error", code="server", msg="Internal server error")
 
         return str(token)

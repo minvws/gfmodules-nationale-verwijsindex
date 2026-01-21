@@ -1,26 +1,9 @@
+from typing import List
+
 from fastapi import HTTPException
-from pydantic import BaseModel, ConfigDict
-from pydantic.alias_generators import to_camel
 
-
-class OperationOutcomeDetail(BaseModel):
-    text: str
-
-
-class OperationOutcomeIssue(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-    severity: str
-    code: str
-    details: OperationOutcomeDetail | None = None
-    diagnostics: str | None = None
-    expression: list[str] | None = None
-
-
-class OperationOutcome(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
-    resource_type: str = "OperationOutcome"
-    issue: list[OperationOutcomeIssue]
+from app.models.fhir.elements import Coding
+from app.models.fhir.operation_outcome import OperationOutcome, OperationOutcomeDetail, OperationOutcomeIssue
 
 
 class FHIRException(HTTPException):
@@ -30,16 +13,15 @@ class FHIRException(HTTPException):
         severity: str,
         code: str,
         msg: str,
-        diagnostics: str | None = None,
-        expression: list[str] | None = None,
+        expression: List[str] | None = None,
+        coding: List[Coding] | None = None,
     ):
         outcome = OperationOutcome(
             issue=[
                 OperationOutcomeIssue(
                     severity=severity,
                     code=code,
-                    details=OperationOutcomeDetail(text=msg),
-                    diagnostics=diagnostics,
+                    details=OperationOutcomeDetail(text=msg, coding=coding),
                     expression=expression,
                 )
             ]

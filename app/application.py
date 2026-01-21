@@ -10,7 +10,7 @@ from app import container
 from app.auth import get_auth_ctx
 from app.config import get_config
 from app.dependencies import get_prs_registration_service
-from app.exceptions.fhir_exception import OperationOutcome, OperationOutcomeDetail, OperationOutcomeIssue
+from app.models.fhir.operation_outcome import OperationOutcome, OperationOutcomeDetail, OperationOutcomeIssue
 from app.routers.data_reference import router as data_reference_router
 from app.routers.default import router as default_router
 from app.routers.fhir import router as fhir_router
@@ -128,8 +128,6 @@ def default_fhir_exception_handler(_: Request, exc: Exception) -> JSONResponse:
                 severity="error",
                 code="exception",
                 details=OperationOutcomeDetail(text="An unexpected error occurred"),
-                diagnostics=str(exc),
-                expression=[type(exc).__name__],
             )
         ]
     )
@@ -151,7 +149,7 @@ def request_validation_fhir_exception_handler(
             OperationOutcomeIssue(
                 severity="error",
                 code="required" if err["type"] == "missing" else "invalid",
-                diagnostics=".".join(map(str, err["loc"])) + " " + str(err["msg"]),
+                expression=[".".join(map(str, err["loc"])) + " " + str(err["msg"])],
             ),
         )
 

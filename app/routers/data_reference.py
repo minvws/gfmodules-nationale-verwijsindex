@@ -35,7 +35,6 @@ def exchange_oprf(pseudonym_service: PseudonymService, oprf_jwe: str, blind_fact
             severity="error",
             code="not-found",
             msg="Pseudonym could not be exchanged",
-            diagnostics=str(e),
             expression=["NVIDataReference.subject"],
         )
 
