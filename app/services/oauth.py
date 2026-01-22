@@ -8,10 +8,11 @@ from typing import Any, Dict
 import jwt
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
-from fastapi import HTTPException, Request
+from fastapi import Request
 from jwt import PyJWKClient
 
 from app.config import ConfigOAuth
+from app.exceptions.fhir_exception import FHIRException
 from app.models.ura import UraNumber
 from app.utils.certificates.utils import enforce_cert_newlines
 
@@ -64,7 +65,12 @@ class OAuthService:
         """
         auth_header = request.headers.get("authorization")
         if not auth_header or not auth_header.lower().startswith("bearer "):
-            raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+            raise FHIRException(
+                status_code=401,
+                severity="error",
+                code="security",
+                msg="Missing or invalid Authorization header",
+            )
 
         token = auth_header[7:]  # Remove "Bearer "
         claims = self._verify_token(token)
@@ -77,9 +83,9 @@ class OAuthService:
         Verify JWT token and return claims.
         """
         jwk_client = PyJWKClient(self.config.jwks_url, cache_keys=True, ssl_context=self._ssl_context)
-        signing_key = jwk_client.get_signing_key_from_jwt(token).key
 
         try:
+            signing_key = jwk_client.get_signing_key_from_jwt(token).key
             claims = jwt.decode(
                 token,
                 signing_key,
@@ -94,7 +100,12 @@ class OAuthService:
 
         except Exception as e:
             logger.debug("Failed to decode JWT: %s", e)
-            raise HTTPException(status_code=401, detail="Invalid token")
+            raise FHIRException(
+                status_code=401,
+                severity="error",
+                code="security",
+                msg="Invalid token",
+            )
 
         return claims  # type: ignore
 
@@ -108,9 +119,11 @@ class OAuthService:
         cert_data = request.headers.get(SSL_CLIENT_CERT_HEADER_NAME)
         if not cert_data:
             logger.error("Client certificate not presented or verification failed")
-            raise HTTPException(
+            raise FHIRException(
                 status_code=401,
-                detail="Client certificate not presented or verification failed",
+                severity="error",
+                code="security",
+                msg="Client certificate not presented or verification failed",
             )
 
         cert_pem = cert_data.split(",")[0]
@@ -133,8 +146,18 @@ class OAuthService:
 
         if fp is None:
             logger.debug("mTLS binding failed")
-            raise HTTPException(status_code=401, detail="Invalid token")
+            raise FHIRException(
+                status_code=401,
+                severity="security",
+                code="security",
+                msg="Invalid token",
+            )
 
         if not hmac.compare_digest(fp, request_cert_fp):
             logger.debug("mTLS binding failed")
-            raise HTTPException(status_code=401, detail="Invalid token")
+            raise FHIRException(
+                status_code=401,
+                severity="security",
+                code="security",
+                msg="Invalid token",
+            )
