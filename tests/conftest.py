@@ -74,7 +74,9 @@ def mock_org(mock_referral_entity: ReferralEntity) -> Organization:
 @pytest.fixture()
 def prs_registration_service(ura_number: UraNumber) -> PrsRegistrationService:
     config = get_test_config()
-    client_oauth_service = ClientOAuthService(endpoint=config.oauth.endpoint, timeout=config.oauth.timeout)
+    client_oauth_service = ClientOAuthService(
+        endpoint=config.oauth_outgoing.endpoint, timeout=config.oauth_outgoing.timeout
+    )
     return PrsRegistrationService(
         config=config.pseudonym_api, ura_number=ura_number, client_oauth_service=client_oauth_service
     )

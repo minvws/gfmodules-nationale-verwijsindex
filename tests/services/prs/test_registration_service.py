@@ -42,7 +42,7 @@ def test_register_organization_should_succeed(
         headers={
             "Authorization": f"Bearer {access_token.access_token}",
         },
-        data={
+        json={
             "ura": prs_registration_service._ura_number.value,
             "name": "nationale-verwijsindex",
             "max_key_usage": "bsn",
@@ -69,7 +69,7 @@ def test_register_organization_should_succeed_even_if_it_is_registered(
         headers={
             "Authorization": f"Bearer {access_token.access_token}",
         },
-        data={
+        json={
             "ura": prs_registration_service._ura_number.value,
             "name": "nationale-verwijsindex",
             "max_key_usage": "bsn",
@@ -138,7 +138,7 @@ def test_register_certificate_should_succeed(
             "Authorization": f"Bearer {access_token.access_token}",
         },
         sub_route="register/certificate",
-        data={"scope": ["nationale-verwijsindex"]},
+        json={"scope": ["nationale-verwijsindex"]},
     )
 
 
@@ -161,7 +161,7 @@ def test_register_certificate_should_succeed_even_if_it_is_registered(
             "Authorization": f"Bearer {access_token.access_token}",
         },
         sub_route="register/certificate",
-        data={"scope": ["nationale-verwijsindex"]},
+        json={"scope": ["nationale-verwijsindex"]},
     )
 
 

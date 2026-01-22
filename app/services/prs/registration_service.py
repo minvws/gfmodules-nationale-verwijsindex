@@ -60,8 +60,6 @@ class PrsRegistrationService:
                 logger.info("Organization already registered at PRS")
                 return
 
-            print(response.text)
-
             response.raise_for_status()
 
         except (HTTPError, ConnectionError, Timeout) as e:

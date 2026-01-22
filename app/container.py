@@ -45,12 +45,12 @@ def container_config(binder: inject.Binder) -> None:
     binder.bind(PseudonymService, pseudonym_service)
 
     client_oauth_service = ClientOAuthService(
-        mock=not config.oauth.enable_outgoing_oauth,
-        endpoint=config.oauth.endpoint,
-        mtls_cert=config.oauth.mtls_cert,
-        mtls_key=config.oauth.mtls_key,
-        verify_ca=config.oauth.verify_ca,
-        timeout=config.oauth.timeout,
+        mock=not config.oauth_outgoing.enabled,
+        endpoint=config.oauth_outgoing.endpoint,
+        mtls_cert=config.oauth_outgoing.mtls_cert,
+        mtls_key=config.oauth_outgoing.mtls_key,
+        verify_ca=config.oauth_outgoing.verify_ca,
+        timeout=config.oauth_outgoing.timeout,
     )
     binder.bind(ClientOAuthService, client_oauth_service)
 
@@ -61,7 +61,7 @@ def container_config(binder: inject.Binder) -> None:
     )
     binder.bind(PrsRegistrationService, prs_registration_service)
 
-    oauth_service = OAuthService(config.oauth)
+    oauth_service = OAuthService(config.oauth_incoming)
     binder.bind(OAuthService, oauth_service)
 
 
