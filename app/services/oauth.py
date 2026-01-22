@@ -105,11 +105,15 @@ class OAuthService:
         """
 
         # Extract presented client certificate thumbprint from request
-        cert_pem = request.headers.get(SSL_CLIENT_CERT_HEADER_NAME)
-        if not cert_pem:
+        cert_data = request.headers.get(SSL_CLIENT_CERT_HEADER_NAME)
+        if not cert_data:
             logger.error("Client certificate not presented or verification failed")
-            raise HTTPException(status_code=401, detail="Client certificate not presented or verification failed")
+            raise HTTPException(
+                status_code=401,
+                detail="Client certificate not presented or verification failed",
+            )
 
+        cert_pem = cert_data.split(",")[0]
         cert_pem = enforce_cert_newlines(cert_pem)
 
         # Calculate thumbprint of presented certificate
