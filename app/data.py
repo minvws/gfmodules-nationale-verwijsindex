@@ -32,11 +32,6 @@ HCIM_2024_ZIBS = [
             "Een medicatieafspraak is de afspraak tussen een zorgverlener en een patiënt over het gebruik van een geneesmiddel.",
         ),
         ("LaboratoryTestResult", "Laboratorium uitslag", "De uitslag van een laboratorium onderzoek."),
-        (
-            "MedicationAgreement",
-            "Beeldvormend onderzoek",
-            "Een onderzoek waarbij gebruik wordt gemaakt van beeldvormende technieken zoals röntgen, CT, MRI.",
-        ),
         ("Encounter", "Contact", "Een contact tussen een patiënt en een zorgverlener."),
         ("Procedure", "Verrichting", "Een verrichting of behandeling die uitgevoerd is."),
         ("Condition", "Probleem", "Een gezondheidsprobleem, diagnose of aandoening."),
