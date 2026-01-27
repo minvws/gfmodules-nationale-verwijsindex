@@ -12,7 +12,6 @@ class OperationOutcomeIssue(BaseModel):
     severity: str
     code: str
     details: OperationOutcomeDetail | None = None
-    diagnostics: str | None = None
     expression: list[str] | None = None
 
 
@@ -30,7 +29,6 @@ class FHIRException(HTTPException):
         severity: str,
         code: str,
         msg: str,
-        diagnostics: str | None = None,
         expression: list[str] | None = None,
     ):
         outcome = OperationOutcome(
@@ -39,7 +37,6 @@ class FHIRException(HTTPException):
                     severity=severity,
                     code=code,
                     details=OperationOutcomeDetail(text=msg),
-                    diagnostics=diagnostics,
                     expression=expression,
                 )
             ]

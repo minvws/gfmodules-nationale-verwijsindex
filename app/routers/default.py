@@ -20,7 +20,33 @@ National Referral Index
 """
 
 
-@router.get("/")
+@router.get(
+    "/",
+    summary="API Home",
+    description="Display the NVI welcome page with ASCII logo and version information.",
+    response_class=Response,
+    status_code=200,
+    responses={
+        200: {
+            "description": "API home page with logo and version info",
+            "content": {
+                "text/plain": {
+                    "examples": {
+                        "with_version": {
+                            "summary": "With version info",
+                            "value": "NVI\n\nVersion: 1.0.0\nCommit: abc123def456",
+                        },
+                        "no_version": {
+                            "summary": "No version info",
+                            "value": "NVI\n\nNo version information found",
+                        },
+                    }
+                }
+            },
+        }
+    },
+    tags=["Info"],
+)
 def index() -> Response:
     content = LOGO
 
@@ -32,16 +58,39 @@ def index() -> Response:
         content += "\nNo version information found"
         logger.info("Version info could not be loaded: %s" % e)
 
-    return Response(content)
+    return Response(content, media_type="text/plain")
 
 
-@router.get("/version.json")
+@router.get(
+    "/version.json",
+    summary="Get Version Info",
+    description="Retrieve detailed version and build information in JSON format.",
+    response_class=Response,
+    responses={
+        200: {
+            "description": "Version information retrieved successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "version": "1.0.0",
+                        "git_ref": "abc123def456",
+                    }
+                }
+            },
+        },
+        404: {
+            "description": "Version information file not found",
+            "content": {"text/plain": {"example": "Version info could not be loaded."}},
+        },
+    },
+    tags=["Info"],
+)
 def version_json() -> Response:
     try:
         with open(Path(__file__).parent.parent.parent / "version.json", "r") as file:
             content = file.read()
-    except (FileNotFoundError, json.JSONDecodeError) as e:
+    except FileNotFoundError as e:
         logger.info("Version info could not be loaded: %s" % e)
-        return Response(status_code=404)
+        return Response(status_code=404, content="Version info could not be loaded.", media_type="text/plain")
 
-    return Response(content)
+    return Response(content, media_type="application/json")

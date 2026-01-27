@@ -128,7 +128,6 @@ def default_fhir_exception_handler(_: Request, exc: Exception) -> JSONResponse:
                 severity="error",
                 code="exception",
                 details=OperationOutcomeDetail(text="An unexpected error occurred"),
-                diagnostics=str(exc),
                 expression=[type(exc).__name__],
             )
         ]
@@ -151,7 +150,7 @@ def request_validation_fhir_exception_handler(
             OperationOutcomeIssue(
                 severity="error",
                 code="required" if err["type"] == "missing" else "invalid",
-                diagnostics=".".join(map(str, err["loc"])) + " " + str(err["msg"]),
+                details=OperationOutcomeDetail(text=".".join(map(str, err["loc"])) + " " + str(err["msg"])),
             ),
         )
 
