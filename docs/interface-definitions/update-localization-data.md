@@ -71,8 +71,8 @@ The following endpoints are provided:
 The registrations (Post) endpoint creates a new referral for the provided parameters.
 
 <!-- markdownlint-disable MD013 -->
-|  |  |
-|---|---|
+| | |
+| --- | --- |
 | Path | /registrations |
 | Type | POST |
 | Query Parameters | None |
@@ -110,8 +110,8 @@ Example response:
 The registrations/query (POST) endpoint returns the stored referrals for the client URA.
 
 <!-- markdownlint-disable MD013 -->
-|  |  |
-|---|---|
+| | |
+| --- | --- |
 | Path | /registrations/query |
 | Type | POST |
 | Query Parameters | None |
@@ -152,8 +152,8 @@ The registrations (Delete) endpoint removes a referral for the provided paramete
 The registrations are actually deleted in the NRI register.
 
 <!-- markdownlint-disable MD013 -->
-|  |  |
-|---|---|
+| | |
+| --- | --- |
 | Path | /registrations |
 | Type | DELETE |
 | Query Parameters | None |
