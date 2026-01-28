@@ -1,7 +1,10 @@
-# GFModules National Referral Index (NRI) or Nationale Verwijs Index (NVI)
+# Nationale Verwijs Index (NVI)
 
-The National Referral Index (NRI) is responsible for the referral of the Health Data. The NRI contains a referral
-to the register that associates a Health Provider with pseudonym and data domain.
+This app is the implementation of the Nationale Verwijs Index (NVI) and is part of
+the 'Generieke Functies, lokalisatie en addressering' project of the Ministry of Health,
+Welfare and Sport of the Dutch government. This application is responsible for storing and
+managing referrals of health data. Each referral creates a unique link between a pseudonymized patient,
+a specific healthcare provider (identified by their URA number), and a particular care context.
 
 ## Disclaimer
 
@@ -29,7 +32,7 @@ The application is a FastAPI application, so you can use the FastAPI documentati
 ## Getting started
 
 You can either run the application natively or in a docker container. If you want to run the application natively you
-can take a look at the initialisation steps in `docker/init.sh`.
+can take a look at the initialization steps in `docker/init.sh`.
 
 The preferred way to run the application is through docker.
 
@@ -91,7 +94,7 @@ an app.conf mount.
     make container-build-sa
 ```
 
-Both containers only differ in their init script and the default version usually will mount its own local src directory
+Both containers only differ in their init script and the default version will usually mount its own local src directory
 into the container's /src dir.
 
 ## Contribution
@@ -102,14 +105,14 @@ demonstration purposes to illustrate potential system communication patterns and
 For that reason we will only accept contributions that fit this goal. We do appreciate any effort from the
 community, but because our time is limited it is possible that your PR or issue is closed without a full justification.
 
-If you plan to make non-trivial changes, we recommend to open an issue beforehand where we can discuss your
+If you plan to make non-trivial changes, we recommend opening an issue beforehand where we can discuss your
 planned changes. This increases the chance that we might be able to use your contribution
 (or it avoids doing work if there are reasons why we wouldn't be able to use it).
 
 Note that all commits should be signed using a gpg key.
 
 When starting to introduce changes, it is important to leave user specific files such as IDE or text-editor settings
-outside the repository. For this, create an local `.gitignore` file and configure git like below.
+outside the repository. For this, create a local `.gitignore` file and configure git like below.
 
 ```bash
 git config --global core.excludesfile ~/.gitignore

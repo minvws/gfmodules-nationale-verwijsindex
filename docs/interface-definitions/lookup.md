@@ -1,46 +1,18 @@
-# Interface Specification National Referral Index - Lookup
-
-## Disclaimer
-
-This project and all associated code serve solely as **documentation and demonstration purposes**
-to illustrate potential system communication patterns and architectures.
-
-This codebase:
-
-- Is NOT intended for production use
-- Does NOT represent a final specification
-- Should NOT be considered feature-complete or secure
-- May contain errors, omissions, or oversimplified implementations
-- Has NOT been tested or hardened for real-world scenarios
-
-The code examples are *only* meant to help understand concepts and demonstrate possibilities.
-
-By using or referencing this code, you acknowledge that you do so at your own risk and that
-the authors assume no liability for any consequences of its use.
-
-## Context
-
-The GFModules project is a collection of applications that have the purpose to improve the
-data exchange between healthcare providers. The project is the technical implementation of
-the various components of the 'Generieke Functies, lokalisatie en addressering' project of the
-Ministry of Health, Welfare and Sport of the Dutch government.
-
-The National Referral Index (NRI) is responsible for the referral of the Health Data. The NRI contains a referral
-to the register that associates a Health Provider with pseudonym and data domain.
-
-This interface description and other interfaces of this application can be found at the [github repository](https://github.com/minvws/gfmodules-national-referral-index/tree/feat/interface-description/docs/interface-definitions).
-
-<div style="page-break-after: always;"></div>
+# Interface Specification - Localization
 
 ## Summary
 
-This interface enables applications in the Healthcare Provider domain to localize the health data of patients
-based on a reference to a pseudonymised BSN (RID). This RID needs to be fetched first from the PRS
-(see [Process](#process)).
+Localization is the process where a requester (healthcare provider) wants to determine which sources hold
+data for a specific patient.
+This is usually done in EPD's and PACS when a healthcare provider
+wants to retrieve data for a patient from other healthcare providers.
+
+The requester first retrieves a pseudonym for a personal identifier, such as a BSN, via the pseudonym service (PRS)
+and then uses it in the localization request to the NVI.
+The NVI performs an authorization check, decrypts the pseudonym,
+matches it against registrations, and returns the sources that hold data for the patient in the specified care context.
 
 ![lookup process](../images/structurizr-LocalizeInterface.svg)
-
-<div style="page-break-after: always;"></div>
 
 ## Process
 
@@ -49,65 +21,148 @@ This interface is used in the following processes:
 - [Localize health data](https://github.com/minvws/gfmodules-coordination/blob/main/docs/processes/localize_health_data.md)
 - [Fetch timeline](https://github.com/minvws/gfmodules-coordination/blob/main/docs/processes/timeline.md)
 
+### Steps in the localization process
+
+1. The requester retrieves a pseudonym for the patient (via the pseudonym service).
+2. The requester sends the encrypted pseudonym + own URA number + care context +
+  optional filter on provider type(s) to the NVI.
+3. The NVI performs an authorization and authentication check.
+4. The NVI decrypts the pseudonym.
+5. The NVI applies the filter on pseudonym, care context, provider type(s) (if specified) and looks for matches in registrations.
+6. The NVI returns a list of sources.
+
 ## Authentication
 
-All endpoints that are described here are only accessible behind mTLS with a valid UZI Server Certificate.
+Localization requires OAuth 2.0 and mTLS. See
+[docs/interface-definitions/authorization.md](docs/interface-definitions/authorization.md).
 
 ## Endpoints
 
 The following endpoints are provided:
 
-- [info](#info)
+- [Localize Organizations](#localize-organizations)
 
 <div style="page-break-after: always;"></div>
 
-### Info
+### Localize Organizations
 
-The info endpoint gets information about the referrals by pseudonym and data domain.
+This endpoint localizes organizations (sources) that hold referrals/registrations
+for a given pseudonym, care context and provider type(s).
 
 | | |
 | --- | --- |
-| Path | /info |
+| Path | /Organization/$localize |
 | Type | POST |
 | Query Parameters | None |
-| JSON payload | [Pseudonym](#pseudonym), [DataDomain](#data-domain) |
+| Content-Type | application/fhir+json |
+| Payload | [FHIR Parameters](#fhir-parameters) |
 
 Example CURL request:
 
 ```curl
 curl -X 'POST' \
-  'https://referral-index/info' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
+  'https://nvi/Organization/$localize' \
+  -H 'accept: application/fhir+json' \
+  -H 'Content-Type: application/fhir+json' \
+  -H 'Authorization: Bearer <<access_token>>' \
   -d '{
-  "pseudonym": "<<pseudonym>>",
-  "data_domain": "beeld"
+  "resourceType": "Parameters",
+  "parameter": [
+    {
+      "name": "pseudonym",
+      "valueString": "<<encrypted-pseudonym-jwe>>"
+    },
+    {
+      "name": "oprfKey",
+      "valueString": "<<base64-encoded-oprf-key>>"
+    },
+    {
+      "name": "careContext",
+      "valueCoding": {
+        "system": "https://example.org/fhir/CodeSystem/care-context",
+        "code": "MedicationAgreement",
+        "display": "Medicatieafspraak"
+      }
+    },
+    {
+      "name": "filterOrgType",
+      "valueCode": "apotheek"
+    }
+  ]
 }'
 ```
 
 Example response:
 
 ```json
-[
-  {
-    "pseudonym": "<<pseudonym>>",
-    "data_domain": "beeldbank",
-    "ura_number": "13873620"
-  },
-  {
-    "pseudonym": "<<pseudonym>>",
-    "data_domain": "beeldbank",
-    "ura_number": "23665292"
-  }
-]
+{
+  "resourceType": "Bundle",
+  "type": "searchset",
+  "timestamp": "2024-12-08T14:35:22Z",
+  "total": 2,
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Organization",
+        "id": "90000001",
+        "identifier": [
+          {
+            "system": "https://example.org/fhir/NamingSystem/source",
+            "value": "90000001"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Organization",
+        "id": "90000002",
+        "identifier": [
+          {
+            "system": "https://example.org/fhir/NamingSystem/source",
+            "value": "90000002"
+          }
+        ]
+      }
+    }
+  ]
+}
 ```
+
+#### FHIR Parameters
+
+The payload is a FHIR `Parameters` resource with the following parameters:
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| pseudonym | valueString | Yes | Encrypted pseudonym (JWE) issued by the pseudonym service. |
+| oprfKey | valueString | Yes | Base64-encoded OPRF key associated with the pseudonym. |
+| careContext | valueCoding | Yes | Care context in which localization is performed. |
+| filterOrgType | valueCode | No | Filter on provider type(s). If specified, only sources of these types are returned. |
 
 #### Pseudonym
 
-A pseudonym send as a query parameter or as a json property is always serialized as a string
+The pseudonym is provided as an encrypted JWE in `Parameters.parameter[name="pseudonym"].valueString`.
+The NVI decrypts the pseudonym internally and uses the decrypted value for matching.
 
-TODO: Update pseudonym to RID when PRS implementation is finished
+#### OPRF key
 
-#### Data Domain
+The OPRF key is provided in `Parameters.parameter[name="oprfKey"].valueString` and is used to exchange the
+pseudonym (PRS exchange) before matching occurs.
 
-Currently the only supported data domain is `beeldbank`. More will be added in the future.
+#### Care context
+
+The care context is provided as `valueCoding` in `Parameters.parameter[name="careContext"]`. The code
+defines the care context type (for example, `MedicationAgreement`).
+The provided value needs to match any value in the system defined for care contexts.
+
+#### Provider type filter
+
+If `filterOrgType` is specified, the NVI applies this filter before returning results.
+The filter value is a `valueCode` with the provider type (for example, `apotheek`).
+The provided value needs to match any value in the system defined for provider types.
+
+#### Response
+
+The response is a FHIR `Bundle` of type `searchset` containing `Organization` resources that represent the
+found sources. Each `Organization.identifier` contains the source's URA number and the source system.
