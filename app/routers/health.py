@@ -34,7 +34,17 @@ def ok_or_error(value: bool) -> str:
                                 "components": {"database": "ok"},
                             },
                         },
-                        "degraded": {
+                    }
+                }
+            },
+        },
+        500: {"description": "Unexpected error during health check execution"},
+        503: {
+            "description": "One or more components are unhealthy",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "some_unhealthy": {
                             "summary": "Some services unhealthy",
                             "value": {
                                 "status": "error",
@@ -45,7 +55,6 @@ def ok_or_error(value: bool) -> str:
                 }
             },
         },
-        500: {"description": "Unexpected error during health check execution"},
     },
     tags=["Health"],
 )
@@ -56,5 +65,11 @@ def health(db: Database = Depends(dependencies.get_database)) -> JSONResponse:
         "database": ok_or_error(db.is_healthy()),
     }
     healthy = ok_or_error(all(value == "ok" for value in components.values()))
-
-    return JSONResponse(content={"status": healthy, "components": components})
+    content = {"status": healthy, "components": components}
+    if healthy == "ok":
+        return JSONResponse(content=content)
+    logger.warning(f"Some components unhealthy: {components}")
+    return JSONResponse(
+        status_code=503,
+        content=content,
+    )
