@@ -31,12 +31,23 @@ HCIM_2024_ZIBS = [
             "Medicatieafspraak",
             "Een medicatieafspraak is de afspraak tussen een zorgverlener en een patiënt over het gebruik van een geneesmiddel.",
         ),
-        ("LaboratoryTestResult", "Laboratorium uitslag", "De uitslag van een laboratorium onderzoek."),
+        (
+            "LaboratoryTestResult",
+            "Laboratorium uitslag",
+            "De uitslag van een laboratorium onderzoek.",
+        ),
         ("Encounter", "Contact", "Een contact tussen een patiënt en een zorgverlener."),
-        ("Procedure", "Verrichting", "Een verrichting of behandeling die uitgevoerd is."),
+        (
+            "Procedure",
+            "Verrichting",
+            "Een verrichting of behandeling die uitgevoerd is.",
+        ),
         ("Condition", "Probleem", "Een gezondheidsprobleem, diagnose of aandoening."),
-        ("AllergyIntolerance", "Allergie/Intolerantie", "Een allergie of intolerantie voor een stof."),
-        ("VitalSigns", "Vitale parameters", "Meetwaarden die de vitale functies van het lichaam beschrijven."),
+        (
+            "AllergyIntolerance",
+            "Allergie/Intolerantie",
+            "Een allergie of intolerantie voor een stof.",
+        ),
         (
             "ImagingStudy",
             "Beeldvormend onderzoek",
