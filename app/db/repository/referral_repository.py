@@ -1,7 +1,7 @@
 from typing import List, Sequence
 from uuid import UUID
 
-from sqlalchemy import delete, exists, or_, select
+from sqlalchemy import and_, delete, exists, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db.decorator import repository
@@ -114,16 +114,14 @@ class ReferralRepository(RepositoryBase):
         pseudonym: str | None = None,
         data_domain: str | None = None,
     ) -> bool:
-        stmt = select(
-            exists().where(
-                ReferralEntity.ura_number == ura_number,
-            )
-        )
+        conditions = [(ReferralEntity.ura_number == ura_number)]
         if pseudonym:
-            stmt = stmt.where(ReferralEntity.pseudonym == pseudonym)
+            conditions.append((ReferralEntity.pseudonym == pseudonym))
 
         if data_domain:
-            stmt = stmt.where(ReferralEntity.data_domain == data_domain)
+            conditions.append((ReferralEntity.data_domain == data_domain))
+
+        stmt = select(exists().where(and_(*conditions)))
 
         results = self.db_session.session.execute(stmt).scalar()
         return results or False
