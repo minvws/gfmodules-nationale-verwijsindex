@@ -27,7 +27,7 @@ requests = "^2.32.5"
 statsd = "^4.0.1"
 puzi = { git = "https://github.com/minvws/puzi-python" }
 click = "^8.3.1"
-pyjwt = "^2.10.1"
+pyjwt = "^2.11.0"
 pyoprf = "0.9.3"
 jwcrypto = "^1.5.6"
 
