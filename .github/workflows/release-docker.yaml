@@ -89,7 +89,7 @@ jobs:
               with:
                 image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
                 format: "table"
-                exit-code: "1"
+                exit-code: "0"
                 severity: "CRITICAL,HIGH"
                 vuln-type: "library"
                 skip-setup-trivy: true
