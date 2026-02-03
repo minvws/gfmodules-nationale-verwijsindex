@@ -107,7 +107,7 @@ class OAuthService:
                 msg="Invalid token",
             )
 
-        return claims  # type: ignore
+        return claims
 
     @staticmethod
     def _verify_mtls(request: Request, claims: Dict[str, Any]) -> None:
