@@ -156,6 +156,7 @@ def get_config(path: str | None = None) -> Config:
 
         _CONFIG = Config.model_validate(ini_data)
     except ValidationError as e:
+        logger.error(f"Configuration validation error: {e}")
         raise e
 
     return _CONFIG
