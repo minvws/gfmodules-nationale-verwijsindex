@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # syntax directive is used to enable Docker BuildKit
 
-ARG PYTHON_VERSION=3.11
+ARG PYTHON_VERSION=3.14.2
 
 FROM python:${PYTHON_VERSION}-slim AS base
 
@@ -45,9 +45,7 @@ RUN git clone https://github.com/stef/liboprf.git && cd liboprf/src && make
 RUN pip3 install --upgrade pip && \
     pip3 install poetry --no-cache-dir
 
-RUN chown -R ${APP_USER}:${APP_GROUP} /usr/local/lib/python3.11/site-packages/setup*
-RUN chown -R ${APP_USER}:${APP_GROUP} /usr/local/lib/python3.11/site-packages/pkg_resources*
-RUN chown -R ${APP_USER}:${APP_GROUP} /usr/local/lib/python3.11/site-packages/packaging*
+RUN chown -R ${APP_USER}:${APP_GROUP} /usr/local/lib/python3.14/site-packages/packaging*
 
 WORKDIR ${PROJECT_DIR}
 
@@ -65,7 +63,7 @@ COPY --from=builder liboprf/src/lib*.so /usr/local/lib/
 RUN ldconfig
 
 COPY --from=builder /usr/local /usr/local
-RUN chown -R ${APP_USER}:${APP_GROUP} /usr/local/lib/python3.11
+RUN chown -R ${APP_USER}:${APP_GROUP} /usr/local/lib/python3.14
 COPY . /src
 
 COPY ./docker/init-standalone.sh /usr/local/bin
