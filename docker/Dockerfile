@@ -12,38 +12,40 @@ ARG NEW_UID
 ARG NEW_GID
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    POETRY_CACHE_DIR=/tmp/poetry-cache \
-    POETRY_VIRTUALENVS_CREATE=false
+  PYTHONUNBUFFERED=1 \
+  POETRY_CACHE_DIR=/tmp/poetry-cache \
+  POETRY_VIRTUALENVS_CREATE=false
 
 # Create a non-privileged user that the app will run under.
 RUN groupadd --system ${APP_GROUP} --gid=${NEW_GID} && \
-    adduser \
-        --disabled-password \
-        --gecos "" \
-        --uid ${NEW_UID} \
-        --gid ${NEW_GID} \
-        ${APP_USER}
+  adduser \
+  --disabled-password \
+  --gecos "" \
+  --uid ${NEW_UID} \
+  --gid ${NEW_GID} \
+  ${APP_USER}
 
 RUN apt update && \
-    apt install -y \
-        git \
-        gnupg2 \
-        make \
-        postgresql-client \
-        postgresql-client-common \
-        curl \
-        pkg-config \
-        openssl \
-        libssl-dev \
-        libsodium-dev \
-        build-essential
+  apt install -y \
+  git \
+  gnupg2 \
+  make \
+  postgresql-client \
+  postgresql-client-common \
+  curl \
+  pkg-config \
+  openssl \
+  libssl-dev \
+  libsodium-dev \
+  build-essential
 
 # We need to compile liboprf from source as the current distributed versions are outdated.
 RUN git clone https://github.com/stef/liboprf.git && cd liboprf/src && make
 
 RUN pip3 install --upgrade pip && \
-    pip3 install poetry --no-cache-dir
+  pip3 install --upgrade setuptools && \
+  pip3 install --upgrade wheel && \
+  pip3 install poetry --no-cache-dir
 
 RUN chown -R ${APP_USER}:${APP_GROUP} /usr/local/lib/python3.11/site-packages/setup*
 RUN chown -R ${APP_USER}:${APP_GROUP} /usr/local/lib/python3.11/site-packages/pkg_resources*
@@ -74,9 +76,9 @@ COPY ./docker/init.sh /usr/local/bin
 ARG standalone=false
 
 RUN if [ "$standalone" = "true" ] ; then \
-    ln -sf /usr/local/bin/init-standalone.sh /docker-entrypoint.sh; \
+  ln -sf /usr/local/bin/init-standalone.sh /docker-entrypoint.sh; \
   else \
-    ln -sf /usr/local/bin/init.sh /docker-entrypoint.sh ; \
+  ln -sf /usr/local/bin/init.sh /docker-entrypoint.sh ; \
   fi
 
 USER ${APP_USER}
