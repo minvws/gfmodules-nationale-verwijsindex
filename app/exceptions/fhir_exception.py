@@ -46,3 +46,13 @@ class FHIRException(HTTPException):
             detail=outcome.model_dump(by_alias=True, exclude_none=True),
             headers={"Content-Type": "application/fhir+json"},
         )
+
+
+class NotFoundException(FHIRException):
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=404,
+            code="not-found",
+            severity="error",
+            msg="NVIDataReference not found",
+        )

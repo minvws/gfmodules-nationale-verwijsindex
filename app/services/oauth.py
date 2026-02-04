@@ -17,6 +17,7 @@ from app.models.ura import UraNumber
 from app.utils.certificates.utils import enforce_cert_newlines
 
 SSL_CLIENT_CERT_HEADER_NAME = "x-forwarded-tls-client-cert"  # "x-proxy-ssl_client_cert"
+INVALID_TOKEN = "Invalid token"
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +105,7 @@ class OAuthService:
                 status_code=401,
                 severity="error",
                 code="security",
-                msg="Invalid token",
+                msg=INVALID_TOKEN,
             )
 
         return claims
@@ -150,7 +151,7 @@ class OAuthService:
                 status_code=401,
                 severity="security",
                 code="security",
-                msg="Invalid token",
+                msg=INVALID_TOKEN,
             )
 
         if not hmac.compare_digest(fp, request_cert_fp):
@@ -159,5 +160,5 @@ class OAuthService:
                 status_code=401,
                 severity="security",
                 code="security",
-                msg="Invalid token",
+                msg=INVALID_TOKEN,
             )

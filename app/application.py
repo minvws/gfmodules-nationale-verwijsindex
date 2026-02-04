@@ -47,12 +47,8 @@ def run() -> None:
     uvicorn.run("app.application:create_fastapi_app", **get_uvicorn_params())
 
 
-def application_init() -> None:
-    setup_logging()
-
-
 def create_fastapi_app() -> FastAPI:
-    application_init()
+    setup_logging()
     fastapi = setup_fastapi()
     register_at_prs()
 
