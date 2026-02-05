@@ -19,9 +19,9 @@ pool_recycle=1800
 [pseudonym_api]
 endpoint=http://localhost:8504
 timeout=10
-# mtls_cert=secrets/ssl/pseudonym_api.cert
-# mtls_key=secrets/ssl/pseudonym_api.key
-# verify_ca=secrets/ssl/pseudonym_api_ca.cert
+mtls_cert=secrets/ssl/pseudonym_api.cert
+mtls_key=secrets/ssl/pseudonym_api.key
+verify_ca=secrets/ssl/pseudonym_api_ca.cert
 
 [telemetry]
 # Telemetry is enabled or not
@@ -63,15 +63,6 @@ ssl_base_dir = secrets/ssl
 ssl_cert_file = server.cert
 ssl_key_file = server.key
 
-[client_oauth]
-enabled = True
-override_ura_number = 12345600
-audience = nvi.service
-issuer = https://localhost:8443/
-jwks_url = https://localhost:8443/oauth/jwks.json
-mtls_cert = secrets/ssl/client_oauth.cert
-mtls_key =  secrets/ssl/client_oauth.key
-verify_ca = secrets/ssl/client_oauth_ca.cert
 
 # Section for configuring the INCOMING OAuth connections (from external services to this service)
 [oauth]
@@ -82,9 +73,9 @@ override_ura_number = 11112222
 # Audience that an incoming OAuth should have
 audience = nvi.service
 # The issuer that issued the incoming OAuth tokens
-issuer = 
+issuer = https://oauth:443
 # The URL to fetch the JWKS keys for validating incoming tokens
-jwks_url = 
+jwks_url = https://oauth:443/oauth/jwks.json
 # Any MTLS settings for connecting to the oauth server (to fetch JWKS keys)
 mtls_cert = secrets/epd-1.ldn.crt
 mtls_key =  secrets/epd-1.ldn.key
