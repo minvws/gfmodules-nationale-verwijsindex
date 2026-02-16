@@ -2,10 +2,10 @@ from typing import Any, Dict
 
 import pytest
 
+from app.models.fhir.elements import Coding
 from app.models.fhir.resources.data import CARE_CONTEXT_SYSTEM
 from app.models.fhir.resources.organization.parameters import (
     CareContextParameter,
-    CareContextValueCoding,
     OprfKeyParameter,
     OrganizationLocalizationDto,
     Parameters,
@@ -26,7 +26,10 @@ def oprf_key_param() -> OprfKeyParameter:
 
 @pytest.fixture()
 def care_context_param() -> CareContextParameter:
-    return CareContextParameter(value_coding=CareContextValueCoding(code="ImagingStudy"))
+    return CareContextParameter(
+        name="careContext",
+        value_coding=Coding(system=CARE_CONTEXT_SYSTEM, code="ImagingStudy"),
+    )
 
 
 @pytest.fixture()
