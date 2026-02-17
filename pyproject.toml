@@ -38,6 +38,9 @@ ruff = "0.15.1"
 codespell = "^2.4.1"
 pip-audit = "^2.10.0"
 
+[tool.poetry.group.debug.dependencies]
+debugpy = "^1.8.20"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

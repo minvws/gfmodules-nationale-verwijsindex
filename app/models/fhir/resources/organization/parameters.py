@@ -3,7 +3,6 @@ from typing import Any, List, Literal, Self
 from pydantic import (
     BaseModel,
     ConfigDict,
-    ValidationError,
     field_validator,
     model_validator,
 )
@@ -27,28 +26,43 @@ class OprfKeyParameter(BaseModel):
     value_string: str
 
 
-class CareContextValueCoding(Coding):
-    system: str = CARE_CONTEXT_SYSTEM
-
-
 class CareContextParameter(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     name: Literal["careContext"] = "careContext"
-    value_coding: CareContextValueCoding
+    value_coding: Coding
 
-    @field_validator("value_coding", mode="before")
+    @model_validator(mode="before")
     @classmethod
-    def validate_value_coding(cls, value: Any) -> Any:
+    def validate_model(cls, data: Any) -> Any:
+        if isinstance(data, cls):
+            return data
+
+        if not isinstance(data, dict):
+            raise ValueError("data must be a valid object")
+
+        if "name" not in data:
+            raise ValueError("careContext.name is missing")
+
+        name = data["name"]
+        if name != "careContext":
+            raise ValueError("careContext.name must be `careContext`")
+
+        value_coding_name = (
+            "valueCoding" if "valueCoding" in data else "value_coding" if "value_coding" in data else None
+        )
+        if value_coding_name is None:
+            raise ValueError("careContext.valueCoding is missing")
+
+        value_coding = data[value_coding_name]
         try:
-            data = Coding.model_validate(value)
-        except ValidationError:
-            raise ValueError("parameters.careContext must be a valid `coding`")
+            coding = Coding.model_validate(value_coding)
+        except ValueError as e:
+            raise e
 
-        if data.system != CARE_CONTEXT_SYSTEM:
-            raise ValueError(f"valueCoding.system unrecognized, system must be {CARE_CONTEXT_SYSTEM}")
-
-        return value
+        if coding.system != CARE_CONTEXT_SYSTEM:
+            raise ValueError(f"careContext.valueCoding.system must be {CARE_CONTEXT_SYSTEM}")
+        return data
 
 
 class SourceTypeParameter(BaseModel):
@@ -70,6 +84,44 @@ class Parameters(BaseModel):
 
     resource_type: Literal["Parameters"] = "Parameters"
     parameter: List[PseudonymParamter | OprfKeyParameter | CareContextParameter | SourceTypeParameter]
+
+    @field_validator("parameter", mode="before")
+    @classmethod
+    def validate_input(cls, value: Any) -> Any:
+        if not isinstance(value, List):
+            raise ValueError("Parameter.parameter must be a list")
+
+        for param in value:
+            if isinstance(
+                param,
+                (
+                    PseudonymParamter,
+                    OprfKeyParameter,
+                    CareContextParameter,
+                    SourceTypeParameter,
+                ),
+            ):
+                continue
+
+            if "name" not in param:
+                continue
+
+            name = param["name"]
+            match name:
+                case "oprfKey":
+                    OprfKeyParameter.model_validate(param)
+
+                case "pseudonym":
+                    PseudonymParamter.model_validate(param)
+                case "careContext":
+                    CareContextParameter.model_validate(param)
+
+                case "sourceType":
+                    SourceTypeParameter.model_validate(param)
+                case _:
+                    raise ValueError("Invalid property in Parameter.parameter")
+
+        return value
 
     @model_validator(mode="after")
     def validate_paramters(self) -> Self:
