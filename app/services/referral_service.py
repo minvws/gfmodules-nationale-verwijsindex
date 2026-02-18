@@ -12,7 +12,6 @@ from app.exceptions.fhir_exception import FHIRException, NotFoundException
 from app.models.data_domain import DataDomain
 from app.models.fhir.resources.data_reference.resource import NVIDataReferenceOutput
 from app.models.pseudonym import Pseudonym
-from app.models.referrals.entry import ReferralEntry
 from app.models.ura import UraNumber
 
 logger = logging.getLogger(__name__)
@@ -32,25 +31,6 @@ class ReferralService:
                 raise NotFoundException
 
             return NVIDataReferenceOutput.from_referral(referral)
-
-    def get_referrals_by_domain_and_pseudonym(
-        self,
-        pseudonym: Pseudonym,
-        data_domain: DataDomain,
-    ) -> List[ReferralEntry]:
-        """
-        Method that gets all the referrals by pseudonym and data domain
-        """
-
-        with self.database.get_db_session() as session:
-            referral_repository = session.get_repository(ReferralRepository)
-            entities = referral_repository.find_many(
-                pseudonym=str(pseudonym), data_domain=str(data_domain), ura_number=None
-            )
-            if not entities:
-                logger.info(f"No referrals found for pseudonym {str(pseudonym)} and data domain {str(data_domain)}")
-                raise HTTPException(status_code=404)
-            return [ReferralEntry.from_entity(e) for e in entities]
 
     def add_one(
         self,
@@ -111,7 +91,6 @@ class ReferralService:
         pseudonym: Pseudonym,
         data_domain: DataDomain,
         ura_number: UraNumber,
-        request_url: str,
     ) -> None:
         """
         Method that removes a referral from the database
@@ -189,24 +168,3 @@ class ReferralService:
                 raise NotFoundException
 
             repo.delete_one(target)
-
-    def query_referrals(
-        self,
-        pseudonym: Pseudonym | None,
-        data_domain: DataDomain | None,
-        ura_number: UraNumber,
-        request_url: str,
-    ) -> List[ReferralEntry]:
-        """
-        Method that queries referrals from the database
-        """
-        with self.database.get_db_session() as session:
-            referral_repository = session.get_repository(ReferralRepository)
-            entities = referral_repository.find_many(
-                pseudonym=str(pseudonym) if pseudonym else None,
-                data_domain=str(data_domain) if data_domain else None,
-                ura_number=str(ura_number),
-            )
-            if not entities:
-                raise HTTPException(status_code=404)
-            return [ReferralEntry.from_entity(e) for e in entities]

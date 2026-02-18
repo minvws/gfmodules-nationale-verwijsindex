@@ -9,7 +9,12 @@ from app import dependencies
 from app.exceptions.fhir_exception import FHIRException, OperationOutcome
 from app.models.data_domain import DataDomain
 from app.models.fhir.bundle import Bundle
-from app.models.fhir.resources.data import CARE_CONTEXT_SYSTEM, SOURCE_SYSTEM, SOURCE_TYPE_SYSTEM, SUBJECT_SYSTEM
+from app.models.fhir.resources.data import (
+    CARE_CONTEXT_SYSTEM,
+    SOURCE_SYSTEM,
+    SOURCE_TYPE_SYSTEM,
+    SUBJECT_SYSTEM,
+)
 from app.models.fhir.resources.data_reference.requests import DataReferenceRequestParams
 from app.models.fhir.resources.data_reference.resource import (
     NVIDataReferenceOutput,
@@ -63,8 +68,14 @@ def exchange_oprf(pseudonym_service: PseudonymService, oprf_jwe: str, blind_fact
                             {
                                 "resourceType": "NVIDataReference",
                                 "id": "12345",
-                                "meta": {"versionId": "1", "lastUpdated": "2024-12-08T14:40:00Z"},
-                                "source": {"system": SOURCE_SYSTEM, "value": "90000001"},
+                                "meta": {
+                                    "versionId": "1",
+                                    "lastUpdated": "2024-12-08T14:40:00Z",
+                                },
+                                "source": {
+                                    "system": SOURCE_SYSTEM,
+                                    "value": "90000001",
+                                },
                                 "sourceType": {
                                     "coding": [
                                         {
@@ -363,8 +374,6 @@ def create_reference(
         data_domain=data.get_data_domain(),
         ura_number=data.get_ura_number(),
         organization_type=data.get_organization_type(),
-        uzi_number=data.source.value,
-        request_url=source_url,
     )
     return FHIRJSONResponse(
         content=jsonable_encoder(new_reference.model_dump(exclude_none=True, by_alias=True)),
