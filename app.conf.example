@@ -63,31 +63,30 @@ ssl_base_dir = secrets/ssl
 ssl_cert_file = server.cert
 ssl_key_file = server.key
 
-
-# Section for configuring the INCOMING OAuth connections (from external services to this service)
-[oauth]
+[oauth_incoming]
+# Enable requiring OAuth tokens for incoming requests
 enabled = True
 # If not enabled, we assume this URA number is what is calling our service
 override_ura_number = 11112222
-
-# Audience that an incoming OAuth should have
-audience = nvi.service
-# The issuer that issued the incoming OAuth tokens
-issuer = https://oauth:443
+# Audience that an incoming OAuth should have, URL of this service
+audience = https://localhost:8541
+# The issuer that issued the incoming OAuth tokens, URL of the authorization server
+issuer = https://localhost:8443
 # The URL to fetch the JWKS keys for validating incoming tokens
-jwks_url = https://oauth:443/oauth/jwks.json
-# Any MTLS settings for connecting to the oauth server (to fetch JWKS keys)
-mtls_cert = secrets/epd-1.ldn.crt
-mtls_key =  secrets/epd-1.ldn.key
-verify_ca = secrets/ca.ldn.crt
+jwks_url = https://localhost:8443/oauth/jwks.json
+# MTLS settings for fetching the JWKS keys
+mtls_cert = secrets/ssl/oauth.cert
+mtls_key = secrets/ssl/oauth.key
+verify_ca = secrets/ssl/oauth_ca.cert
 
-# Section for configuring the OUTGOING OAuth connections (from this service to external services)
-[client_oauth]
-# If not enabled, we don't connect to OAuth and thus we never add a Bearer JWT token to the called service
+[oauth_outgoing]
+# Enable fetching OAuth tokens for outgoing requests, if disabled a mock token is used instead
 enabled = True
-# The OAuth server that we will connect to to fetch an access token
-issuer = https://localhost:8443/
-# Any MTLS settings for connecting to the oauth server (to fetch access tokens)
-mtls_cert = secrets/client-uzi.crt
-mtls_key =  secrets/client-uzi.key
-verify_ca =
+# Endpoint to fetch OAuth tokens from
+endpoint = https://localhost:8443/oauth/token
+# Timeout (in seconds) for requests to the oauth server
+timeout = 10
+# MTLS settings for connecting to the oauth server
+mtls_cert = secrets/ssl/oauth.cert
+mtls_key = secrets/ssl/oauth.key
+verify_ca = secrets/ssl/oauth_ca.cert
