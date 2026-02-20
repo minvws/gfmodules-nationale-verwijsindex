@@ -2,40 +2,39 @@ from datetime import datetime
 from typing import Generic, List, Literal, TypeVar
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, ConfigDict
-from pydantic.alias_generators import to_camel
+from pydantic import Field
 
 from app.models.fhir.resources.data_reference.resource import (
     NVIDataReferenceOutput,
 )
-from app.models.fhir.resources.domain_resource import DomainResource
+from app.models.fhir.resources.domain_resource import DomainResource, FhirBaseModel
 from app.models.fhir.resources.organization.resource import Organization
 
 T = TypeVar("T", bound=DomainResource)
 
 
-class EntryRequest(BaseModel):
+class EntryRequest(FhirBaseModel):
     method: Literal["POST", "DELETE"]
     url: str
 
 
-class EntryResponse(BaseModel):
+class EntryResponse(FhirBaseModel):
     pass
 
 
-class BundleEntry(BaseModel, Generic[T]):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+class BundleEntry(FhirBaseModel, Generic[T]):
+    # model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     request: EntryRequest | None = None
     resource: T
 
 
-class Bundle(BaseModel, Generic[T]):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+class Bundle(FhirBaseModel, Generic[T]):
+    # model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     id: str | None = None
     resource_type: Literal["Bundle"] = "Bundle"
-    type: Literal["searchset"] = "searchset"
-    timestamp: datetime = datetime.now()
+    type: Literal["searchset", "transaction"] = "searchset"
+    timestamp: datetime = Field(default_factory=datetime.now)
     total: int | None = None
     entry: List[BundleEntry[T]]
 

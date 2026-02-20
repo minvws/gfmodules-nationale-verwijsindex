@@ -10,25 +10,20 @@ from pydantic.alias_generators import to_camel
 
 from app.models.fhir.elements import Coding
 from app.models.fhir.resources.data import CARE_CONTEXT_SYSTEM
+from app.models.fhir.resources.domain_resource import FhirBaseModel
 
 
-class PseudonymParamter(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
+class PseudonymParamter(FhirBaseModel):
     name: Literal["pseudonym"] = "pseudonym"
     value_string: str
 
 
-class OprfKeyParameter(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
+class OprfKeyParameter(FhirBaseModel):
     name: Literal["oprfKey"] = "oprfKey"
     value_string: str
 
 
-class CareContextParameter(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
+class CareContextParameter(FhirBaseModel):
     name: Literal["careContext"] = "careContext"
     value_coding: Coding
 
