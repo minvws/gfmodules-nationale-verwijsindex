@@ -25,7 +25,7 @@ def test_serialize_organization_should_succeed() -> None:
         type=[CodeableConcept(coding=[Coding(system="some-system", code="some-code", display="some-display")])],
     )
 
-    actual = data.model_dump(by_alias=True)
+    actual = data.model_dump(by_alias=True, exclude_none=True)
 
     assert expected == actual
 
