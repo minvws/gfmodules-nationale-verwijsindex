@@ -1,13 +1,49 @@
+from typing import List
 from uuid import UUID, uuid4
 
 import pytest
 from fastapi import HTTPException
 
+from app.db.models.referral import ReferralEntity
 from app.exceptions.fhir_exception import FHIRException
 from app.models.data_domain import DataDomain
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
 from app.services.referral_service import ReferralService
+
+
+def assert_eq(
+    expected: ReferralEntity | List[ReferralEntity],
+    actual: ReferralEntity | List[ReferralEntity],
+) -> None:
+    """
+    Helper function to compare equality between objects.
+    """
+
+    def compare(expected: ReferralEntity, actual: ReferralEntity) -> None:
+
+        expected_attr = expected.__table__.columns.keys()
+        actual_attr = actual.__table__.columns.keys()
+
+        assert expected_attr == actual_attr
+        for attr in expected_attr:
+            expected_value = getattr(expected, attr)
+            actual_value = getattr(actual, attr)
+
+            assert expected_value == actual_value
+
+    match (expected, actual):
+        case (ReferralEntity() as exp, ReferralEntity() as act):
+            compare(exp, act)
+
+        case (list() as exp, list() as act):
+            assert len(exp) == len(act)
+            for i, item in enumerate(exp):
+                target = act[i]
+                assert_eq(item, target)
+
+        case _:
+            raise TypeError("Cannot compare equality for obj of different types")
 
 
 def test_add_one_should_succeed(
@@ -23,7 +59,7 @@ def test_add_one_should_succeed(
     assert isinstance(expected.id, UUID)
     actual = referral_service.get_by_id(expected.id)
 
-    assert expected == actual
+    assert_eq(expected, actual)
 
 
 def test_add_referral_should_raise_exception_with_duplicates(
@@ -63,7 +99,7 @@ def test_delete_one_should_succeed(
     )
     assert isinstance(data.id, UUID)
     nvi_reference = referral_service.get_by_id(data.id)
-    assert data == nvi_reference
+    assert_eq(data, nvi_reference)
     referral_service.delete_one(
         pseudonym=patient,
         data_domain=data_domain,
@@ -115,12 +151,13 @@ def test_get_registration_with_specific_patient_should_succeed(
     expected = [data]
 
     actual = referral_service.get_registrations(
-        ura_number=data.get_ura_number(),
+        ura_number=UraNumber(data.ura_number),
         pseudonym=localisation_pseudonym,
-        data_domain=data.get_data_domain(),
+        data_domain=DataDomain(data.data_domain),
     )
 
-    assert expected == actual
+    assert len(expected) == len(actual)
+    assert_eq(list(expected), list(actual))
 
 
 def test_get_registrations_should_succeed(referral_service: ReferralService, ura_number: UraNumber) -> None:
@@ -145,7 +182,7 @@ def test_get_registrations_should_succeed(referral_service: ReferralService, ura
     expected = [expected_1, expected_2]
     actual = referral_service.get_registrations(ura_number=ura_number)
 
-    assert expected == actual
+    assert_eq(list(expected), list(actual))
 
 
 def test_delete_patient_registrations_should_succeed(
@@ -180,7 +217,7 @@ def test_delete_patient_registrations_should_succeed(
 
     actual = referral_service.get_registrations(ura_number)
 
-    assert expected == actual
+    assert_eq(list(expected), list(actual))
 
 
 def test_delete_patient_registrations_should_raise_exception_when_not_found(
@@ -251,10 +288,10 @@ def test_delete_organizaton_should_succeed(referral_service: ReferralService, ur
         ura_number=ura_a,
         organization_type=ura_a_type,
     )
-    assert referral_service.get_registrations(ura_number=ura_a) == [
-        patient_1_referecne,
-        patient_2_reference,
-    ]
+    assert_eq(
+        list(referral_service.get_registrations(ura_number=ura_a)),
+        [patient_1_referecne, patient_2_reference],
+    )
 
     ura_b = UraNumber("98765432")
     patient_3 = Pseudonym("ps-3")
@@ -272,7 +309,7 @@ def test_delete_organizaton_should_succeed(referral_service: ReferralService, ur
     actual_org_2 = referral_service.get_registrations(ura_number=ura_b)
 
     assert actual_org_1 == []
-    assert actual_org_2 == [patient_3_reference]
+    assert_eq(list(actual_org_2), [patient_3_reference])
 
 
 def test_delete_specific_organization_should_raise_exception_when_no_match_found(
@@ -332,7 +369,7 @@ def test_get_one_should_succeed(
     )
 
     assert actual is not None
-    assert expected == actual
+    assert_eq(expected, actual)
 
 
 def test_get_one_should_return_none_when_not_found(referral_service: ReferralService, ura_number: UraNumber) -> None:

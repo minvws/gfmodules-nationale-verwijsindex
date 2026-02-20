@@ -33,8 +33,18 @@ class Coding(BaseModel):
 
 class CodeableConcept(BaseModel):
     coding: List[Coding]
+    text: str | None = None
 
 
 class Identifier(BaseModel):
     system: str
     value: str
+
+
+class Reference(BaseModel):
+    identifier: Identifier
+    type: str | None = None
+
+
+class Extension(BaseModel):
+    url: str
