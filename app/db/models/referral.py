@@ -7,6 +7,7 @@ from sqlalchemy.types import Uuid
 from app.db.models.base import Base
 
 
+# TODO: adde device
 class ReferralEntity(Base):
     __tablename__ = "referrals"
     __table_args__ = (UniqueConstraint("ura_number", "pseudonym", "data_domain", name="providers_unique_idx"),)

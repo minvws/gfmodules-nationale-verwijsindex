@@ -9,12 +9,15 @@ from app.models.fhir.elements import (
     Reference,
 )
 from app.models.fhir.resources.domain_resource import DomainResource
+from app.models.ura import UraNumber
 
 
+# TODO: check add validations accordingly
 class ReferenceExtension(Extension):
     value_reference: Reference
 
 
+# TODO: check system values and add validations accordingly
 class LocalizationList(DomainResource):
     resource_type: Literal["List"] = "List"
 
@@ -77,3 +80,6 @@ class LocalizationList(DomainResource):
             code=code,
             empty_reason=empty_reason,
         )
+
+    def get_ura(self) -> UraNumber:
+        return UraNumber(self.extension[0].value_reference.identifier.value)
