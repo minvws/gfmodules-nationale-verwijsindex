@@ -133,11 +133,12 @@ def get_reference(
             blind_factor=params.oprf_key,
         )
 
-    registrations = referral_service.get_registrations(
+    referrals = referral_service.get_registrations(
         ura_number=UraNumber(params.source),
         pseudonym=pseudonym,
         data_domain=DataDomain(params.care_context) if params.care_context else None,
     )
+    registrations = [NVIDataReferenceOutput.from_referral(r) for r in referrals]
     return Bundle.from_reference_outputs(registrations)
 
 
@@ -364,9 +365,10 @@ def create_reference(
         ura_number=data.get_ura_number(),
     )
     if referral:
+        data_reference = NVIDataReferenceOutput.from_referral(referral)
         return FHIRJSONResponse(
             status_code=200,
-            content=jsonable_encoder(referral.model_dump(by_alias=True, exclude_none=True)),
+            content=jsonable_encoder(data_reference.model_dump(by_alias=True, exclude_none=True)),
         )
 
     new_reference = referral_service.add_one(
@@ -375,8 +377,9 @@ def create_reference(
         ura_number=data.get_ura_number(),
         organization_type=data.get_organization_type(),
     )
+    new_data_reference = NVIDataReferenceOutput.from_referral(new_reference)
     return FHIRJSONResponse(
-        content=jsonable_encoder(new_reference.model_dump(exclude_none=True, by_alias=True)),
+        content=jsonable_encoder(new_data_reference.model_dump(exclude_none=True, by_alias=True)),
         status_code=201,
         headers={"Location": source_url + f"/{new_reference.id}"},
     )
@@ -441,11 +444,12 @@ def get_by_id(
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
 ) -> NVIDataReferenceOutput:
-    data_reference = referral_service.get_by_id(id)
+    referral = referral_service.get_by_id(id)
+
     auth_enabled = oauth_service.enabled()
     if auth_enabled:
         req_ura: UraNumber = request.state.auth.ura_number
-        if req_ura != data_reference.get_ura_number():
+        if req_ura != referral.ura_number:
             raise FHIRException(
                 status_code=403,
                 severity="error",
@@ -453,7 +457,7 @@ def get_by_id(
                 msg="Organization is forbidden to access NVIDataReference",
             )
 
-    return data_reference
+    return NVIDataReferenceOutput.from_referral(referral)
 
 
 @router.delete(
@@ -478,11 +482,11 @@ def delete_by_id(
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
 ) -> DeleteResponse:
-    data_reference = referral_service.get_by_id(id)
+    referral = referral_service.get_by_id(id)
     auth_enabled = oauth_service.enabled()
     if auth_enabled:
         req_ura: UraNumber = request.state.auth.ura_number
-        if req_ura != data_reference.get_ura_number():
+        if req_ura != referral.ura_number:
             raise FHIRException(
                 status_code=403,
                 severity="error",
