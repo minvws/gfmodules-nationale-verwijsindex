@@ -20,6 +20,7 @@ from app.routers.default import router as default_router
 from app.routers.fhir import router as fhir_router
 from app.routers.health import router as health_router
 from app.routers.organization import router as organization_router
+from app.routers.patient import router as patient_router
 from app.stats import StatsdMiddleware
 
 
@@ -86,19 +87,12 @@ def setup_fastapi() -> FastAPI:
     )
 
     container.configure()
-
-    public_routers = [
-        default_router,
-        health_router,
-        fhir_router,
-    ]
+    # TODO: move patient to private router
+    public_routers = [default_router, health_router, fhir_router]
     for router in public_routers:
         fastapi.include_router(router)
 
-    routers = [
-        data_reference_router,
-        organization_router,
-    ]
+    routers = [data_reference_router, organization_router, patient_router]
     for router in routers:
         fastapi.include_router(router, dependencies=[Depends(get_auth_ctx)])
 

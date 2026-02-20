@@ -1,6 +1,10 @@
 from typing import List, Literal
 
+from pydantic import ConfigDict
+from pydantic.alias_generators import to_camel
+
 from app.db.models.referral import ReferralEntity
+from app.models.data_domain import DataDomain
 from app.models.fhir.elements import (
     CodeableConcept,
     Coding,
@@ -9,12 +13,16 @@ from app.models.fhir.elements import (
     Reference,
 )
 from app.models.fhir.resources.domain_resource import DomainResource
+from app.models.ura import UraNumber
 
 
+# TODO: check add validations accordingly
 class ReferenceExtension(Extension):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     value_reference: Reference
 
 
+# TODO: check system values and add validations accordingly
 class LocalizationList(DomainResource):
     resource_type: Literal["List"] = "List"
 
@@ -77,3 +85,15 @@ class LocalizationList(DomainResource):
             code=code,
             empty_reason=empty_reason,
         )
+
+    def get_ura(self) -> UraNumber:
+        return UraNumber(self.extension[0].value_reference.identifier.value)
+
+    def get_pseudonym_jwt(self) -> str:
+        return self.subject.identifier.value
+
+    def get_data_domain(self) -> DataDomain:
+        return DataDomain(self.code.coding[0].code)
+
+    def get_device(self) -> str:
+        return self.source.identifier.value

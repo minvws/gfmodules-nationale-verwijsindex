@@ -1,7 +1,6 @@
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
-from pydantic.alias_generators import to_camel
+from pydantic import ValidationError, field_validator
 
 from app.data import HCIM_2024_ZIBS, NVI_ORGANIZATION_TYPES
 from app.db.models.referral import ReferralEntity
@@ -13,13 +12,11 @@ from app.models.fhir.resources.data import (
     SOURCE_TYPE_SYSTEM,
     SUBJECT_SYSTEM,
 )
-from app.models.fhir.resources.domain_resource import DomainResource
+from app.models.fhir.resources.domain_resource import DomainResource, FhirBaseModel
 from app.models.ura import UraNumber
 
 
-class NVIDataReferenceBase(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
+class NVIDataReferenceBase(FhirBaseModel):
     resource_type: Literal["NVIDataReference"] = "NVIDataReference"
     source: Identifier
     source_type: CodeableConcept
