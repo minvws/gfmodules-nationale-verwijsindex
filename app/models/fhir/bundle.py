@@ -14,9 +14,18 @@ from app.models.fhir.resources.organization.resource import Organization
 T = TypeVar("T", bound=DomainResource)
 
 
+class EntryRequest(BaseModel):
+    method: Literal["POST", "DELETE"]
+    url: str
+
+
+class EntryResponse(BaseModel):
+    pass
+
+
 class BundleEntry(BaseModel, Generic[T]):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
+    request: EntryRequest | None = None
     resource: T
 
 
