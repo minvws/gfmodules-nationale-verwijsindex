@@ -10,7 +10,7 @@ from app import container
 from app.auth import get_auth_ctx
 from app.config import get_config
 from app.dependencies import get_prs_registration_service
-from app.exceptions.fhir_exception import (
+from app.models.fhir.resources.operation_outcome.resource import (
     OperationOutcome,
     OperationOutcomeDetail,
     OperationOutcomeIssue,
@@ -87,7 +87,6 @@ def setup_fastapi() -> FastAPI:
     )
 
     container.configure()
-    # TODO: move patient to private router
     public_routers = [default_router, health_router, fhir_router]
     for router in public_routers:
         fastapi.include_router(router)

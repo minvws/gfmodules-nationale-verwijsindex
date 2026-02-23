@@ -1,60 +1,46 @@
-import json
 import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request
 
-from app.dependencies import get_pseudonym_service, get_referral_service
+from app.dependencies import (
+    get_localization_list_service,
+)
 from app.exceptions.fhir_exception import FHIRException
-from app.models.fhir.bundle import Bundle
+from app.models.fhir.bundle import (
+    Bundle,
+)
 from app.models.fhir.resources.localization_list.resource import LocalizationList
-from app.services.decrypt_service import DecryptService
-from app.services.prs.pseudonym_service import PseudonymService
-from app.services.referral_service import ReferralService
-from app.utils.certificates.utils import enforce_cert_newlines
+from app.services.localization_list import LocalizationListService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Patient"], prefix="/Patient")
 
 
-@router.post("")
+@router.post("", response_model_exclude_none=True)
 def register(
     request: Request,
     data: Bundle[LocalizationList],
-    referral_service: ReferralService = Depends(get_referral_service),
-    pseudonym_service: PseudonymService = Depends(get_pseudonym_service),
+    localisaiton_list_service: LocalizationListService = Depends(get_localization_list_service),
 ) -> Any:
-    # TODO: Validation here
-    method = data.entry[0].request.method
-    resource = data.entry[0].resource
-    client_cert = enforce_cert_newlines(request.headers.get("x-forwarded-tls-client-cert"))
-    pseudonym_token = DecryptService.deserialize_jwt(data.entry[0].resource.get_pseudonym_jwt(), client_cert)
-    pseudonym_data = json.loads(pseudonym_token)
-    try:
-        pseudonym = pseudonym_service.exchange(
-            oprf_jwe=pseudonym_data["pseudonym"], blind_factor=pseudonym_data["oprfKey"]
-        )
-    except Exception as e:
-        logger.error(f"failed to exchange pseudonym {e}")
+    results_bundle = Bundle[Any](entry=[])
+    client_cert = request.headers.get("x-forwarded-tls-client-cert")
+    if client_cert is None:
         raise FHIRException(
-            status_code=500,
+            status_code=409,
             severity="error",
-            code="not-found",
-            msg="Pseudonym could not be exchanged",
-            expression=["NVIDataReference.subject"],
+            code="security",
+            msg="Client certificate is missing from Authorization header",
         )
-
-    match method:
-        case "POST":
-            referral_service.add_one(
-                pseudonym=pseudonym,
-                data_domain=resource.get_data_domain(),
-                ura_number=resource.get_ura(),
-            )
-        case "DELETE":
-            referral_service.delete_one(
-                pseudonym=pseudonym,
-                data_domain=resource.get_data_domain(),
-                ura_number=resource.get_ura(),
-            )
-    return {"message": "Ok!!"}
+    valid_bundle = localisaiton_list_service.validate_localization_bundle_structure(data)
+    if not valid_bundle:
+        raise FHIRException(
+            status_code=400,
+            severity="error",
+            code="structural",
+            msg="Bundle.entry is invalid",
+        )
+    for i, entry in enumerate(data.entry):
+        result = localisaiton_list_service.process_entry(entry=entry, index=i)
+        results_bundle.entry.append(result)
+    return results_bundle

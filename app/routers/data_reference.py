@@ -6,7 +6,7 @@ from fastapi import APIRouter, Body, Depends, Query, Request
 from fastapi.encoders import jsonable_encoder
 
 from app import dependencies
-from app.exceptions.fhir_exception import FHIRException, OperationOutcome
+from app.exceptions.fhir_exception import FHIRException
 from app.models.data_domain import DataDomain
 from app.models.fhir.bundle import Bundle
 from app.models.fhir.resources.data import (
@@ -20,6 +20,7 @@ from app.models.fhir.resources.data_reference.resource import (
     NVIDataReferenceOutput,
     NVIDataRefrenceInput,
 )
+from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.pseudonym import Pseudonym
 from app.models.response import DeleteResponse, FHIRJSONResponse
 from app.models.ura import UraNumber

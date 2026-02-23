@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Generic, List, Literal, TypeVar
+from typing import Generic, List, Literal, Self, TypeVar
 from uuid import UUID, uuid4
 
 from pydantic import Field
@@ -8,33 +8,71 @@ from app.models.fhir.resources.data_reference.resource import (
     NVIDataReferenceOutput,
 )
 from app.models.fhir.resources.domain_resource import DomainResource, FhirBaseModel
+from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.fhir.resources.organization.resource import Organization
 
 T = TypeVar("T", bound=DomainResource)
 
 
 class EntryRequest(FhirBaseModel):
-    method: Literal["POST", "DELETE"]
+    method: Literal["POST", "DELETE", "GET", "PUT"]
     url: str
 
 
 class EntryResponse(FhirBaseModel):
-    pass
+    status: str
+    outcome: OperationOutcome | None = None
+
+    @classmethod
+    def make_validation_response(
+        cls,
+        msg: str | None = None,
+        code: Literal["required", "structure", "invalid"] = "required",
+    ) -> Self:
+        message = msg if msg else "Structural data is invalid or missing required properties"
+        return cls(
+            status="400",
+            outcome=OperationOutcome.make_error_outcome(code=code, msg=message),
+        )
+
+    @classmethod
+    def make_forbidden_respone(cls, msg: str | None = None) -> Self:
+        message = msg if msg else "URA number not allowed to perform requested operation"
+        return cls(
+            status="403",
+            outcome=OperationOutcome.make_error_outcome(
+                code="forbidden",
+                msg=message,
+            ),
+        )
+
+    @classmethod
+    def make_unauthorized_response(cls, msg: str | None = None) -> Self:
+        message = msg if msg else "Unauthorized access to perform operation"
+
+        return cls(
+            status="401",
+            outcome=OperationOutcome.make_error_outcome(code="security", msg=message),
+        )
+
+    @classmethod
+    def make_good_response(cls, msg: str | None = None) -> Self:
+        message = msg if msg else "Resource has been modified successfully"
+
+        return cls(status="201", outcome=OperationOutcome.make_good_outcome(msg=message))
 
 
 class BundleEntry(FhirBaseModel, Generic[T]):
-    # model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     request: EntryRequest | None = None
-    resource: T
+    response: EntryResponse | None = None
+    resource: T | None = None
 
 
 class Bundle(FhirBaseModel, Generic[T]):
-    # model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
     id: str | None = None
     resource_type: Literal["Bundle"] = "Bundle"
     type: Literal["searchset", "transaction"] = "searchset"
-    timestamp: datetime = Field(default_factory=datetime.now)
+    timestamp: datetime | None = Field(default=None)
     total: int | None = None
     entry: List[BundleEntry[T]]
 

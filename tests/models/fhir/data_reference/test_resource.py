@@ -334,7 +334,13 @@ def test_from_entity_should_succeed() -> None:
             coding=[Coding(system=SOURCE_TYPE_SYSTEM, code="ziekenhuis", display="Ziekenhuis")]
         ),
         care_context=CodeableConcept(
-            coding=[Coding(system=CARE_CONTEXT_SYSTEM, code="ImagingStudy", display="Beeldvormend onderzoek")]
+            coding=[
+                Coding(
+                    system=CARE_CONTEXT_SYSTEM,
+                    code="ImagingStudy",
+                    display="Beeldvormend onderzoek",
+                )
+            ]
         ),
     )
     referral = ReferralEntity(
@@ -346,5 +352,4 @@ def test_from_entity_should_succeed() -> None:
     )
 
     actual = NVIDataReferenceOutput.from_referral(referral)
-
     assert expected == actual

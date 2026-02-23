@@ -16,13 +16,11 @@ from app.models.fhir.resources.domain_resource import DomainResource
 from app.models.ura import UraNumber
 
 
-# TODO: check add validations accordingly
 class ReferenceExtension(Extension):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     value_reference: Reference
 
 
-# TODO: check system values and add validations accordingly
 class LocalizationList(DomainResource):
     resource_type: Literal["List"] = "List"
 
@@ -89,7 +87,7 @@ class LocalizationList(DomainResource):
     def get_ura(self) -> UraNumber:
         return UraNumber(self.extension[0].value_reference.identifier.value)
 
-    def get_pseudonym_jwt(self) -> str:
+    def get_encoded_pseudonym(self) -> str:
         return self.subject.identifier.value
 
     def get_data_domain(self) -> DataDomain:
