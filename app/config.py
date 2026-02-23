@@ -73,20 +73,21 @@ class ConfigStats(BaseModel):
     module_name: str | None
 
 
-class ConfigOAuth(BaseModel):
-    enabled: bool = Field(default=False)
+class ConfigOAuthIncoming(BaseModel):
+    enabled: bool = Field(default=True)
     override_ura_number: str | None = Field(default=None)
-    jwks_url: str
-    issuer: str
     audience: str
+    issuer: str
+    jwks_url: str
     mtls_cert: str | None = Field(default=None)
     mtls_key: str | None = Field(default=None)
     verify_ca: str | bool = Field(default=True)
 
 
-class ConfigClientOAuth(BaseModel):
-    enabled: bool = Field(default=False)
-    issuer: str | None = Field(default=None)
+class ConfigOAuthOutgoing(BaseModel):
+    enabled: bool = Field(default=True)
+    endpoint: str
+    timeout: int = Field(default=10, gt=0)
     mtls_cert: str | None = Field(default=None)
     mtls_key: str | None = Field(default=None)
     verify_ca: str | bool = Field(default=True)
@@ -99,8 +100,8 @@ class Config(BaseModel):
     telemetry: ConfigTelemetry
     stats: ConfigStats
     uvicorn: ConfigUvicorn
-    oauth: ConfigOAuth
-    client_oauth: ConfigClientOAuth
+    oauth_incoming: ConfigOAuthIncoming
+    oauth_outgoing: ConfigOAuthOutgoing
 
 
 def read_ini_file(path: str) -> Any:

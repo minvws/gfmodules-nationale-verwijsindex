@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives import serialization
 from fastapi import Request
 from jwt import PyJWKClient
 
-from app.config import ConfigOAuth
+from app.config import ConfigOAuthIncoming
 from app.exceptions.fhir_exception import FHIRException
 from app.models.ura import UraNumber
 from app.utils.certificates.utils import enforce_cert_newlines
@@ -27,7 +27,7 @@ class OAuthService:
     OAuth2 service for verifying tokens and mTLS binding
     """
 
-    def __init__(self, config: ConfigOAuth) -> None:
+    def __init__(self, config: ConfigOAuthIncoming) -> None:
         self.config = config
         self._ssl_context = self._create_ssl_context()
 
