@@ -4,6 +4,7 @@ import inject
 
 from app.config import Config
 from app.db.db import Database
+from app.services.localization_list import LocalizationListService
 from app.services.oauth import OAuthService
 from app.services.organization import OrganizationService
 from app.services.prs.pseudonym_service import PseudonymService
@@ -42,3 +43,7 @@ def get_oauth_service() -> OAuthService:
 
 def get_capability_statement() -> dict[str, Any]:
     return inject.instance(CapabilityStatement)
+
+
+def get_localization_list_service() -> LocalizationListService:
+    return inject.instance(LocalizationListService)

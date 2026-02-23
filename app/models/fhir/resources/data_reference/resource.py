@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-from pydantic import ValidationError, field_validator
+from pydantic import Field, ValidationError, field_validator
 
 from app.data import HCIM_2024_ZIBS, NVI_ORGANIZATION_TYPES
 from app.db.models.referral import ReferralEntity
@@ -19,7 +19,7 @@ from app.models.ura import UraNumber
 class NVIDataReferenceBase(FhirBaseModel):
     resource_type: Literal["NVIDataReference"] = "NVIDataReference"
     source: Identifier
-    source_type: CodeableConcept
+    source_type: CodeableConcept | None = Field(default=None)
     care_context: CodeableConcept
 
     @field_validator("source", mode="before")
@@ -100,8 +100,8 @@ class NVIDataReferenceBase(FhirBaseModel):
     def get_data_domain(self) -> DataDomain:
         return DataDomain(self.care_context.coding[0].code)
 
-    def get_organization_type(self) -> str:
-        return self.source_type.coding[0].code
+    def get_organization_type(self) -> str | None:
+        return self.source_type.coding[0].code if self.source_type else None
 
 
 class NVIDataRefrenceInput(NVIDataReferenceBase):
@@ -128,27 +128,11 @@ class NVIDataRefrenceInput(NVIDataReferenceBase):
 class NVIDataReferenceOutput(NVIDataReferenceBase, DomainResource):
     @classmethod
     def from_referral(cls, entity: ReferralEntity) -> "NVIDataReferenceOutput":
-        return cls(
+        results = cls(
             id=entity.id,
             source=Identifier(
                 system=SOURCE_SYSTEM,
                 value=entity.ura_number,
-            ),
-            source_type=CodeableConcept(
-                coding=[
-                    Coding(
-                        system=SOURCE_TYPE_SYSTEM,
-                        code=entity.organization_type,
-                        display=next(
-                            (
-                                types.display
-                                for types in NVI_ORGANIZATION_TYPES
-                                if types.code == entity.organization_type
-                            ),
-                            None,
-                        ),
-                    )
-                ]
             ),
             care_context=CodeableConcept(
                 coding=[
@@ -163,3 +147,22 @@ class NVIDataReferenceOutput(NVIDataReferenceBase, DomainResource):
                 ]
             ),
         )
+        if entity.organization_type:
+            results.source_type = CodeableConcept(
+                coding=[
+                    Coding(
+                        system=SOURCE_TYPE_SYSTEM,
+                        code=entity.organization_type,
+                        display=next(
+                            (
+                                types.display
+                                for types in NVI_ORGANIZATION_TYPES
+                                if types.code == entity.organization_type
+                            ),
+                            None,
+                        ),
+                    )
+                ]
+            )
+
+        return results

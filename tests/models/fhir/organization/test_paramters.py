@@ -9,14 +9,14 @@ from app.models.fhir.resources.organization.parameters import (
     OprfKeyParameter,
     OrganizationLocalizationDto,
     Parameters,
-    PseudonymParamter,
+    PseudonymParameter,
     SourceTypeParameter,
 )
 
 
 @pytest.fixture()
-def pseudonym_param() -> PseudonymParamter:
-    return PseudonymParamter(value_string="some-pseudonym")
+def pseudonym_param() -> PseudonymParameter:
+    return PseudonymParameter(value_string="some-pseudonym")
 
 
 @pytest.fixture()
@@ -39,7 +39,7 @@ def organization_type_param() -> SourceTypeParameter:
 
 @pytest.fixture()
 def mock_parameter(
-    pseudonym_param: PseudonymParamter,
+    pseudonym_param: PseudonymParameter,
     oprf_key_param: OprfKeyParameter,
     care_context_param: CareContextParameter,
     organization_type_param: SourceTypeParameter,
@@ -227,7 +227,7 @@ def test_validate_parameters_should_raise_exception_with_missing_required_params
 
 
 def test_get_org_lokalisatie_dto_should_succeed(
-    pseudonym_param: PseudonymParamter,
+    pseudonym_param: PseudonymParameter,
     oprf_key_param: OprfKeyParameter,
     care_context_param: CareContextParameter,
     organization_type_param: SourceTypeParameter,

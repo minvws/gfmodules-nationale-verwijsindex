@@ -14,13 +14,18 @@ class Organization(DomainResource):
     @classmethod
     def from_referral(cls, referral: ReferralEntity) -> "Organization":
         identifier = Identifier(system=SOURCE_SYSTEM, value=referral.ura_number)
-        org_type = CodeableConcept(
-            coding=[
-                Coding(
-                    system=SOURCE_TYPE_SYSTEM,
-                    code=referral.organization_type,
-                    display=referral.organization_type.capitalize(),
-                )
-            ]
-        )
-        return cls(id=referral.ura_number, identifier=[identifier], type=[org_type])
+
+        results = cls(id=referral.ura_number, identifier=[identifier])
+        if referral.organization_type:
+            org_type = CodeableConcept(
+                coding=[
+                    Coding(
+                        system=SOURCE_TYPE_SYSTEM,
+                        code=referral.organization_type,
+                        display=referral.organization_type.capitalize(),
+                    )
+                ]
+            )
+            results.type = [org_type]
+
+        return results

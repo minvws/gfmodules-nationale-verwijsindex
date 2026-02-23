@@ -2,9 +2,7 @@ import json
 import logging
 from typing import Any
 
-from jwcrypto import jwe, jwk, jwt
-
-from app.utils.certificates.utils import enforce_cert_newlines
+from jwcrypto import jwe, jwk
 
 logger = logging.getLogger(__name__)
 
@@ -50,11 +48,3 @@ class DecryptService:
         except Exception as e:
             logger.error(f"Failed to read private key file: {e}")
             raise ValueError("Failed to read private key file") from e
-
-    @staticmethod
-    def deserialize_jwt(signed_token: str, client_cert: str) -> Any:
-        cert = enforce_cert_newlines(client_cert)
-        pub_key = jwk.JWK.from_pem(cert.encode())
-        token = jwt.JWT()
-        token.deserialize(signed_token, key=pub_key)
-        return token.claims

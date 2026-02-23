@@ -3,7 +3,6 @@ from typing import Sequence
 from uuid import UUID
 
 import inject
-from fastapi.exceptions import HTTPException
 
 from app.db.db import Database
 from app.db.models.referral import ReferralEntity
@@ -55,7 +54,7 @@ class ReferralService:
                     status_code=409,
                     code="conflict",
                     severity="error",
-                    msg="NVIDataReference already exists",
+                    msg="Record already exists",
                 )
 
             new_referral: ReferralEntity = referral_repository.add_one(
@@ -74,6 +73,7 @@ class ReferralService:
         pseudonym: Pseudonym,
         data_domain: DataDomain,
         ura_number: UraNumber,
+        source: str,
     ) -> ReferralEntity | None:
         with self.database.get_db_session() as session:
             repo = session.get_repository(ReferralRepository)
@@ -108,7 +108,12 @@ class ReferralService:
                 source=source,
             )
             if referral is None:
-                raise HTTPException(status_code=404)
+                raise FHIRException(
+                    status_code=404,
+                    severity="error",
+                    code="not-found",
+                    msg="Record does not exist",
+                )
 
             referral_repository.delete_one(referral)
 
@@ -117,6 +122,7 @@ class ReferralService:
         ura_number: UraNumber,
         data_domain: DataDomain | None = None,
         pseudonym: Pseudonym | None = None,
+        source: str | None = None,
     ) -> Sequence[ReferralEntity]:
         with self.database.get_db_session() as session:
             repo = session.get_repository(ReferralRepository)
