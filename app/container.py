@@ -6,6 +6,7 @@ from app.config import Config, get_config
 from app.db.db import Database
 from app.services.client_oauth import ClientOAuthService
 from app.services.decrypt_service import DecryptService
+from app.services.localization_list import LocalizationListService
 from app.services.oauth import OAuthService
 from app.services.organization import OrganizationService
 from app.services.prs.pseudonym_service import PseudonymService
@@ -14,7 +15,10 @@ from app.services.referral_service import ReferralService
 from app.utils.certificates.dezi import (
     get_ura_from_cert,
 )
-from app.utils.load_capability_statement import CapabilityStatement, load_capability_statement
+from app.utils.load_capability_statement import (
+    CapabilityStatement,
+    load_capability_statement,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +47,11 @@ def container_config(binder: inject.Binder) -> None:
         decrypt_service=decrypt_service,
     )
     binder.bind(PseudonymService, pseudonym_service)
+
+    localization_list_service = LocalizationListService(
+        referral_service=referral_service, pseudonym_service=pseudonym_service
+    )
+    binder.bind(LocalizationListService, localization_list_service)
 
     client_oauth_service = ClientOAuthService(config=config.client_oauth)
     binder.bind(ClientOAuthService, client_oauth_service)

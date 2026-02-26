@@ -1,9 +1,11 @@
 from typing import Any, List
 
-from pydantic import BaseModel, model_validator
+from pydantic import model_validator
+
+from app.models.fhir.resources.domain_resource import FhirBaseModel
 
 
-class Coding(BaseModel):
+class Coding(FhirBaseModel):
     system: str
     code: str
     display: str | None = None
@@ -31,10 +33,20 @@ class Coding(BaseModel):
         return value
 
 
-class CodeableConcept(BaseModel):
+class CodeableConcept(FhirBaseModel):
     coding: List[Coding]
+    text: str | None = None
 
 
-class Identifier(BaseModel):
+class Identifier(FhirBaseModel):
     system: str
     value: str
+
+
+class Reference(FhirBaseModel):
+    identifier: Identifier
+    type: str | None = None
+
+
+class Extension(FhirBaseModel):
+    url: str

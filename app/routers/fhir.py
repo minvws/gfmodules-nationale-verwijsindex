@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 
 from app.data import HCIM_2024_ZIBS, NVI_ORGANIZATION_TYPES
 from app.dependencies import get_capability_statement
-from app.exceptions.fhir_exception import OperationOutcome
+from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.response import FHIRJSONResponse
 
 logger = logging.getLogger(__name__)

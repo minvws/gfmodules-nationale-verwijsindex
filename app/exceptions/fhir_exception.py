@@ -1,25 +1,10 @@
 from fastapi import HTTPException
-from pydantic import BaseModel, ConfigDict
-from pydantic.alias_generators import to_camel
 
-
-class OperationOutcomeDetail(BaseModel):
-    text: str
-
-
-class OperationOutcomeIssue(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-    severity: str
-    code: str
-    details: OperationOutcomeDetail | None = None
-    expression: list[str] | None = None
-
-
-class OperationOutcome(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
-    resource_type: str = "OperationOutcome"
-    issue: list[OperationOutcomeIssue]
+from app.models.fhir.resources.operation_outcome.resource import (
+    OperationOutcome,
+    OperationOutcomeDetail,
+    OperationOutcomeIssue,
+)
 
 
 class FHIRException(HTTPException):
@@ -31,7 +16,7 @@ class FHIRException(HTTPException):
         msg: str,
         expression: list[str] | None = None,
     ):
-        outcome = OperationOutcome(
+        self.outcome = OperationOutcome(
             issue=[
                 OperationOutcomeIssue(
                     severity=severity,
@@ -43,7 +28,7 @@ class FHIRException(HTTPException):
         )
         super().__init__(
             status_code=status_code,
-            detail=outcome.model_dump(by_alias=True, exclude_none=True),
+            detail=self.outcome.model_dump(by_alias=True, exclude_none=True),
             headers={"Content-Type": "application/fhir+json"},
         )
 

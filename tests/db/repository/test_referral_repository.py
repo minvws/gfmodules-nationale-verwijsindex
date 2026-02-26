@@ -160,7 +160,8 @@ def test_find_should_return_two_referrals_from_different_organizations(
         referral_repository.add_one(mock_referral_entity)
         referral_2 = referral_repository.add_one(different_org_referral)
         expected = [mock_referral_entity, referral_2]
-
+        assert mock_referral_entity.organization_type is not None
+        assert referral_2.organization_type is not None
         actual = referral_repository.find(
             pseudonym=mock_referral_entity.pseudonym,
             data_domain=mock_referral_entity.data_domain,
