@@ -34,6 +34,7 @@ def test_get_should_return_two_organizations(
             data_domain=mock_referral_entity.data_domain,
             ura_number="00000123",
             organization_type="pharmacy",
+            source="SomeDevice",
         )
         referral_2 = referral_repository.add_one(mock_2)
     expected = [
@@ -61,6 +62,7 @@ def test_get_should_return_one_org_based_on_org_type_filter(
             data_domain=mock_referral_entity.data_domain,
             ura_number="00000123",
             organization_type="pharmacy",
+            source="SomeDevice",
         )
         referral_2 = referral_repository.add_one(mock_2)
     expected = [Organization.from_referral(referral_2)]

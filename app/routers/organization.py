@@ -6,7 +6,7 @@ from fastapi import APIRouter, Body, Depends
 from app.dependencies import get_organization_service, get_pseudonym_service
 from app.exceptions.fhir_exception import FHIRException, OperationOutcome
 from app.models.fhir.bundle import Bundle
-from app.models.fhir.resources.data import CARE_CONTEXT_SYSTEM, SOURCE_SYSTEM
+from app.models.fhir.resources.data import CARE_CONTEXT_SYSTEM, ORG_SYSTEM
 from app.models.fhir.resources.organization.parameters import Parameters
 from app.models.fhir.resources.organization.resource import Organization
 from app.models.response import FHIRJSONResponse
@@ -40,7 +40,7 @@ router = APIRouter(tags=["Organization"], prefix="/Organization")
                                 "resource": {
                                     "resourceType": "Organization",
                                     "id": "90000001",
-                                    "identifier": [{"system": SOURCE_SYSTEM, "value": "90000001"}],
+                                    "identifier": [{"system": ORG_SYSTEM, "value": "90000001"}],
                                 }
                             }
                         ],
@@ -67,7 +67,10 @@ def localize(
                             "name": "pseudonym",
                             "valueString": "eyJhbGciOiJSU0EtT0FFUC0yNTYiLCJlbmMiOiJBMjU2R0NNIn0.dGhpcyBpcyBhIGV4YW1wbGUgSldFIGVuY3J5cHRlZCBwc2V1ZG9ueW0...",
                         },
-                        {"name": "oprfKey", "valueString": "base64-encoded-oprf-key-from-bsnk"},
+                        {
+                            "name": "oprfKey",
+                            "valueString": "base64-encoded-oprf-key-from-bsnk",
+                        },
                         {
                             "name": "careContext",
                             "valueCoding": {

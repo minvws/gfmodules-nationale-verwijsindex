@@ -5,7 +5,7 @@ from pydantic.alias_generators import to_camel
 
 from app.db.models.referral import ReferralEntity
 from app.models.fhir.elements import CodeableConcept, Coding, Identifier
-from app.models.fhir.resources.data import SOURCE_SYSTEM, SOURCE_TYPE_SYSTEM
+from app.models.fhir.resources.data import ORG_TYPE_SYSTEM, SOURCE_SYSTEM
 from app.models.fhir.resources.domain_resource import DomainResource
 
 
@@ -22,7 +22,7 @@ class Organization(DomainResource):
         org_type = CodeableConcept(
             coding=[
                 Coding(
-                    system=SOURCE_TYPE_SYSTEM,
+                    system=ORG_TYPE_SYSTEM,
                     code=referral.organization_type,
                     display=referral.organization_type.capitalize(),
                 )

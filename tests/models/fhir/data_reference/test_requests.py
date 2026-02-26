@@ -6,15 +6,17 @@ from app.models.fhir.resources.data_reference.requests import DataReferenceReque
 
 def test_serialize_should_succeed() -> None:
     expected = {
-        "source": "00000123",
+        "organization": "00000123",
         "pseudonym": "ps-1",
         "oprfKey": "some-key",
+        "source": "SomeDevice",
         "careContext": "ImagingStudy",
     }
     data = DataReferenceRequestParams(
-        source="00000123",
+        organization="00000123",
         pseudonym="ps-1",
         oprf_key="some-key",
+        source="SomeDevice",
         care_context="ImagingStudy",
     )
 
@@ -25,15 +27,17 @@ def test_serialize_should_succeed() -> None:
 
 def test_deserialize_should_succeed() -> None:
     expected = DataReferenceRequestParams(
-        source="98765432",
+        organization="98765432",
         pseudonym="ps-1",
         oprf_key="some-key",
+        source="SomeDevice",
         care_context="ImagingStudy",
     )
     data = {
-        "source": "98765432",
+        "organization": "98765432",
         "pseudonym": "ps-1",
         "oprfKey": "some-key",
+        "source": "SomeDevice",
         "careContext": "ImagingStudy",
     }
 
@@ -44,9 +48,9 @@ def test_deserialize_should_succeed() -> None:
 
 def test_model_create_should_fail_with_str_ura() -> None:
     with pytest.raises(ValidationError):
-        DataReferenceRequestParams(source="some-str-source-no-numbers")
+        DataReferenceRequestParams(organization="some-str-source-no-numbers")
 
 
 def test_model_create_should_fail_with_incorrect_ura_number_format() -> None:
     with pytest.raises(ValidationError):
-        DataReferenceRequestParams(source="123456789191982")
+        DataReferenceRequestParams(organization="123456789191982")

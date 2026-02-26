@@ -18,6 +18,7 @@ def test_add_one_should_succeed(
         pseudonym=Pseudonym("ps-1"),
         data_domain=DataDomain("ImagingStudy"),
         ura_number=ura_number,
+        source="SomeDevice",
         organization_type="ziekenhuis",
     )
     assert isinstance(expected.id, UUID)
@@ -36,6 +37,7 @@ def test_add_referral_should_raise_exception_with_duplicates(
         pseudonym=patient,
         data_domain=data_domain,
         ura_number=ura_number,
+        source="SomeDevice",
         organization_type=org_type,
     )
     with pytest.raises(HTTPException) as exec:
@@ -43,6 +45,7 @@ def test_add_referral_should_raise_exception_with_duplicates(
             pseudonym=patient,
             data_domain=data_domain,
             ura_number=ura_number,
+            source="SomeDevice",
             organization_type=org_type,
         )
 
@@ -59,6 +62,7 @@ def test_delete_one_should_succeed(
         pseudonym=patient,
         data_domain=data_domain,
         ura_number=ura_number,
+        source="SomeDevice",
         organization_type="huisarts",
     )
     assert isinstance(data.id, UUID)
@@ -68,6 +72,7 @@ def test_delete_one_should_succeed(
         pseudonym=patient,
         data_domain=data_domain,
         ura_number=ura_number,
+        source="SomeDevice",
     )
     with pytest.raises(HTTPException) as exec:
         referral_service.get_by_id(data.id)
@@ -85,6 +90,7 @@ def test_delete_one_should_raise_exception_when_not_found(
         referral_service.delete_one(
             pseudonym=patient,
             data_domain=data_domain,
+            source="SomeDevice",
             ura_number=ura_number,
         )
 
@@ -102,6 +108,7 @@ def test_get_registration_with_specific_patient_should_succeed(
         pseudonym=localisation_pseudonym,
         data_domain=data_domain,
         ura_number=ura_number,
+        source="SomeDevice",
         organization_type="ziekenhuis",
     )
 
@@ -109,6 +116,7 @@ def test_get_registration_with_specific_patient_should_succeed(
         pseudonym=Pseudonym("ps-2"),
         data_domain=data_domain,
         ura_number=ura_number,
+        source="SomeDevice",
         organization_type="ziekenhuis",
     )
 
@@ -134,12 +142,14 @@ def test_get_registrations_should_succeed(referral_service: ReferralService, ura
         pseudonym=patient_1,
         data_domain=data_domain_1,
         ura_number=ura_number,
+        source="SomeDevice",
         organization_type=org_type,
     )
     expected_2 = referral_service.add_one(
         pseudonym=patient_2,
         data_domain=data_domain_2,
         ura_number=ura_number,
+        source="SomeDevice",
         organization_type=org_type,
     )
     expected = [expected_1, expected_2]
@@ -157,12 +167,14 @@ def test_delete_patient_registrations_should_succeed(
         pseudonym=patient_1,
         data_domain=DataDomain("ImagingStudy"),
         ura_number=ura_number,
+        source="SomeDevice",
         organization_type="ziekenhuis",
     )
     referral_service.add_one(
         pseudonym=patient_1,
         data_domain=DataDomain("MedicationAgreement"),
         ura_number=ura_number,
+        source="SomeDevice",
         organization_type="ziekenhuis",
     )
 
@@ -171,6 +183,7 @@ def test_delete_patient_registrations_should_succeed(
         pseudonym=patient_2,
         data_domain=DataDomain("MedicationAgreement"),
         ura_number=ura_number,
+        source="SomeDevice",
         organization_type="ziekenhuis",
     )
 
@@ -200,12 +213,14 @@ def test_delete_specific_registration_should_suceed(referral_service: ReferralSe
         pseudonym=patient,
         data_domain=data_domain,
         ura_number=ura_number,
+        source="SomeDevice",
         organization_type=org_type,
     )
 
     referral_service.delete_specific_registration(
         ura_number=ura_number,
         data_domain=data_domain,
+        source="SomeDevice",
         pseudonym=patient,
     )
     actual = referral_service.get_registrations(
@@ -227,6 +242,7 @@ def test_delete_specific_registration_should_raise_exception_when_no_match_found
             ura_number=ura_number,
             data_domain=data_domain,
             pseudonym=patient,
+            source="SomeDevice",
         )
 
     assert exec.value.status_code == 404
@@ -241,6 +257,7 @@ def test_delete_organizaton_should_succeed(referral_service: ReferralService, ur
         pseudonym=patient_1,
         data_domain=patient_1_data_domain,
         ura_number=ura_a,
+        source="SomeDevice",
         organization_type=ura_a_type,
     )
     patient_2 = Pseudonym("ps-2")
@@ -249,6 +266,7 @@ def test_delete_organizaton_should_succeed(referral_service: ReferralService, ur
         pseudonym=patient_2,
         data_domain=patient_2_data_domain,
         ura_number=ura_a,
+        source="SomeDevice",
         organization_type=ura_a_type,
     )
     assert referral_service.get_registrations(ura_number=ura_a) == [
@@ -264,6 +282,7 @@ def test_delete_organizaton_should_succeed(referral_service: ReferralService, ur
         pseudonym=patient_3,
         data_domain=patient_3_data_domain,
         ura_number=ura_b,
+        source="SomeDevice",
         organization_type=ura_b_type,
     )
 
@@ -291,6 +310,7 @@ def test_delete_by_id_should_succeed(referral_service: ReferralService, ura_numb
         pseudonym=patient,
         data_domain=data_domain,
         ura_number=ura_number,
+        source="SomeDevice",
         organization_type="ziekenhuis",
     )
     assert isinstance(patient_reference.id, UUID)
@@ -322,6 +342,7 @@ def test_get_one_should_succeed(
         pseudonym=pseudonym,
         data_domain=data_domain,
         ura_number=ura_number,
+        source="SomeDevice",
         organization_type="ziekenhuis",
     )
 
@@ -329,6 +350,7 @@ def test_get_one_should_succeed(
         pseudonym=pseudonym,
         data_domain=data_domain,
         ura_number=ura_number,
+        source="SomeDevice",
     )
 
     assert actual is not None
@@ -342,6 +364,7 @@ def test_get_one_should_return_none_when_not_found(referral_service: ReferralSer
         pseudonym=pseudonym,
         data_domain=data_domain,
         ura_number=ura_number,
+        source="SomeDevice",
     )
 
     assert actual is None

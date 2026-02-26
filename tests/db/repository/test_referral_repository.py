@@ -55,6 +55,7 @@ def test_find_many_should_return_two_item(
         ura_number="0000123",
         pseudonym="some-pseudonym",
         data_domain="MedicationStatement",
+        source="Some-Device",
         organization_type="hospital",
     )
     with referral_repository.db_session:
@@ -77,12 +78,14 @@ def test_find_many_with_alternative_params_should_succeed(
         ura_number="0000123",
         pseudonym="ps-1",
         data_domain="ImagingStudy",
+        source="Some-Device",
         organization_type="Hospital",
     )
     mock_referral_2 = ReferralEntity(
         ura_number="0000124",
         pseudonym="ps-2",
         data_domain="MedicationStatement",
+        source="Some-Other-Device",
         organization_type="Hospital",
     )
     expected = [mock_referral_1, mock_referral_2]
@@ -133,6 +136,7 @@ def test_find_should_return_two_referrals(
             pseudonym=mock_referral_entity.pseudonym,
             data_domain=mock_referral_entity.data_domain,
             ura_number="00000123",
+            source="Some-Device",
             organization_type=mock_referral_entity.data_domain,
         )
         referral_repository.add_one(mock_referral_entity)
@@ -155,6 +159,7 @@ def test_find_should_return_two_referrals_from_different_organizations(
             pseudonym=mock_referral_entity.pseudonym,
             data_domain=mock_referral_entity.data_domain,
             ura_number="00000123",
+            source="Some-Device",
             organization_type="pharmacy",
         )
         referral_repository.add_one(mock_referral_entity)
@@ -263,11 +268,13 @@ def test_delete_with_only_ura_number_should_remove_all_recordss(
         ura_number="0000123",
         pseudonym="ps-1",
         data_domain="ImagingStudy",
+        source="SomeDevice",
         organization_type="Hospital",
     )
     referral_2 = ReferralEntity(
         ura_number="0000123",
         pseudonym="ps-2",
+        source="SomeOtherDevice",
         data_domain="MedicationStatement",
         organization_type="Hospital",
     )
@@ -276,6 +283,7 @@ def test_delete_with_only_ura_number_should_remove_all_recordss(
         ura_number="0000125",
         pseudonym="ps-3",
         data_domain="ImagingStudy",
+        source="AntoherDevice",
         organization_type="Pharmacy",
     )
     with referral_repository.db_session:
@@ -296,12 +304,14 @@ def test_delete_with_pseudonym_should_remove_all_records_for_patient(
         ura_number="0000123",
         pseudonym="ps-1",
         data_domain="ImagingStudy",
+        source="ImagingMachine",
         organization_type="Hospital",
     )
     referral_2 = ReferralEntity(
         ura_number="0000123",
         pseudonym="ps-1",
         data_domain="MedicationStatement",
+        source="SomeEPD",
         organization_type="Hospital",
     )
     # referral from a different patient
@@ -309,6 +319,7 @@ def test_delete_with_pseudonym_should_remove_all_records_for_patient(
         ura_number="0000123",
         pseudonym="ps-2",
         data_domain="ImagingStudy",
+        source="SomeXRay",
         organization_type="Pharmacy",
     )
     with referral_repository.db_session:
