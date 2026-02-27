@@ -62,6 +62,7 @@ def mock_referral_entity() -> ReferralEntity:
         ura_number="0000123",
         pseudonym="some-pseudonym",
         data_domain="ImagingStudy",
+        source="Some-Device",
         organization_type="Hospital",
     )
 
@@ -76,7 +77,9 @@ def prs_registration_service(ura_number: UraNumber) -> PrsRegistrationService:
     config = get_test_config()
     client_oauth_service = ClientOAuthService(config.client_oauth)
     return PrsRegistrationService(
-        config=config.pseudonym_api, ura_number=ura_number, client_oauth_service=client_oauth_service
+        config=config.pseudonym_api,
+        ura_number=ura_number,
+        client_oauth_service=client_oauth_service,
     )
 
 

@@ -26,6 +26,13 @@ class OprfKeyParameter(BaseModel):
     value_string: str
 
 
+class SourceParameter(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    name: Literal["source"] = "source"
+    value_string: str
+
+
 class CareContextParameter(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
@@ -65,10 +72,10 @@ class CareContextParameter(BaseModel):
         return data
 
 
-class SourceTypeParameter(BaseModel):
+class OrganizationTypeParameter(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
-    name: Literal["sourceType"] = "sourceType"
+    name: Literal["organizationType"] = "organizationType"
     value_code: str
 
 
@@ -76,6 +83,7 @@ class OrganizationLocalizationDto(BaseModel):
     oprf_jwe: str
     oprf_key: str
     data_domain: str
+    source: str
     org_types: List[str] = []
 
 
@@ -83,7 +91,9 @@ class Parameters(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     resource_type: Literal["Parameters"] = "Parameters"
-    parameter: List[PseudonymParamter | OprfKeyParameter | CareContextParameter | SourceTypeParameter]
+    parameter: List[
+        PseudonymParamter | OprfKeyParameter | SourceParameter | CareContextParameter | OrganizationTypeParameter
+    ]
 
     @field_validator("parameter", mode="before")
     @classmethod
@@ -98,7 +108,8 @@ class Parameters(BaseModel):
                     PseudonymParamter,
                     OprfKeyParameter,
                     CareContextParameter,
-                    SourceTypeParameter,
+                    SourceParameter,
+                    OrganizationTypeParameter,
                 ),
             ):
                 continue
@@ -113,11 +124,16 @@ class Parameters(BaseModel):
 
                 case "pseudonym":
                     PseudonymParamter.model_validate(param)
+
                 case "careContext":
                     CareContextParameter.model_validate(param)
 
-                case "sourceType":
-                    SourceTypeParameter.model_validate(param)
+                case "organizationType":
+                    OrganizationTypeParameter.model_validate(param)
+
+                case "source":
+                    SourceParameter.model_validate(param)
+
                 case _:
                     raise ValueError("Invalid property in Parameter.parameter")
 
@@ -127,11 +143,7 @@ class Parameters(BaseModel):
     def validate_paramters(self) -> Self:
         names = [param.name for param in self.parameter]
 
-        field_counts = {
-            "pseudonym": 0,
-            "oprfKey": 0,
-            "careContext": 0,
-        }
+        field_counts = {"pseudonym": 0, "oprfKey": 0, "careContext": 0, "source": 0}
 
         while len(names) > 0:
             field_name = names.pop(0)
@@ -154,6 +166,7 @@ class Parameters(BaseModel):
         pseduonym: str | None = None
         oprf_key: str | None = None
         data_domain: str | None = None
+        source: str | None = None
         org_type = []
 
         for param in self.parameter:
@@ -166,8 +179,11 @@ class Parameters(BaseModel):
             if isinstance(param, CareContextParameter):
                 data_domain = param.value_coding.code
 
-            if isinstance(param, SourceTypeParameter):
+            if isinstance(param, OrganizationTypeParameter):
                 org_type.append(param.value_code)
+
+            if isinstance(param, SourceParameter):
+                source = param.value_string
 
         if pseduonym is None:
             raise ValueError("pseudonym.valueString is not accessible in Lokaliztation Parameters")
@@ -178,9 +194,13 @@ class Parameters(BaseModel):
         if data_domain is None:
             raise ValueError("careContext.valueString is not accessible in Lokaliztation Parameters")
 
+        if source is None:
+            raise ValueError("source.valueString is not accessible in Lokalization Parameters")
+
         return OrganizationLocalizationDto(
             oprf_jwe=pseduonym,
             oprf_key=oprf_key,
             data_domain=data_domain,
+            source=source,
             org_types=org_type,
         )

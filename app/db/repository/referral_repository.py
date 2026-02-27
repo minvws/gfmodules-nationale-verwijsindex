@@ -11,11 +11,12 @@ from app.db.repository.respository_base import RepositoryBase
 
 @repository(ReferralEntity)
 class ReferralRepository(RepositoryBase):
-    def find_one(self, pseudonym: str, data_domain: str, ura_number: str) -> ReferralEntity | None:
+    def find_one(self, pseudonym: str, data_domain: str, ura_number: str, source: str) -> ReferralEntity | None:
         stmt = select(ReferralEntity).where(
             ReferralEntity.ura_number == str(ura_number),
             ReferralEntity.data_domain == str(data_domain),
             ReferralEntity.pseudonym == str(pseudonym),
+            ReferralEntity.source == str(source),
         )
         result = self.db_session.execute(stmt).scalars().first()
         return result
@@ -30,6 +31,7 @@ class ReferralRepository(RepositoryBase):
         pseudonym: str | None = None,
         data_domain: str | None = None,
         ura_number: str | None = None,
+        source: str | None = None,
         organization_type: str | None = None,
     ) -> Sequence[ReferralEntity]:
         stmt = select(ReferralEntity)
@@ -42,6 +44,9 @@ class ReferralRepository(RepositoryBase):
 
         if data_domain is not None:
             stmt = stmt.where(ReferralEntity.data_domain == data_domain)
+
+        if source is not None:
+            stmt = stmt.where(ReferralEntity.source == source)
 
         if organization_type is not None:
             stmt = stmt.where(ReferralEntity.organization_type == organization_type)
@@ -93,6 +98,7 @@ class ReferralRepository(RepositoryBase):
         ura_number: str,
         pseudonym: str | None = None,
         data_domain: str | None = None,
+        source: str | None = None,
     ) -> None:
         try:
             stmt = delete(ReferralEntity).where(ReferralEntity.ura_number == ura_number)
@@ -100,7 +106,10 @@ class ReferralRepository(RepositoryBase):
                 stmt = stmt.where(ReferralEntity.pseudonym == pseudonym)
 
             if data_domain:
-                stmt.where(ReferralEntity.data_domain == data_domain)
+                stmt = stmt.where(ReferralEntity.data_domain == data_domain)
+
+            if source:
+                stmt = stmt.where(ReferralEntity.source == source)
 
             self.db_session.session.execute(stmt)
             self.db_session.commit()
@@ -113,6 +122,7 @@ class ReferralRepository(RepositoryBase):
         ura_number: str,
         pseudonym: str | None = None,
         data_domain: str | None = None,
+        source: str | None = None,
     ) -> bool:
         conditions = [(ReferralEntity.ura_number == ura_number)]
         if pseudonym:
@@ -120,6 +130,9 @@ class ReferralRepository(RepositoryBase):
 
         if data_domain:
             conditions.append((ReferralEntity.data_domain == data_domain))
+
+        if source:
+            conditions.append((ReferralEntity.source == source))
 
         stmt = select(exists().where(and_(*conditions)))
 

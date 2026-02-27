@@ -37,6 +37,7 @@ class ReferralService:
         pseudonym: Pseudonym,
         data_domain: DataDomain,
         ura_number: UraNumber,
+        source: str,
         organization_type: str | None = None,
     ) -> NVIDataReferenceOutput:
         """
@@ -49,6 +50,7 @@ class ReferralService:
                 pseudonym=str(pseudonym),
                 data_domain=str(data_domain),
                 ura_number=str(ura_number),
+                source=source,
             ):
                 raise FHIRException(
                     status_code=409,
@@ -62,6 +64,7 @@ class ReferralService:
                     pseudonym=str(pseudonym),
                     data_domain=str(data_domain),
                     ura_number=str(ura_number),
+                    source=source,
                     organization_type=organization_type,
                 )
             )
@@ -72,6 +75,7 @@ class ReferralService:
         pseudonym: Pseudonym,
         data_domain: DataDomain,
         ura_number: UraNumber,
+        source: str,
     ) -> NVIDataReferenceOutput | None:
         with self.database.get_db_session() as session:
             repo = session.get_repository(ReferralRepository)
@@ -79,6 +83,7 @@ class ReferralService:
                 pseudonym=str(pseudonym),
                 data_domain=str(data_domain),
                 ura_number=str(ura_number),
+                source=source,
             )
 
         if referral:
@@ -91,6 +96,7 @@ class ReferralService:
         pseudonym: Pseudonym,
         data_domain: DataDomain,
         ura_number: UraNumber,
+        source: str,
     ) -> None:
         """
         Method that removes a referral from the database
@@ -101,6 +107,7 @@ class ReferralService:
                 pseudonym=str(pseudonym),
                 data_domain=str(data_domain),
                 ura_number=str(ura_number),
+                source=source,
             )
             if referral is None:
                 raise HTTPException(status_code=404)
@@ -112,6 +119,7 @@ class ReferralService:
         ura_number: UraNumber,
         data_domain: DataDomain | None = None,
         pseudonym: Pseudonym | None = None,
+        source: str | None = None,
     ) -> List[NVIDataReferenceOutput]:
         with self.database.get_db_session() as session:
             repo = session.get_repository(ReferralRepository)
@@ -119,6 +127,7 @@ class ReferralService:
                 ura_number=str(ura_number),
                 data_domain=str(data_domain) if data_domain else None,
                 pseudonym=str(pseudonym) if pseudonym else None,
+                source=source,
             )
 
         return [NVIDataReferenceOutput.from_referral(e) for e in data]
@@ -133,7 +142,11 @@ class ReferralService:
             repo.delete(ura_number=str(ura_number), pseudonym=str(pseudonym))
 
     def delete_specific_registration(
-        self, ura_number: UraNumber, data_domain: DataDomain, pseudonym: Pseudonym
+        self,
+        ura_number: UraNumber,
+        data_domain: DataDomain,
+        pseudonym: Pseudonym,
+        source: str,
     ) -> None:
         with self.database.get_db_session() as session:
             repo = session.get_repository(ReferralRepository)
@@ -141,6 +154,7 @@ class ReferralService:
                 ura_number=str(ura_number),
                 data_domain=str(data_domain),
                 pseudonym=str(pseudonym),
+                source=source,
             )
             if not exists:
                 raise NotFoundException
@@ -149,6 +163,7 @@ class ReferralService:
                 ura_number=str(ura_number),
                 pseudonym=str(pseudonym),
                 data_domain=str(data_domain),
+                source=source,
             )
 
     def delete_specific_organization(self, ura_number: UraNumber) -> None:
