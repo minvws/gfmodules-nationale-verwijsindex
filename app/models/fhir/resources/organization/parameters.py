@@ -9,7 +9,9 @@ from pydantic import (
 from pydantic.alias_generators import to_camel
 
 from app.models.fhir.elements import Coding
-from app.models.fhir.resources.data import CARE_CONTEXT_SYSTEM
+from app.models.fhir.resources.data import (
+    CARE_CONTEXT_SYSTEM,
+)
 
 
 class PseudonymParamter(BaseModel):
@@ -23,13 +25,6 @@ class OprfKeyParameter(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     name: Literal["oprfKey"] = "oprfKey"
-    value_string: str
-
-
-class SourceParameter(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
-    name: Literal["source"] = "source"
     value_string: str
 
 
@@ -72,10 +67,10 @@ class CareContextParameter(BaseModel):
         return data
 
 
-class OrganizationTypeParameter(BaseModel):
+class SourceTypeParameter(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
-    name: Literal["organizationType"] = "organizationType"
+    name: Literal["sourceType"] = "sourceType"
     value_code: str
 
 
@@ -83,7 +78,6 @@ class OrganizationLocalizationDto(BaseModel):
     oprf_jwe: str
     oprf_key: str
     data_domain: str
-    source: str
     org_types: List[str] = []
 
 
@@ -91,9 +85,7 @@ class Parameters(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     resource_type: Literal["Parameters"] = "Parameters"
-    parameter: List[
-        PseudonymParamter | OprfKeyParameter | SourceParameter | CareContextParameter | OrganizationTypeParameter
-    ]
+    parameter: List[PseudonymParamter | OprfKeyParameter | CareContextParameter | SourceTypeParameter]
 
     @field_validator("parameter", mode="before")
     @classmethod
@@ -108,8 +100,7 @@ class Parameters(BaseModel):
                     PseudonymParamter,
                     OprfKeyParameter,
                     CareContextParameter,
-                    SourceParameter,
-                    OrganizationTypeParameter,
+                    SourceTypeParameter,
                 ),
             ):
                 continue
@@ -128,11 +119,8 @@ class Parameters(BaseModel):
                 case "careContext":
                     CareContextParameter.model_validate(param)
 
-                case "organizationType":
-                    OrganizationTypeParameter.model_validate(param)
-
-                case "source":
-                    SourceParameter.model_validate(param)
+                case "sourceType":
+                    SourceTypeParameter.model_validate(param)
 
                 case _:
                     raise ValueError("Invalid property in Parameter.parameter")
@@ -143,7 +131,7 @@ class Parameters(BaseModel):
     def validate_paramters(self) -> Self:
         names = [param.name for param in self.parameter]
 
-        field_counts = {"pseudonym": 0, "oprfKey": 0, "careContext": 0, "source": 0}
+        field_counts = {"pseudonym": 0, "oprfKey": 0, "careContext": 0}
 
         while len(names) > 0:
             field_name = names.pop(0)
@@ -166,7 +154,6 @@ class Parameters(BaseModel):
         pseduonym: str | None = None
         oprf_key: str | None = None
         data_domain: str | None = None
-        source: str | None = None
         org_type = []
 
         for param in self.parameter:
@@ -179,11 +166,8 @@ class Parameters(BaseModel):
             if isinstance(param, CareContextParameter):
                 data_domain = param.value_coding.code
 
-            if isinstance(param, OrganizationTypeParameter):
+            if isinstance(param, SourceTypeParameter):
                 org_type.append(param.value_code)
-
-            if isinstance(param, SourceParameter):
-                source = param.value_string
 
         if pseduonym is None:
             raise ValueError("pseudonym.valueString is not accessible in Lokaliztation Parameters")
@@ -194,13 +178,9 @@ class Parameters(BaseModel):
         if data_domain is None:
             raise ValueError("careContext.valueString is not accessible in Lokaliztation Parameters")
 
-        if source is None:
-            raise ValueError("source.valueString is not accessible in Lokalization Parameters")
-
         return OrganizationLocalizationDto(
             oprf_jwe=pseduonym,
             oprf_key=oprf_key,
             data_domain=data_domain,
-            source=source,
             org_types=org_type,
         )
