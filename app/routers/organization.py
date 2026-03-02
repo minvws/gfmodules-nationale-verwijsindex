@@ -79,7 +79,7 @@ def localize(
                                 "display": "Medicatieafspraak",
                             },
                         },
-                        {"name": "filterOrgType", "valueCode": "apotheek"},
+                        {"name": "sourceType", "valueCode": "apotheek"},
                     ],
                 }
             ]

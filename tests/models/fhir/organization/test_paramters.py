@@ -8,10 +8,9 @@ from app.models.fhir.resources.organization.parameters import (
     CareContextParameter,
     OprfKeyParameter,
     OrganizationLocalizationDto,
-    OrganizationTypeParameter,
     Parameters,
     PseudonymParamter,
-    SourceParameter,
+    SourceTypeParameter,
 )
 
 
@@ -34,13 +33,8 @@ def care_context_param() -> CareContextParameter:
 
 
 @pytest.fixture()
-def organization_type_param() -> OrganizationTypeParameter:
-    return OrganizationTypeParameter(value_code="hospital")
-
-
-@pytest.fixture()
-def source_param() -> SourceParameter:
-    return SourceParameter(value_string="SomeDevice")
+def organization_type_param() -> SourceTypeParameter:
+    return SourceTypeParameter(value_code="hospital")
 
 
 @pytest.fixture()
@@ -48,8 +42,7 @@ def mock_parameter(
     pseudonym_param: PseudonymParamter,
     oprf_key_param: OprfKeyParameter,
     care_context_param: CareContextParameter,
-    organization_type_param: OrganizationTypeParameter,
-    source_param: SourceParameter,
+    organization_type_param: SourceTypeParameter,
 ) -> Parameters:
     return Parameters(
         parameter=[
@@ -57,7 +50,6 @@ def mock_parameter(
             oprf_key_param,
             care_context_param,
             organization_type_param,
-            source_param,
         ]
     )
 
@@ -93,8 +85,7 @@ def test_serialize_paramters_should_succeed(mock_parameter: Parameters) -> None:
                 "name": "careContext",
                 "valueCoding": {"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"},
             },
-            {"name": "organizationType", "valueCode": "hospital"},
-            {"name": "source", "valueString": "SomeDevice"},
+            {"name": "sourceType", "valueCode": "hospital"},
         ],
     }
 
@@ -113,8 +104,7 @@ def test_deserialize_should_succeed(mock_parameter: Parameters) -> None:
                 "name": "careContext",
                 "valueCoding": {"system": CARE_CONTEXT_SYSTEM, "code": "ImagingStudy"},
             },
-            {"name": "organizationType", "valueCode": "hospital"},
-            {"name": "source", "valueString": "SomeDevice"},
+            {"name": "sourceType", "valueCode": "hospital"},
         ],
     }
     actual = Parameters.model_validate(data)
@@ -138,7 +128,7 @@ def test_deserialize_should_succeed(mock_parameter: Parameters) -> None:
                         "code": "ImagingStudy",
                     },
                 },
-                {"name": "organizationType", "valueCode": "hospital"},
+                {"name": "sourceType", "valueCode": "hospital"},
             ],
         },
         {
@@ -154,7 +144,7 @@ def test_deserialize_should_succeed(mock_parameter: Parameters) -> None:
                         "code": "ImagingStudy",
                     },
                 },
-                {"name": "organizationType", "valueCode": "hospital"},
+                {"name": "sourceType", "valueCode": "hospital"},
             ],
         },
         {
@@ -176,7 +166,7 @@ def test_deserialize_should_succeed(mock_parameter: Parameters) -> None:
                         "code": "ImagingStudy",
                     },
                 },
-                {"name": "organizationType", "valueCode": "hospital"},
+                {"name": "sourceType", "valueCode": "hospital"},
             ],
         },
     ],
@@ -202,7 +192,7 @@ def test_validate_paramters_should_raise_exception_when_params_exceed_max_requir
                         "code": "ImagingStudy",
                     },
                 },
-                {"name": "organizationType", "valueCode": "hospital"},
+                {"name": "sourceType", "valueCode": "hospital"},
             ],
         },
         {
@@ -216,7 +206,7 @@ def test_validate_paramters_should_raise_exception_when_params_exceed_max_requir
                         "code": "ImagingStudy",
                     },
                 },
-                {"name": "organizationType", "valueCode": "hospital"},
+                {"name": "sourceType", "valueCode": "hospital"},
             ],
         },
         {
@@ -224,7 +214,7 @@ def test_validate_paramters_should_raise_exception_when_params_exceed_max_requir
             "parameter": [
                 {"name": "pseudonym", "valueString": "some-pseudonym"},
                 {"name": "oprfKey", "valueString": "some-key"},
-                {"name": "organizationType", "valueCode": "hospital"},
+                {"name": "sourceType", "valueCode": "hospital"},
             ],
         },
     ],
@@ -240,15 +230,13 @@ def test_get_org_lokalisatie_dto_should_succeed(
     pseudonym_param: PseudonymParamter,
     oprf_key_param: OprfKeyParameter,
     care_context_param: CareContextParameter,
-    organization_type_param: OrganizationTypeParameter,
-    source_param: SourceParameter,
+    organization_type_param: SourceTypeParameter,
     mock_parameter: Parameters,
 ) -> None:
     expected = OrganizationLocalizationDto(
         oprf_jwe=pseudonym_param.value_string,
         oprf_key=oprf_key_param.value_string,
         data_domain=care_context_param.value_coding.code,
-        source=source_param.value_string,
         org_types=[organization_type_param.value_code],
     )
 
