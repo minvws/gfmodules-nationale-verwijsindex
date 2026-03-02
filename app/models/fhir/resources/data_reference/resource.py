@@ -9,9 +9,8 @@ from app.models.data_domain import DataDomain
 from app.models.fhir.elements import CodeableConcept, Coding, Identifier
 from app.models.fhir.resources.data import (
     CARE_CONTEXT_SYSTEM,
-    ORG_SYSTEM,
-    ORG_TYPE_SYSTEM,
     SOURCE_SYSTEM,
+    SOURCE_TYPE_SYSTEM,
     SUBJECT_SYSTEM,
 )
 from app.models.fhir.resources.domain_resource import DomainResource
@@ -22,56 +21,55 @@ class NVIDataReferenceBase(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     resource_type: Literal["NVIDataReference"] = "NVIDataReference"
-    organization: Identifier
-    organization_type: CodeableConcept
-    care_context: CodeableConcept
     source: Identifier
+    source_type: CodeableConcept
+    care_context: CodeableConcept
 
-    @field_validator("organization", mode="before")
+    @field_validator("source", mode="before")
     @classmethod
-    def validate_organization(cls, value: Any) -> Identifier:
+    def validate_source(cls, value: Any) -> Identifier:
         if value is None:
             raise ValueError("NVIDataReference.source is required")
 
         try:
-            organization = Identifier.model_validate(value)
+            source = Identifier.model_validate(value)
         except ValidationError:
-            raise ValueError("NVIDataReferece.organization must be a valid `Identifier`")
+            raise ValueError("NVIDataReferece.source must be a valid `Identifier`")
 
-        if organization.system != ORG_SYSTEM:
-            raise ValueError(f"NVIDataReferece.organization.system unrecognized, system must be: {ORG_SYSTEM}")
+        if source.system != SOURCE_SYSTEM:
+            raise ValueError(f"NVIDataReferece.source.system unrecognized, system must be: {SOURCE_SYSTEM}")
 
         try:
-            UraNumber(organization.value)
+            UraNumber(source.value)
         except ValueError as e:
             raise ValueError(f"Invalid UraNumber: {e}")
 
-        return organization
+        return source
 
-    @field_validator("organization_type", mode="before")
+    @field_validator("source_type", mode="before")
     @classmethod
-    def validate_org_type(cls, value: Any) -> CodeableConcept:
+    def validate_source_type(cls, value: Any) -> CodeableConcept:
         if value is None:
             raise ValueError("NVIDataReference.organizationType is required")
 
         try:
-            org_type = CodeableConcept.model_validate(value)
+            source_type = CodeableConcept.model_validate(value)
         except ValidationError:
             raise ValueError("NVIDataReferece.sourceType must be a valid `CodeableConcept`")
 
-        if len(org_type.coding) != 1:
+        if len(source_type.coding) != 1:
             raise ValueError("NVIDataReference.sourceType.coding must me of length `1`")
 
-        coding = org_type.coding[0]
+        coding = source_type.coding[0]
 
-        if coding.system != ORG_TYPE_SYSTEM:
+        if coding.system != SOURCE_TYPE_SYSTEM:
             raise ValueError(
-                f"NVIDataReference.sourceType.coding.system urecognized, system must be: {ORG_TYPE_SYSTEM}"
+                f"NVIDataReference.sourceType.coding.system urecognized, system must be: {SOURCE_TYPE_SYSTEM}"
             )
         if coding.code not in [types.code for types in NVI_ORGANIZATION_TYPES]:
             raise ValueError(f"Invalid SourceType code: '{coding.code}' is not in ValueSet nvi-organization-types")
 
-        return org_type
+        return source_type
 
     @field_validator("care_context", mode="before")
     @classmethod
@@ -99,33 +97,14 @@ class NVIDataReferenceBase(BaseModel):
 
         return care_context
 
-    @field_validator("source", mode="before")
-    @classmethod
-    def validate_source(cls, value: Any) -> Identifier:
-        if value is None:
-            raise ValueError("NVIDataReference.source is required")
-
-        try:
-            source = Identifier.model_validate(value)
-        except ValidationError:
-            raise ValueError("NVIDataReference.source must be a valid Identifier")
-
-        if source.system != SOURCE_SYSTEM:
-            raise ValueError(f"NVI.source.system unrecognized, system must be {SOURCE_SYSTEM}")
-
-        return source
-
     def get_ura_number(self) -> UraNumber:
-        return UraNumber(self.organization.value)
+        return UraNumber(self.source.value)
 
     def get_data_domain(self) -> DataDomain:
         return DataDomain(self.care_context.coding[0].code)
 
     def get_organization_type(self) -> str:
-        return self.organization_type.coding[0].code
-
-    def get_source(self) -> str:
-        return self.source.value
+        return self.source_type.coding[0].code
 
 
 class NVIDataRefrenceInput(NVIDataReferenceBase):
@@ -154,14 +133,14 @@ class NVIDataReferenceOutput(NVIDataReferenceBase, DomainResource):
     def from_referral(cls, entity: ReferralEntity) -> "NVIDataReferenceOutput":
         return cls(
             id=entity.id,
-            organization=Identifier(
-                system=ORG_SYSTEM,
+            source=Identifier(
+                system=SOURCE_SYSTEM,
                 value=entity.ura_number,
             ),
-            organization_type=CodeableConcept(
+            source_type=CodeableConcept(
                 coding=[
                     Coding(
-                        system=ORG_TYPE_SYSTEM,
+                        system=SOURCE_TYPE_SYSTEM,
                         code=entity.organization_type,
                         display=next(
                             (
@@ -186,5 +165,4 @@ class NVIDataReferenceOutput(NVIDataReferenceBase, DomainResource):
                     )
                 ]
             ),
-            source=Identifier(system=SOURCE_SYSTEM, value=entity.source),
         )
