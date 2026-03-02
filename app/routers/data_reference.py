@@ -11,9 +11,9 @@ from app.models.data_domain import DataDomain
 from app.models.fhir.bundle import Bundle
 from app.models.fhir.resources.data import (
     CARE_CONTEXT_SYSTEM,
-    ORG_SYSTEM,
-    ORG_TYPE_SYSTEM,
+    DEFAULT_DEVICE_IDENTIFIER,
     SOURCE_SYSTEM,
+    SOURCE_TYPE_SYSTEM,
     SUBJECT_SYSTEM,
 )
 from app.models.fhir.resources.data_reference.requests import DataReferenceRequestParams
@@ -73,22 +73,18 @@ def exchange_oprf(pseudonym_service: PseudonymService, oprf_jwe: str, blind_fact
                                     "versionId": "1",
                                     "lastUpdated": "2024-12-08T14:40:00Z",
                                 },
-                                "organization": {
-                                    "system": ORG_SYSTEM,
+                                "source": {
+                                    "system": SOURCE_SYSTEM,
                                     "value": "90000001",
                                 },
-                                "organization_type": {
+                                "sourceType": {
                                     "coding": [
                                         {
-                                            "system": ORG_TYPE_SYSTEM,
+                                            "system": SOURCE_TYPE_SYSTEM,
                                             "code": "laboratorium",
                                             "display": "Laboratorium",
                                         }
                                     ]
-                                },
-                                "source": {
-                                    "system": SOURCE_SYSTEM,
-                                    "value": "Electronic Health Record System",
                                 },
                                 "careContext": {
                                     "coding": [
@@ -141,7 +137,7 @@ def get_reference(
     registrations = referral_service.get_registrations(
         ura_number=UraNumber(params.source),
         pseudonym=pseudonym,
-        source=params.source,
+        source=DEFAULT_DEVICE_IDENTIFIER,
         data_domain=DataDomain(params.care_context) if params.care_context else None,
     )
     return Bundle.from_reference_outputs(registrations)
@@ -194,12 +190,12 @@ def delete_reference(
                 pseudonym=pseudonym,
             )
             return DeleteResponse(status_code=204)
-        if params.source and params.care_context:
+        else:
             referral_service.delete_specific_registration(
                 ura_number=UraNumber(params.organization),
                 data_domain=DataDomain(params.care_context),
                 pseudonym=pseudonym,
-                source=params.source,
+                source=DEFAULT_DEVICE_IDENTIFIER,
             )
 
             return DeleteResponse(status_code=204)
@@ -229,20 +225,19 @@ def delete_reference(
                                 "versionId": "1",
                                 "lastUpdated": "2024-12-08T14:40:00Z",
                             },
-                            "organization": {
-                                "system": ORG_TYPE_SYSTEM,
+                            "source": {
+                                "system": SOURCE_TYPE_SYSTEM,
                                 "value": "90000001",
                             },
-                            "organization_typeType": {
+                            "sourceType": {
                                 "coding": [
                                     {
-                                        "system": ORG_TYPE_SYSTEM,
+                                        "system": SOURCE_TYPE_SYSTEM,
                                         "code": "laboratorium",
                                         "display": "Laboratorium",
                                     }
                                 ]
                             },
-                            "source": {"system": SOURCE_SYSTEM, "value": "DeviceName"},
                             "careContext": {
                                 "coding": [
                                     {
@@ -276,20 +271,19 @@ def delete_reference(
                                 "versionId": "1",
                                 "lastUpdated": "2024-12-08T14:40:00Z",
                             },
-                            "organization": {
-                                "system": ORG_SYSTEM,
+                            "source": {
+                                "system": SOURCE_SYSTEM,
                                 "value": "90000001",
                             },
-                            "organizationType": {
+                            "sourceType": {
                                 "coding": [
                                     {
-                                        "system": ORG_TYPE_SYSTEM,
+                                        "system": SOURCE_TYPE_SYSTEM,
                                         "code": "laboratorium",
                                         "display": "Laboratorium",
                                     }
                                 ]
                             },
-                            "source": {"system": SOURCE_SYSTEM, "value": "DeviceValue"},
                             "careContext": {
                                 "coding": [
                                     {
@@ -323,16 +317,15 @@ def create_reference(
                         "system": SUBJECT_SYSTEM,
                         "value": "eyJhbGciOiJSU0EtT0FFUC0yNTYiLCJlbmMiOiJBMjU2R0NNIn0...",
                     },
-                    "organization": {"system": ORG_SYSTEM, "value": "90000001"},
-                    "organizationType": {
+                    "source": {"system": SOURCE_SYSTEM, "value": "90000001"},
+                    "sourceType": {
                         "coding": [
                             {
-                                "system": ORG_TYPE_SYSTEM,
+                                "system": SOURCE_TYPE_SYSTEM,
                                 "code": "laboratorium",
                             }
                         ]
                     },
-                    "source": {"system": SOURCE_SYSTEM, "value": "DeviceValue"},
                     "careContext": {
                         "coding": [
                             {
@@ -373,7 +366,7 @@ def create_reference(
         pseudonym=pseudonym,
         data_domain=data.get_data_domain(),
         ura_number=data.get_ura_number(),
-        source=data.get_source(),
+        source=DEFAULT_DEVICE_IDENTIFIER,
     )
     if referral:
         return FHIRJSONResponse(
@@ -386,7 +379,7 @@ def create_reference(
         data_domain=data.get_data_domain(),
         ura_number=data.get_ura_number(),
         organization_type=data.get_organization_type(),
-        source=data.get_source(),
+        source=DEFAULT_DEVICE_IDENTIFIER,
     )
     return FHIRJSONResponse(
         content=jsonable_encoder(new_reference.model_dump(exclude_none=True, by_alias=True)),
@@ -422,7 +415,7 @@ def create_reference(
                         "sourceType": {
                             "coding": [
                                 {
-                                    "system": ORG_TYPE_SYSTEM,
+                                    "system": SOURCE_TYPE_SYSTEM,
                                     "code": "laboratorium",
                                     "display": "Laboratorium",
                                 }
