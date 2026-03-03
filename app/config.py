@@ -24,6 +24,7 @@ class LogLevel(str, Enum):
 
 class ConfigApp(BaseModel):
     loglevel: LogLevel = Field(default=LogLevel.info)
+    environment: str = Field(default="proeftuin")
 
 
 class ConfigDatabase(BaseModel):

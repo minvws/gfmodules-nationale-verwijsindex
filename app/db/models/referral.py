@@ -1,3 +1,4 @@
+from typing import Optional
 from uuid import UUID, uuid4
 
 from sqlalchemy import String, UniqueConstraint
@@ -24,7 +25,7 @@ class ReferralEntity(Base):
     pseudonym: Mapped[str] = mapped_column("pseudonym", String)
     data_domain: Mapped[str] = mapped_column("data_domain", String)
     source: Mapped[str] = mapped_column("source", String)
-    organization_type: Mapped[str] = mapped_column("organization_type", String)
+    organization_type: Mapped[Optional[str]] = mapped_column("organization_type", String)
 
     def __repr__(self) -> str:
         return f"<ReferralEntity(ura_number={self.ura_number}, pseudonym={self.pseudonym}, data_domain={self.data_domain}, source={self.source}, organization_type={self.organization_type}>"

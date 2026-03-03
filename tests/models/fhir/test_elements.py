@@ -23,7 +23,7 @@ def test_serialize_codeable_concept_should_succeed() -> None:
     expected = {"coding": [{"system": "some-system", "code": "some-code", "display": "some-display"}]}
     data = CodeableConcept(coding=[Coding(system="some-system", code="some-code", display="some-display")])
 
-    actual = data.model_dump()
+    actual = data.model_dump(exclude_none=True)
 
     assert expected == actual
 

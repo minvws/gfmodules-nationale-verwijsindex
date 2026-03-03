@@ -1,16 +1,14 @@
 import logging
-from typing import List
+from typing import Sequence
 from uuid import UUID
 
 import inject
-from fastapi.exceptions import HTTPException
 
 from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
 from app.exceptions.fhir_exception import FHIRException, NotFoundException
 from app.models.data_domain import DataDomain
-from app.models.fhir.resources.data_reference.resource import NVIDataReferenceOutput
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
 
@@ -22,7 +20,7 @@ class ReferralService:
     def __init__(self, database: Database) -> None:
         self.database = database
 
-    def get_by_id(self, id: UUID) -> NVIDataReferenceOutput:
+    def get_by_id(self, id: UUID) -> ReferralEntity:
         with self.database.get_db_session() as session:
             repo = session.get_repository(ReferralRepository)
             referral = repo.find_by_id(id)
@@ -30,7 +28,7 @@ class ReferralService:
             if referral is None:
                 raise NotFoundException
 
-            return NVIDataReferenceOutput.from_referral(referral)
+            return referral
 
     def add_one(
         self,
@@ -39,7 +37,7 @@ class ReferralService:
         ura_number: UraNumber,
         source: str,
         organization_type: str | None = None,
-    ) -> NVIDataReferenceOutput:
+    ) -> ReferralEntity:
         """
         Method that adds a referral to the database
         """
@@ -56,7 +54,7 @@ class ReferralService:
                     status_code=409,
                     code="conflict",
                     severity="error",
-                    msg="NVIDataReference already exists",
+                    msg="Record already exists",
                 )
 
             new_referral: ReferralEntity = referral_repository.add_one(
@@ -68,7 +66,7 @@ class ReferralService:
                     organization_type=organization_type,
                 )
             )
-            return NVIDataReferenceOutput.from_referral(new_referral)
+            return new_referral
 
     def get_one(
         self,
@@ -76,7 +74,7 @@ class ReferralService:
         data_domain: DataDomain,
         ura_number: UraNumber,
         source: str,
-    ) -> NVIDataReferenceOutput | None:
+    ) -> ReferralEntity | None:
         with self.database.get_db_session() as session:
             repo = session.get_repository(ReferralRepository)
             referral = repo.find_one(
@@ -87,7 +85,7 @@ class ReferralService:
             )
 
         if referral:
-            return NVIDataReferenceOutput.from_referral(referral)
+            return referral
 
         return None
 
@@ -110,7 +108,12 @@ class ReferralService:
                 source=source,
             )
             if referral is None:
-                raise HTTPException(status_code=404)
+                raise FHIRException(
+                    status_code=404,
+                    severity="error",
+                    code="not-found",
+                    msg="Record does not exist",
+                )
 
             referral_repository.delete_one(referral)
 
@@ -120,7 +123,7 @@ class ReferralService:
         data_domain: DataDomain | None = None,
         pseudonym: Pseudonym | None = None,
         source: str | None = None,
-    ) -> List[NVIDataReferenceOutput]:
+    ) -> Sequence[ReferralEntity]:
         with self.database.get_db_session() as session:
             repo = session.get_repository(ReferralRepository)
             data = repo.find_many(
@@ -130,7 +133,7 @@ class ReferralService:
                 source=source,
             )
 
-        return [NVIDataReferenceOutput.from_referral(e) for e in data]
+        return data
 
     def delete_patient_registrations(self, ura_number: UraNumber, pseudonym: Pseudonym) -> None:
         with self.database.get_db_session() as session:

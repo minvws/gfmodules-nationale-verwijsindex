@@ -353,5 +353,4 @@ def test_from_entity_should_succeed() -> None:
     )
 
     actual = NVIDataReferenceOutput.from_referral(referral)
-
     assert expected == actual

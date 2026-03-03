@@ -4,9 +4,10 @@ from typing import Annotated
 from fastapi import APIRouter, Body, Depends
 
 from app.dependencies import get_organization_service, get_pseudonym_service
-from app.exceptions.fhir_exception import FHIRException, OperationOutcome
+from app.exceptions.fhir_exception import FHIRException
 from app.models.fhir.bundle import Bundle
 from app.models.fhir.resources.data import CARE_CONTEXT_SYSTEM, SOURCE_SYSTEM
+from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.fhir.resources.organization.parameters import Parameters
 from app.models.fhir.resources.organization.resource import Organization
 from app.models.response import FHIRJSONResponse
