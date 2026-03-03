@@ -47,10 +47,10 @@ class EntryResponse(FhirBaseModel):
         )
 
     @classmethod
-    def make_good_response(cls, msg: str | None = None) -> Self:
+    def make_good_response(cls, msg: str | None = None, status: str = "200") -> Self:
         message = msg if msg else "Resource has been modified successfully"
 
-        return cls(status="201", outcome=OperationOutcome.make_good_outcome(msg=message))
+        return cls(status=status, outcome=OperationOutcome.make_good_outcome(msg=message))
 
 
 class BundleEntry(FhirBaseModel, Generic[T]):
@@ -59,8 +59,7 @@ class BundleEntry(FhirBaseModel, Generic[T]):
     resource: T | None = None
 
 
-class Bundle(FhirBaseModel, Generic[T]):
-    id: str | None = None
+class Bundle(DomainResource, Generic[T]):
     resource_type: Literal["Bundle"] = "Bundle"
     type: Literal["searchset", "transaction"] = "searchset"
     timestamp: datetime | None = Field(default=None)

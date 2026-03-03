@@ -48,16 +48,17 @@ class LocalizationListService:
         match method:
             case "POST":
                 try:
-                    self.referral_service.add_one(
+                    new_data = self.referral_service.add_one(
                         pseudonym=pseudonym,
                         data_domain=resource.get_data_domain(),
                         ura_number=resource.get_ura(),
                         source=resource.get_device(),
                     )
                     return BundleEntry(
+                        resource=LocalizationList.from_referral(new_data),
                         response=EntryResponse.make_good_response(
                             f"Bundle.entry.{index}.resource has been created successfully"
-                        )
+                        ),
                     )
                 except FHIRException as e:
                     return BundleEntry(response=EntryResponse(status=str(e.status_code), outcome=e.outcome))
@@ -71,7 +72,8 @@ class LocalizationListService:
                     )
                     return BundleEntry(
                         response=EntryResponse.make_good_response(
-                            f"Bundle.entry.{index}.resource has been deleted successfully"
+                            f"Bundle.entry.{index}.resource has been deleted successfully",
+                            status="204",
                         )
                     )
                 except FHIRException as e:

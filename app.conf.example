@@ -1,6 +1,9 @@
 [app]
 # Loglevel can be one of: debug, info, warning, error, critical
 loglevel=debug
+# Used to hide certain features that are still in development or disable other dependencies
+# preferable values: development, test, proeftuin
+environment=proeftuin
 
 [database]
 # Dsn for database connection

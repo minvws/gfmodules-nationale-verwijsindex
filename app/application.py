@@ -87,7 +87,10 @@ def setup_fastapi() -> FastAPI:
     )
 
     container.configure()
-    public_routers = [default_router, health_router, fhir_router]
+    public_routers = [default_router, health_router]
+    if config.app.environment != "proeftuin":
+        public_routers.append(fhir_router)
+
     for router in public_routers:
         fastapi.include_router(router)
 
