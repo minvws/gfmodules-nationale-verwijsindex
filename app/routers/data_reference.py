@@ -192,7 +192,7 @@ def delete_reference(
             return DeleteResponse(status_code=204)
         else:
             referral_service.delete_specific_registration(
-                ura_number=UraNumber(params.organization),
+                ura_number=UraNumber(params.source),
                 data_domain=DataDomain(params.care_context),
                 pseudonym=pseudonym,
                 source=DEFAULT_DEVICE_IDENTIFIER,
