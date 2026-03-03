@@ -137,7 +137,6 @@ def get_reference(
     registrations = referral_service.get_registrations(
         ura_number=UraNumber(params.source),
         pseudonym=pseudonym,
-        source=DEFAULT_DEVICE_IDENTIFIER,
         data_domain=DataDomain(params.care_context) if params.care_context else None,
     )
     return Bundle.from_reference_outputs(registrations)
