@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Self
 
 from pydantic import model_validator
 
@@ -41,6 +41,16 @@ class CodeableConcept(FhirBaseModel):
 class Identifier(FhirBaseModel):
     system: str
     value: str
+
+    @classmethod
+    def from_query(cls, query: str) -> Self:
+        data = query.split("|")
+        if len(data) != 2:
+            raise ValueError(
+                "Unable to retrieve required properties for Identifier obecjt creation, missing delimiter or invalid query"
+            )
+
+        return cls(system=data[0], value=data[1])
 
 
 class Reference(FhirBaseModel):
