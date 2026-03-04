@@ -48,12 +48,6 @@ class OAuthService:
 
         return context
 
-    def enabled(self) -> bool:
-        """
-        Check if OAuth2 is enabled.
-        """
-        return self.config.enabled
-
     def override_ura_number(self) -> UraNumber:
         """
         Get the override URA number when OAuth2 is disabled.

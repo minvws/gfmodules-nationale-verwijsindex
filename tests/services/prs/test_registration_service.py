@@ -4,9 +4,9 @@ import pytest
 from requests.exceptions import ConnectionError, HTTPError, Timeout
 
 from app.services.prs.exception import PseudonymError
-from app.services.prs.registration_service import PrsRegistrationService
+from app.services.prs.prs_registration_service import PrsRegistrationService
 
-PATCHED_MODULE = "app.services.prs.registration_service.HttpService.do_request"
+PATCHED_MODULE = "app.services.prs.prs_registration_service.HttpService.do_request"
 
 
 @patch(PATCHED_MODULE)

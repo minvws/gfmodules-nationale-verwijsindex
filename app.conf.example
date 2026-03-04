@@ -20,6 +20,8 @@ pool_pre_ping=False
 pool_recycle=1800
 
 [pseudonym_api]
+# If not enabled, mock services are injected if app is build with debug mode
+enabled=False
 endpoint=http://localhost:8504
 timeout=10
 mtls_cert=secrets/ssl/pseudonym_api.cert
@@ -28,7 +30,7 @@ verify_ca=secrets/ssl/pseudonym_api_ca.cert
 
 [telemetry]
 # Telemetry is enabled or not
-enabled = True
+enabled = False
 # Endpoint to GRPC server for telemetry
 endpoint = http://tracing:4317
 # Service name to use
@@ -38,7 +40,7 @@ tracer_name = zmodules.service.national_referral_index
 
 [stats]
 # Statsd is enabled or not
-enabled = True
+enabled = False
 # Host for statsd server
 host = 127.0.0.1
 # Port for statsd server
@@ -69,7 +71,8 @@ ssl_key_file = server.key
 
 # Section for configuring the INCOMING OAuth connections (from external services to this service)
 [oauth]
-enabled = True
+# If not enabled, mock services are injected if app is build with debug mode
+enabled = False
 # If not enabled, we assume this URA number is what is calling our service
 override_ura_number = 11112222
 
@@ -87,7 +90,8 @@ verify_ca = secrets/ca.ldn.crt
 # Section for configuring the OUTGOING OAuth connections (from this service to external services)
 [client_oauth]
 # If not enabled, we don't connect to OAuth and thus we never add a Bearer JWT token to the called service
-enabled = True
+# If not enabled, mock services are injected if app is build with debug mode
+enabled = False
 # The OAuth server that we will connect to to fetch an access token
 issuer = https://localhost:8443/
 # Any MTLS settings for connecting to the oauth server (to fetch access tokens)

@@ -2,15 +2,15 @@ import logging
 
 import inject
 
-from app.config import Config, get_config
+from app.config import Config, ConfigClientOAuth, ConfigOAuth, ConfigPseudonymApi, get_config
 from app.db.db import Database
+from app.models.ura import UraNumber
 from app.services.client_oauth import ClientOAuthService
 from app.services.decrypt_service import DecryptService
-from app.services.localization_list import LocalizationListService
 from app.services.oauth import OAuthService
 from app.services.organization import OrganizationService
+from app.services.prs.prs_registration_service import PrsRegistrationService
 from app.services.prs.pseudonym_service import PseudonymService
-from app.services.prs.registration_service import PrsRegistrationService
 from app.services.referral_service import ReferralService
 from app.utils.certificates.dezi import (
     get_ura_from_cert,
@@ -38,33 +38,56 @@ def container_config(binder: inject.Binder) -> None:
     binder.bind(ReferralService, referral_service)
 
     organization_service = OrganizationService(database=db)
+
+    bind_prs_registration_service(binder, config.pseudonym_api)
+    bind_oauth_service(binder, config.oauth)
+    bind_pseudonym_service(binder, config.pseudonym_api)
+
     binder.bind(OrganizationService, organization_service)
 
-    decrypt_service = DecryptService(mtls_key=config.pseudonym_api.mtls_key)
-    binder.bind(DecryptService, decrypt_service)
+    binder.bind(ConfigPseudonymApi, config.pseudonym_api)
+    binder.bind(ConfigClientOAuth, config.client_oauth)
 
-    pseudonym_service = PseudonymService(
-        decrypt_service=decrypt_service,
+    binder.bind_to_provider(DecryptService, lambda: DecryptService(mtls_key=config.pseudonym_api.mtls_key))
+
+
+def bind_prs_registration_service(binder: inject.Binder, config_pseudonym_api: ConfigPseudonymApi) -> None:
+    if config_pseudonym_api.enabled:
+        binder.bind_to_provider(
+            PrsRegistrationService,
+            lambda: create_prs_registration_service(get_ura_from_cert(config_pseudonym_api.mtls_cert)),  # pyright: ignore[reportCallIssue]
+        )
+    else:
+        from app.debug.prs_registration_service import PrsRegistrationServiceMock
+
+        binder.bind_to_constructor(PrsRegistrationService, PrsRegistrationServiceMock)
+
+
+@inject.autoparams()
+def create_prs_registration_service(
+    ura_number: UraNumber, config_pseudonym_api: ConfigPseudonymApi, client_oauth_service: ClientOAuthService
+) -> PrsRegistrationService:
+    return PrsRegistrationService(
+        ura_number=ura_number, config=config_pseudonym_api, client_oauth_service=client_oauth_service
     )
-    binder.bind(PseudonymService, pseudonym_service)
 
-    localization_list_service = LocalizationListService(
-        referral_service=referral_service, pseudonym_service=pseudonym_service
-    )
-    binder.bind(LocalizationListService, localization_list_service)
 
-    client_oauth_service = ClientOAuthService(config=config.client_oauth)
-    binder.bind(ClientOAuthService, client_oauth_service)
+def bind_oauth_service(binder: inject.Binder, config_oauth: ConfigOAuth) -> None:
+    if config_oauth.enabled:
+        binder.bind(OAuthService, OAuthService)
+    else:
+        from app.debug.oauth_service_mock import OAuthServiceMock
 
-    prs_registration_service = PrsRegistrationService(
-        get_ura_from_cert(config.pseudonym_api.mtls_cert),
-        config.pseudonym_api,
-        client_oauth_service,
-    )
-    binder.bind(PrsRegistrationService, prs_registration_service)
+        binder.bind(OAuthService, OAuthServiceMock(UraNumber(config_oauth.override_ura_number)))
 
-    oauth_service = OAuthService(config.oauth)
-    binder.bind(OAuthService, oauth_service)
+
+def bind_pseudonym_service(binder: inject.Binder, config_pseudonym_api: ConfigPseudonymApi) -> None:
+    if config_pseudonym_api.enabled:
+        binder.bind(PseudonymService, PseudonymService)
+    else:
+        from app.debug.pseudonym_service_mock import PseudonymServiceMock
+
+        binder.bind_to_constructor(PseudonymService, PseudonymServiceMock)
 
 
 def configure() -> None:

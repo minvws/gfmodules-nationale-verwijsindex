@@ -47,19 +47,6 @@ def get_auth_ctx(
     creds: Optional[HTTPAuthorizationCredentials] = Depends(bearer),
     oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
 ) -> AuthContext:
-    if not oauth_service.enabled():
-        ctx = AuthContext(
-            claims={},
-            scope=[],
-            ura_number=oauth_service.override_ura_number(),
-        )
-        request.state.auth = ctx
-        return ctx
-
-    if creds is None or creds.scheme.lower() != "bearer":
-        logger.error("Missing or invalid bearer token")
-        raise HTTPException(status_code=401, detail="Missing bearer token")
-
     try:
         claims = oauth_service.verify(request)
     except OAuthError as e:

@@ -16,6 +16,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     POETRY_CACHE_DIR=/tmp/poetry-cache \
     POETRY_VIRTUALENVS_CREATE=false
 
+ENV APP_NAME=gfmodules_national_referral_index
+ENV APP_VERSION=0.1.0
+
 # Create a non-privileged user that the app will run under.
 RUN groupadd --system ${APP_GROUP} --gid=${NEW_GID} && \
     adduser \
@@ -49,33 +52,78 @@ RUN chown -R ${APP_USER}:${APP_GROUP} /usr/local/lib/python3.14/site-packages/pa
 
 WORKDIR ${PROJECT_DIR}
 
-FROM base AS builder
+COPY ./pyproject.toml ./poetry.lock README.md ./
 
-COPY ./pyproject.toml ./poetry.lock ./
+
+
+#
+# This stage is the builder stage which builds a clean package without dev and debug packages
+#
+FROM base AS lean-builder
+
+COPY ./app /src/app
+
+RUN --mount=type=cache,target=${POETRY_CACHE_DIR} poetry install --only main --no-interaction
+
+RUN --mount=type=cache,target=${POETRY_CACHE_DIR} poetry build
+
+RUN tar xzvf /src/dist/${APP_NAME}-${APP_VERSION}.tar.gz -C /src/dist
+
+
+
+#
+# This stage is the debug builder which builds poetry with dev dependencies
+#
+FROM base AS debug-builder
+
 RUN --mount=type=cache,target=${POETRY_CACHE_DIR} poetry install --no-root --no-interaction
 
+
+
+#
+# This stage builds the final debug stage with debug package
+#
+FROM base AS debug-final
+
+# We need to copy the compiled shared libraries from the builder stage to the correct location so they can be found.
+RUN mkdir -p /usr/lib/x86_64-linux-gnu/
+COPY --from=debug-builder liboprf/src/noise_xk/lib*.so /usr/local/lib/
+COPY --from=debug-builder liboprf/src/lib*.so /usr/local/lib/
+RUN ldconfig
+
+COPY --from=debug-builder /usr/local /usr/local
+RUN chown -R ${APP_USER}:${APP_GROUP} /usr/local/lib/python3.14
+
+COPY ./docker/init.sh /docker-entrypoint.sh
+
+USER ${APP_USER}
+
+EXPOSE 8502
+WORKDIR ${PROJECT_DIR}
+
+ENV PYTHONPATH=${PROJECT_DIR}
+
+CMD ["/docker-entrypoint.sh"]
+
+
+
+#
+# This stage builds the final stage without debug and build dependencies
+#
 FROM base AS final
 
 # We need to copy the compiled shared libraries from the builder stage to the correct location so they can be found.
 RUN mkdir -p /usr/lib/x86_64-linux-gnu/
-COPY --from=builder liboprf/src/noise_xk/lib*.so /usr/local/lib/
-COPY --from=builder liboprf/src/lib*.so /usr/local/lib/
+COPY --from=lean-builder liboprf/src/noise_xk/lib*.so /usr/local/lib/
+COPY --from=lean-builder liboprf/src/lib*.so /usr/local/lib/
 RUN ldconfig
 
-COPY --from=builder /usr/local /usr/local
+COPY --from=lean-builder /usr/local /usr/local
 RUN chown -R ${APP_USER}:${APP_GROUP} /usr/local/lib/python3.14
-COPY . /src
 
-COPY ./docker/init-standalone.sh /usr/local/bin
-COPY ./docker/init.sh /usr/local/bin
+COPY --from=lean-builder /src/dist/${APP_NAME}-${APP_VERSION} /src
 
-ARG standalone=false
-
-RUN if [ "$standalone" = "true" ] ; then \
-    ln -sf /usr/local/bin/init-standalone.sh /docker-entrypoint.sh; \
-  else \
-    ln -sf /usr/local/bin/init.sh /docker-entrypoint.sh ; \
-  fi
+COPY ./docker/init-standalone.sh /docker-entrypoint.sh
 
 USER ${APP_USER}
 

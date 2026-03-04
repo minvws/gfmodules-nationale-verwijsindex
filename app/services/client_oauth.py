@@ -1,5 +1,6 @@
 import logging
 
+import inject
 from fastapi import HTTPException
 
 from app.config import ConfigClientOAuth
@@ -13,6 +14,7 @@ class ClientOAuthService:
     Service that will connect to an OAuth2 provider to fetch access tokens for using external services.
     """
 
+    @inject.autoparams()
     def __init__(self, config: ConfigClientOAuth) -> None:
         self.config = config
         if self.config.enabled:

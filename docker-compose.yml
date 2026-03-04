@@ -6,6 +6,7 @@ services:
         NEW_UID: ${NEW_UID:-1000}
         NEW_GID: ${NEW_GID:-1000}
       dockerfile: docker/Dockerfile
+      target: debug-final
     environment:
         FASTAPI_CONFIG_PATH: /src/app.conf
     volumes:
@@ -21,18 +22,6 @@ services:
       start_period: 5s
     depends_on:
       postgres:
-        condition: service_healthy
-
-  app_ssl:
-    image: httpd
-    ports:
-      - "8541:443"
-    volumes:
-      - "./secrets:/usr/local/secrets"
-      - "./docker/httpd.conf:/usr/local/apache2/conf/httpd.conf"
-      - "./docker/httpd-ssl.conf:/usr/local/apache2/conf/extra/httpd-ssl.conf"
-    depends_on:
-      app:
         condition: service_healthy
 
   postgres:
