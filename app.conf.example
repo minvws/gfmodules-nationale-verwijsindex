@@ -1,9 +1,9 @@
 [app]
 # Loglevel can be one of: debug, info, warning, error, critical
 loglevel=debug
-# Used to hide certain features that are still in development or disable other dependencies
-# preferable values: development, test, proeftuin
-environment=proeftuin
+
+# Enables alpha routes when True
+alpha_routers_enabled=True
 
 [database]
 # Dsn for database connection
