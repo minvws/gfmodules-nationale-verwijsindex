@@ -14,7 +14,7 @@ from app.models.fhir.resources.localization_list.resource import LocalizationLis
 from app.services.localization_list import LocalizationListService
 
 logger = logging.getLogger(__name__)
-router = APIRouter(tags=["FHIR"], prefix="/v1-alpha/fhir")
+router = APIRouter(tags=["v1-alpha - FHIR"], prefix="/v1-alpha/fhir")
 
 
 @router.post("", response_model_exclude_none=True)

@@ -87,14 +87,15 @@ def setup_fastapi() -> FastAPI:
     )
 
     container.configure()
-    public_routers = [default_router, health_router]
-    if config.app.environment != "proeftuin":
-        public_routers.append(fhir_router)
+
+    public_routers = [default_router, health_router, fhir_router]
+    routers = [data_reference_router, organization_router]
+
+    if config.app.alpha_routers_enabled:
+        routers.append(localization_list_router)
 
     for router in public_routers:
         fastapi.include_router(router)
-
-    routers = [data_reference_router, organization_router, localization_list_router]
     for router in routers:
         fastapi.include_router(router, dependencies=[Depends(get_auth_ctx)])
 
