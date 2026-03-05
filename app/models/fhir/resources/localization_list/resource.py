@@ -85,13 +85,17 @@ class LocalizationList(DomainResource):
         )
 
     def get_ura(self) -> UraNumber:
+        # TODO: Search for extension with URL "http://minvws.github.io/generiekefuncties-docs/StructureDefinition/nl-gf-localization-custodian"and value_reference with identifier http://fhir.nl/fhir/NamingSystem/ura
         return UraNumber(self.extension[0].value_reference.identifier.value)
 
     def get_encoded_pseudonym(self) -> str:
+        # TODO: Search for Subject with identifier for system http://minvws.github.io/generiekefuncties-docs/NamingSystem/nvi-identifier
         return self.subject.identifier.value
 
     def get_data_domain(self) -> DataDomain:
+        # TODO: Search for coding in Code with System "http://minvws.github.io/generiekefuncties-docs/CodeSystem/nl-gf-zorgcontext-cs"
         return DataDomain(self.code.coding[0].code)
 
     def get_device(self) -> str:
+        # TODO: Search for Device in source with identifier system "http://example.org/device-identifiers"
         return self.source.identifier.value

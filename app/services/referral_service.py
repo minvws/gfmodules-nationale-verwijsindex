@@ -104,6 +104,23 @@ class ReferralService:
 
         return referrals
 
+    def delete_many(
+        self,
+        ura_number: UraNumber,
+        pseudonym: Pseudonym | None = None,
+        data_domain: DataDomain | None = None,
+        source: str | None = None,
+    ) -> None:
+        with self.database.get_db_session() as session:
+            repo = session.get_repository(ReferralRepository)
+            print("service", ura_number, pseudonym, data_domain, source)
+            repo.delete_many(
+                ura_number=str(ura_number),
+                pseudonym=str(pseudonym) if pseudonym else None,
+                data_domain=str(data_domain) if data_domain else None,
+                source=source,
+            )
+
     def delete_one(
         self,
         pseudonym: Pseudonym,

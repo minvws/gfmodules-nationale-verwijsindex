@@ -47,7 +47,7 @@ class Identifier(FhirBaseModel):
         data = query.split("|")
         if len(data) != 2:
             raise ValueError(
-                "Unable to retrieve required properties for Identifier obecjt creation, missing delimiter or invalid query"
+                "Unable to retrieve required properties for Identifier object creation, missing delimiter or invalid query"
             )
 
         return cls(system=data[0], value=data[1])

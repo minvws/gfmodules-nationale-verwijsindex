@@ -18,3 +18,6 @@ class LocalizationListParams(BaseModel):
             raise ValueError("Unable to retrieve required properties for Identigier object, source value is None")
 
         return Identifier.from_query(self.source)
+
+    def empty(self) -> bool:
+        return self.patient is None and self.code is None and self.source is None

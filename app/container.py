@@ -44,6 +44,7 @@ def container_config(binder: inject.Binder) -> None:
 
     referral_service = ReferralService(database=db)
     binder.bind(ReferralService, referral_service)
+    binder.bind(DeviceService, DeviceService(database=db))
 
     organization_service = OrganizationService(database=db)
 
