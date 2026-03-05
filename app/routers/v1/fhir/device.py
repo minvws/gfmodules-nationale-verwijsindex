@@ -4,14 +4,11 @@ from uuid import UUID
 
 from fastapi import APIRouter
 from fastapi.params import Query
-from pydantic import BaseModel, Field
+
+from app.models.fhir.resources.device.request import DeviceParams
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["v1-alpha - FHIR"], prefix="/v1-alpha/fhir/Device")
-
-
-class DeviceParams(BaseModel):
-    org_identifier: str = Field(alias="organization.identifier")
 
 
 @router.get("/{id}")
