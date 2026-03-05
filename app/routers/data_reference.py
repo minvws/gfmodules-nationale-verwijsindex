@@ -26,6 +26,7 @@ from app.models.pseudonym import Pseudonym
 from app.models.response import DeleteResponse, FHIRJSONResponse
 from app.models.ura import UraNumber
 from app.services.oauth import OAuthService
+from app.services.prs.exception import PseudonymError
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 
@@ -36,6 +37,15 @@ router = APIRouter(tags=["NVI Data Reference"], prefix="/NVIDataReference")
 def exchange_oprf(pseudonym_service: PseudonymService, oprf_jwe: str, blind_factor: str) -> Pseudonym:
     try:
         return pseudonym_service.exchange(oprf_jwe=oprf_jwe, blind_factor=blind_factor)
+    except PseudonymError as e:
+        logger.error(f"invalid pseudonym exchange request: {e}")
+        raise FHIRException(
+            status_code=400,
+            severity="error",
+            code="invalid",
+            msg="Invalid pseudonym request",
+            expression=["NVIDataReference.subject"],
+        ) from e
     except Exception as e:
         logger.error(f"failed to exchange pseudonym: {e}")
         raise FHIRException(
