@@ -16,7 +16,7 @@ from app.models.ura import UraNumber
 from app.services.client_oauth import ClientOAuthService
 from app.services.http import HttpService
 from app.services.organization import OrganizationService
-from app.services.prs.registration_service import PrsRegistrationService
+from app.services.prs.prs_registration_service import PrsRegistrationService
 from app.services.referral_service import ReferralService
 from app.utils.certificates.utils import (
     load_certificate,
@@ -48,7 +48,13 @@ def referral_repository(database: Database) -> ReferralRepository:
 @pytest.fixture()
 def http_service() -> HttpService:
     config = get_test_config()
-    return HttpService(**config.pseudonym_api.model_dump())
+    return HttpService(
+        endpoint=config.pseudonym_api.endpoint,
+        timeout=config.pseudonym_api.timeout,
+        mtls_cert=config.pseudonym_api.mtls_cert,
+        mtls_key=config.pseudonym_api.mtls_key,
+        verify_ca=config.pseudonym_api.verify_ca,
+    )
 
 
 @pytest.fixture(scope="session")
@@ -85,7 +91,7 @@ def prs_registration_service(ura_number: UraNumber) -> PrsRegistrationService:
 
 @pytest.fixture()
 def referral_service(database: Database) -> ReferralService:
-    return ReferralService(database=database)  # type: ignore
+    return ReferralService(database=database)
 
 
 @pytest.fixture()

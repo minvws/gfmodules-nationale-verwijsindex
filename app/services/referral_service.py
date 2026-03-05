@@ -2,8 +2,6 @@ import logging
 from typing import Sequence
 from uuid import UUID
 
-import inject
-
 from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
@@ -16,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class ReferralService:
-    @inject.autoparams()
     def __init__(self, database: Database) -> None:
         self.database = database
 

@@ -99,7 +99,7 @@ def localize(
         raise FHIRException(
             status_code=500,
             severity="error",
-            code="not-found",
+            code="exception",
             msg="Pseudonym could not be exchanged",
             expression=["Parameters.parameter.pseudonym"],
         )

@@ -41,7 +41,7 @@ def exchange_oprf(pseudonym_service: PseudonymService, oprf_jwe: str, blind_fact
         raise FHIRException(
             status_code=500,
             severity="error",
-            code="not-found",
+            code="exception",
             msg="Pseudonym could not be exchanged",
             expression=["NVIDataReference.subject"],
         )
@@ -114,18 +114,15 @@ def get_reference(
     request: Request,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
-    oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
 ) -> Bundle[NVIDataReferenceOutput]:
-    auth_enabled = oauth_service.enabled()
-    if auth_enabled:
-        req_ura = str(request.state.auth.ura_number)
-        if req_ura != params.source:
-            raise FHIRException(
-                status_code=403,
-                severity="error",
-                code="forbidden",
-                msg="Organization is forbidden to access requested NVIDataReference",
-            )
+    req_ura = str(request.state.auth.ura_number)
+    if req_ura != params.source:
+        raise FHIRException(
+            status_code=403,
+            severity="error",
+            code="forbidden",
+            msg="Organization is forbidden to access requested NVIDataReference",
+        )
 
     pseudonym: Pseudonym | None = None
     if params.pseudonym and params.oprf_key:
@@ -167,16 +164,14 @@ def delete_reference(
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
     oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
 ) -> DeleteResponse:
-    auth_enabled = oauth_service.enabled()
-    if auth_enabled:
-        req_ura = str(request.state.auth.ura_number)
-        if req_ura != params.source:
-            raise FHIRException(
-                status_code=403,
-                severity="error",
-                code="forbidden",
-                msg="Organization is forbidden to remove NVIDataReference.",
-            )
+    req_ura = str(request.state.auth.ura_number)
+    if req_ura != params.source:
+        raise FHIRException(
+            status_code=403,
+            severity="error",
+            code="forbidden",
+            msg="Organization is forbidden to access requested NVIDataReference",
+        )
 
     if params.pseudonym and params.oprf_key:
         pseudonym = exchange_oprf(
@@ -345,16 +340,14 @@ def create_reference(
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
     oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
 ) -> FHIRJSONResponse:
-    auth_enabled = oauth_service.enabled()
-    if auth_enabled:
-        req_ura: UraNumber = request.state.auth.ura_number
-        if req_ura != data.get_ura_number():
-            raise FHIRException(
-                status_code=403,
-                severity="error",
-                code="forbidden",
-                msg="Organization is forbidden to create NVIDataReference",
-            )
+    req_ura: UraNumber = request.state.auth.ura_number
+    if req_ura != data.get_ura_number():
+        raise FHIRException(
+            status_code=403,
+            severity="error",
+            code="forbidden",
+            msg="Organization is forbidden to create NVIDataReference",
+        )
 
     source_url = str(request.url)
     pseudonym = exchange_oprf(
@@ -452,16 +445,14 @@ def get_by_id(
 ) -> NVIDataReferenceOutput:
     referral = referral_service.get_by_id(id)
 
-    auth_enabled = oauth_service.enabled()
-    if auth_enabled:
-        req_ura: UraNumber = request.state.auth.ura_number
-        if req_ura != referral.ura_number:
-            raise FHIRException(
-                status_code=403,
-                severity="error",
-                code="forbidden",
-                msg="Organization is forbidden to access NVIDataReference",
-            )
+    req_ura: UraNumber = request.state.auth.ura_number
+    if req_ura != referral.ura_number:
+        raise FHIRException(
+            status_code=403,
+            severity="error",
+            code="forbidden",
+            msg="Organization is forbidden to access NVIDataReference",
+        )
 
     return NVIDataReferenceOutput.from_referral(referral)
 
@@ -489,16 +480,14 @@ def delete_by_id(
     oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
 ) -> DeleteResponse:
     referral = referral_service.get_by_id(id)
-    auth_enabled = oauth_service.enabled()
-    if auth_enabled:
-        req_ura: UraNumber = request.state.auth.ura_number
-        if req_ura != referral.ura_number:
-            raise FHIRException(
-                status_code=403,
-                severity="error",
-                code="forbidden",
-                msg="Organization is forbidden to remove NVIDataReference.",
-            )
+    req_ura: UraNumber = request.state.auth.ura_number
+    if req_ura != referral.ura_number:
+        raise FHIRException(
+            status_code=403,
+            severity="error",
+            code="forbidden",
+            msg="Organization is forbidden to remove NVIDataReference.",
+        )
 
     referral_service.delete_by_id(id)
     return DeleteResponse(status_code=204)

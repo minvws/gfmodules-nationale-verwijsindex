@@ -7,8 +7,8 @@ from app.db.db import Database
 from app.services.localization_list import LocalizationListService
 from app.services.oauth import OAuthService
 from app.services.organization import OrganizationService
+from app.services.prs.prs_registration_service import PrsRegistrationService
 from app.services.prs.pseudonym_service import PseudonymService
-from app.services.prs.registration_service import PrsRegistrationService
 from app.services.referral_service import ReferralService
 from app.utils.load_capability_statement import CapabilityStatement
 
@@ -22,7 +22,7 @@ def get_database() -> Database:
 
 
 def get_referral_service() -> ReferralService:
-    return inject.instance(ReferralService)  # type: ignore
+    return inject.instance(ReferralService)
 
 
 def get_organization_service() -> OrganizationService:

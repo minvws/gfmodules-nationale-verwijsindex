@@ -38,6 +38,7 @@ class ConfigDatabase(BaseModel):
 
 
 class ConfigPseudonymApi(BaseModel):
+    enabled: bool = Field(default=True)
     endpoint: str
     timeout: int = Field(default=30, gt=0)
     mtls_cert: str
