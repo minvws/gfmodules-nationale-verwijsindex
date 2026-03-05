@@ -143,20 +143,3 @@ def add_list(
     )
 
     return LocalizationList.from_referral(new_referral)
-
-
-@router.get("/List/{id}")
-def get_by_id(
-    id: UUID,
-    referral_service: ReferralService = Depends(get_referral_service),
-) -> Any:
-    referral = referral_service.get_by_id(id)
-    if referral is None:
-        raise FHIRException(
-            status_code=404,
-            severity="error",
-            code="not-found",
-            msg="Requested Record not found",
-        )
-
-    return LocalizationList.from_referral(referral)
