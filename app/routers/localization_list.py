@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 from typing import Annotated, Any
+from uuid import UUID
 
 from fastapi import APIRouter, Depends
 from fastapi.params import Query
@@ -49,7 +50,7 @@ def register(
 
 
 @router.get("/List")
-def bla(
+def get_list(
     params: Annotated[LocalizationListParams, Query()],
     referral_service: ReferralService = Depends(get_referral_service),
     pseudonym_service: PseudonymService = Depends(get_pseudonym_service),
@@ -112,3 +113,50 @@ def bla(
     )
 
     return bundle
+
+
+@router.post("/List")
+def add_list(
+    data: LocalizationList,
+    referral_service: ReferralService = Depends(get_referral_service),
+    pseudonym_service: PseudonymService = Depends(get_pseudonym_service),
+) -> Any:
+    try:
+        encoded_token = data.get_encoded_pseudonym()
+        decoded_token = base64.urlsafe_b64decode(encoded_token)
+        oprf_data = json.loads(decoded_token)
+        pseudoym = pseudonym_service.exchange(oprf_jwe=oprf_data["pseudonym"], blind_factor=oprf_data["oprfKey"])
+    except Exception as e:
+        logger.error(f"error occurred while decoding pseudonym token: {e}")
+        raise FHIRException(
+            status_code=400,
+            severity="error",
+            code="invalid",
+            msg="Invalid pseudonym in patient.identifier",
+        )
+
+    new_referral = referral_service.add_one(
+        ura_number=data.get_ura(),
+        pseudonym=pseudoym,
+        data_domain=data.get_data_domain(),
+        source=data.get_device(),
+    )
+
+    return LocalizationList.from_referral(new_referral)
+
+
+@router.get("/List/{id}")
+def get_by_id(
+    id: UUID,
+    referral_service: ReferralService = Depends(get_referral_service),
+) -> Any:
+    referral = referral_service.get_by_id(id)
+    if referral is None:
+        raise FHIRException(
+            status_code=404,
+            severity="error",
+            code="not-found",
+            msg="Requested Record not found",
+        )
+
+    return LocalizationList.from_referral(referral)
