@@ -25,7 +25,6 @@ from app.models.fhir.resources.operation_outcome.resource import OperationOutcom
 from app.models.pseudonym import Pseudonym
 from app.models.response import DeleteResponse, FHIRJSONResponse
 from app.models.ura import UraNumber
-from app.services.oauth import OAuthService
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 
@@ -162,7 +161,6 @@ def delete_reference(
     request: Request,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
-    oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
 ) -> DeleteResponse:
     req_ura = str(request.state.auth.ura_number)
     if req_ura != params.source:
@@ -338,7 +336,6 @@ def create_reference(
     request: Request,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
     pseudonym_service: PseudonymService = Depends(dependencies.get_pseudonym_service),
-    oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
 ) -> FHIRJSONResponse:
     req_ura: UraNumber = request.state.auth.ura_number
     if req_ura != data.get_ura_number():
@@ -441,7 +438,6 @@ def get_by_id(
     id: UUID,
     request: Request,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
-    oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
 ) -> NVIDataReferenceOutput:
     referral = referral_service.get_by_id(id)
 
@@ -477,7 +473,6 @@ def delete_by_id(
     id: UUID,
     request: Request,
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
-    oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
 ) -> DeleteResponse:
     referral = referral_service.get_by_id(id)
     req_ura: UraNumber = request.state.auth.ura_number
