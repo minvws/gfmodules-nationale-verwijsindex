@@ -86,6 +86,24 @@ class ReferralService:
 
         return None
 
+    def get_many(
+        self,
+        ura_number: UraNumber | None = None,
+        pseudonym: Pseudonym | None = None,
+        data_domain: DataDomain | None = None,
+        source: str | None = None,
+    ) -> Sequence[ReferralEntity]:
+        with self.database.get_db_session() as session:
+            repo = session.get_repository(ReferralRepository)
+            referrals = repo.find_many(
+                ura_number=str(ura_number) if ura_number else None,
+                pseudonym=str(pseudonym) if pseudonym else None,
+                data_domain=str(data_domain) if data_domain else None,
+                source=source,
+            )
+
+        return referrals
+
     def delete_one(
         self,
         pseudonym: Pseudonym,
