@@ -2,11 +2,19 @@ import logging
 
 import inject
 
-from app.config import Config, ConfigClientOAuth, ConfigOAuth, ConfigPseudonymApi, get_config
+from app.config import (
+    Config,
+    ConfigClientOAuth,
+    ConfigOAuth,
+    ConfigPseudonymApi,
+    get_config,
+)
 from app.db.db import Database
+from app.debug.pseudonym_service_mock import PseudonymServiceMock
 from app.models.ura import UraNumber
 from app.services.client_oauth import ClientOAuthService
 from app.services.decrypt_service import DecryptService
+from app.services.localization_list import LocalizationListService
 from app.services.oauth import OAuthService
 from app.services.organization import OrganizationService
 from app.services.prs.prs_registration_service import PrsRegistrationService
@@ -41,7 +49,12 @@ def container_config(binder: inject.Binder) -> None:
 
     bind_prs_registration_service(binder, config.pseudonym_api)
     bind_oauth_service(binder, config.oauth)
-    bind_pseudonym_service(binder, config.pseudonym_api)
+
+    pseudonym_service = create_pseudonym_service(config.pseudonym_api)
+    bind_pseudonym_service(binder, pseudonym_service)
+
+    localization_list_service = LocalizationListService(referral_service, pseudonym_service)
+    binder.bind(LocalizationListService, localization_list_service)
 
     binder.bind(OrganizationService, organization_service)
 
@@ -65,10 +78,14 @@ def bind_prs_registration_service(binder: inject.Binder, config_pseudonym_api: C
 
 @inject.autoparams()
 def create_prs_registration_service(
-    ura_number: UraNumber, config_pseudonym_api: ConfigPseudonymApi, client_oauth_service: ClientOAuthService
+    ura_number: UraNumber,
+    config_pseudonym_api: ConfigPseudonymApi,
+    client_oauth_service: ClientOAuthService,
 ) -> PrsRegistrationService:
     return PrsRegistrationService(
-        ura_number=ura_number, config=config_pseudonym_api, client_oauth_service=client_oauth_service
+        ura_number=ura_number,
+        config=config_pseudonym_api,
+        client_oauth_service=client_oauth_service,
     )
 
 
@@ -81,13 +98,19 @@ def bind_oauth_service(binder: inject.Binder, config_oauth: ConfigOAuth) -> None
         binder.bind(OAuthService, OAuthServiceMock(UraNumber(config_oauth.override_ura_number)))
 
 
-def bind_pseudonym_service(binder: inject.Binder, config_pseudonym_api: ConfigPseudonymApi) -> None:
-    if config_pseudonym_api.enabled:
-        binder.bind(PseudonymService, PseudonymService)
+def bind_pseudonym_service(binder: inject.Binder, service: PseudonymService) -> None:
+    if isinstance(service, PseudonymServiceMock):
+        binder.bind(service, PseudonymServiceMock)
     else:
-        from app.debug.pseudonym_service_mock import PseudonymServiceMock
+        binder.bind(service, PseudonymService)
 
-        binder.bind_to_constructor(PseudonymService, PseudonymServiceMock)
+
+def create_pseudonym_service(config: ConfigPseudonymApi) -> PseudonymService:
+    if config.enabled:
+        decryption_service = DecryptService(mtls_key=config.mtls_key)
+        return PseudonymService(decryption_service)
+
+    return PseudonymServiceMock()
 
 
 def configure() -> None:
