@@ -12,6 +12,7 @@ from app.models.fhir.resources.organization.parameters import Parameters
 from app.models.fhir.resources.organization.resource import Organization
 from app.models.response import FHIRJSONResponse
 from app.services.organization import OrganizationService
+from app.services.prs.exception import PseudonymError
 from app.services.prs.pseudonym_service import PseudonymService
 
 logger = logging.getLogger(__name__)
@@ -94,6 +95,15 @@ def localize(
         localisation_pseudonym = pseudonym_service.exchange(
             oprf_jwe=localization_dto.oprf_jwe, blind_factor=localization_dto.oprf_key
         )
+    except PseudonymError as e:
+        logger.error(f"Invalid pseudonym exchange request: {e}")
+        raise FHIRException(
+            status_code=400,
+            severity="error",
+            code="invalid",
+            msg="Invalid pseudonym request",
+            expression=["Parameters.parameter.pseudonym"],
+        ) from e
     except Exception as e:
         logger.error(f"Failed to exchange pseudonym: {e}")
         raise FHIRException(

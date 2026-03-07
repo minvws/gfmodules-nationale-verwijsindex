@@ -4,7 +4,7 @@ import logging
 import pyoprf
 
 from app.models.pseudonym import Pseudonym
-from app.services.decrypt_service import DecryptService
+from app.services.decrypt_service import DecryptError, DecryptService
 from app.services.prs.exception import PseudonymError
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,10 @@ class PseudonymService:
         logger.info("Decrypting OPRF JWE")
 
         # Decrypt OPRF-JWE<NVI> with private key pre-registered at PRS
-        jwe_data = self._decrypt_service.decrypt_jwe(oprf_jwe)
+        try:
+            jwe_data = self._decrypt_service.decrypt_jwe(oprf_jwe)
+        except DecryptError as e:
+            raise PseudonymError("Invalid pseudonym request") from e
 
         if jwe_data["subject"].startswith("pseudonym:eval:") is False:
             logger.error("JWE is invalid: subject does not start with pseudonym:eval:")
