@@ -50,3 +50,18 @@ def test_model_create_should_fail_with_str_ura() -> None:
 def test_model_create_should_fail_with_incorrect_ura_number_format() -> None:
     with pytest.raises(ValidationError):
         DataReferenceRequestParams(source="123456789191982")
+
+
+@pytest.mark.parametrize(
+    "pseudonym,oprf_key",
+    [
+        ("encrypted-subject", None),
+        (None, "some-oprf-key"),
+    ],
+)
+def test_model_create_should_fail_when_only_pseudonym_or_oprf_key_is_present(
+    pseudonym: str | None,
+    oprf_key: str | None,
+) -> None:
+    with pytest.raises(ValidationError):
+        DataReferenceRequestParams(source="00000123", pseudonym=pseudonym, oprf_key=oprf_key)
