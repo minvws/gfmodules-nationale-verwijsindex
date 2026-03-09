@@ -1,7 +1,7 @@
 from typing import List, Sequence
 from uuid import UUID
 
-from sqlalchemy import and_, delete, exists, or_, select
+from sqlalchemy import and_, delete, distinct, exists, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db.decorator import repository
@@ -20,6 +20,20 @@ class ReferralRepository(RepositoryBase):
         )
         result = self.db_session.execute(stmt).scalars().first()
         return result
+
+    def get_distinct_devices_by_ura_and_source_identifier(self, ura: str, source_identifier: str) -> Sequence[str]:
+        stmt = (
+            select(distinct(ReferralEntity.source))
+            .where(ReferralEntity.ura_number == ura)
+            .where(ReferralEntity.source == source_identifier)
+        )
+        results = self.db_session.execute(stmt).scalars().all()
+        return results
+
+    def get_distinct_devices_by_ura(self, ura: str) -> Sequence[str]:
+        stmt = select(distinct(ReferralEntity.source)).where(ReferralEntity.ura_number == ura)
+        results = self.db_session.execute(stmt).scalars().all()
+        return results
 
     def find_by_id(self, id: UUID) -> ReferralEntity | None:
         stmt = select(ReferralEntity).where(ReferralEntity.id == id)

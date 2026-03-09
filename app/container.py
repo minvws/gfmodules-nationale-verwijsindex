@@ -7,6 +7,7 @@ from app.db.db import Database
 from app.models.ura import UraNumber
 from app.services.client_oauth import ClientOAuthService
 from app.services.decrypt_service import DecryptService
+from app.services.device_service import DeviceService
 from app.services.oauth import OAuthService
 from app.services.organization import OrganizationService
 from app.services.prs.prs_registration_service import PrsRegistrationService
@@ -36,6 +37,7 @@ def container_config(binder: inject.Binder) -> None:
 
     referral_service = ReferralService(database=db)
     binder.bind(ReferralService, referral_service)
+    binder.bind(DeviceService, DeviceService(database=db))
 
     organization_service = OrganizationService(database=db)
 
