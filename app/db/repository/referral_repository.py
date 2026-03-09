@@ -1,7 +1,7 @@
 from typing import List, Sequence
 from uuid import UUID
 
-from sqlalchemy import and_, delete, distinct, exists, or_, select
+from sqlalchemy import and_, delete, exists, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db.decorator import repository
@@ -20,20 +20,6 @@ class ReferralRepository(RepositoryBase):
         )
         result = self.db_session.execute(stmt).scalars().first()
         return result
-
-    def get_distinct_devices_by_ura_and_source_identifier(self, ura: str, source_identifier: str) -> Sequence[str]:
-        stmt = (
-            select(distinct(ReferralEntity.source))
-            .where(ReferralEntity.ura_number == ura)
-            .where(ReferralEntity.source == source_identifier)
-        )
-        results = self.db_session.execute(stmt).scalars().all()
-        return results
-
-    def get_distinct_devices_by_ura(self, ura: str) -> Sequence[str]:
-        stmt = select(distinct(ReferralEntity.source)).where(ReferralEntity.ura_number == ura)
-        results = self.db_session.execute(stmt).scalars().all()
-        return results
 
     def find_by_id(self, id: UUID) -> ReferralEntity | None:
         stmt = select(ReferralEntity).where(ReferralEntity.id == id)
@@ -74,7 +60,8 @@ class ReferralRepository(RepositoryBase):
         pseudonym: str | None = None,
         data_domain: str | None = None,
         source: str | None = None,
-    ) -> None:
+        id: str | UUID | None = None,
+    ) -> int:
         stmt = delete(ReferralEntity)
 
         stmt = stmt.where(ReferralEntity.ura_number == ura_number)
@@ -87,10 +74,13 @@ class ReferralRepository(RepositoryBase):
 
         if source is not None:
             stmt = stmt.where(ReferralEntity.source == source)
-        result = self.db_session.delete_stmt(stmt)
-        self.db_session.commit()
-        print(result)
-        print(result.rowcount)
+
+        if id is not None:
+            stmt = stmt.where(ReferralEntity.id == id)
+
+        results = self.db_session.delete_stmt(stmt)  # type: ignore
+
+        return results.rowcount  # type: ignore
 
     def find(
         self,
@@ -162,7 +152,7 @@ class ReferralRepository(RepositoryBase):
         data_domain: str | None = None,
         source: str | None = None,
     ) -> bool:
-        conditions = [(ReferralEntity.ura_number == ura_number)]
+        conditions = [ReferralEntity.ura_number == ura_number]
         if pseudonym:
             conditions.append((ReferralEntity.pseudonym == pseudonym))
 

@@ -1,5 +1,3 @@
-import base64
-import json
 import logging
 from typing import Any
 
@@ -7,8 +5,10 @@ from app.exceptions.fhir_exception import FHIRException
 from app.models.fhir.bundle import Bundle, BundleEntry, EntryResponse
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.pseudonym import Pseudonym
+from app.models.ura import UraNumber
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
+from app.utils.fhir import decode_url_safe_token
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ class LocalizationListService:
         self.referral_service = referral_service
         self.pseudonym_service = pseudonym_service
 
-    def process_entry(self, entry: BundleEntry[Any], index: int) -> BundleEntry[Any]:
+    def process_entry(self, authenticated_ura: UraNumber, entry: BundleEntry[Any], index: int) -> BundleEntry[Any]:
         if entry.request is None:
             return BundleEntry(
                 response=EntryResponse.make_validation_response(f"Bundle.entry.{index}.request is required")
@@ -45,14 +45,29 @@ class LocalizationListService:
             return BundleEntry(
                 response=EntryResponse.make_forbidden_respone("Error occurred with pseudonym decryption")
             )
+
+        try:
+            ura_number = resource.get_ura()
+            data_domain = resource.get_data_domain()
+            source = resource.get_device()
+        except ValueError as e:
+            return BundleEntry(response=EntryResponse.make_validation_response(msg=str(e), code="invalid"))
+
+        if ura_number != authenticated_ura:
+            return BundleEntry(
+                response=EntryResponse.make_forbidden_respone(
+                    f"Unauthorized transaction on Bundle.entry.{index}.resource"
+                )
+            )
+
         match method:
             case "POST":
                 try:
                     new_data = self.referral_service.add_one(
                         pseudonym=pseudonym,
-                        data_domain=resource.get_data_domain(),
-                        ura_number=resource.get_ura(),
-                        source=resource.get_device(),
+                        data_domain=data_domain,
+                        ura_number=ura_number,
+                        source=source,
                     )
                     return BundleEntry(
                         resource=LocalizationList.from_referral(new_data),
@@ -66,9 +81,9 @@ class LocalizationListService:
                 try:
                     self.referral_service.delete_one(
                         pseudonym=pseudonym,
-                        data_domain=resource.get_data_domain(),
-                        ura_number=resource.get_ura(),
-                        source=resource.get_device(),
+                        data_domain=data_domain,
+                        ura_number=ura_number,
+                        source=source,
                     )
                     return BundleEntry(
                         response=EntryResponse.make_good_response(
@@ -88,8 +103,7 @@ class LocalizationListService:
     def extract_pseudonym(self, resource: LocalizationList) -> Pseudonym:
         try:
             token = resource.get_encoded_pseudonym()
-            decoded_token = base64.urlsafe_b64decode(token)
-            data = json.loads(decoded_token)
+            data = decode_url_safe_token(token)
             pseudonym = self.pseudonym_service.exchange(oprf_jwe=data["pseudonym"], blind_factor=data["oprfKey"])
             return pseudonym
         except Exception as e:

@@ -12,6 +12,14 @@ from app.models.fhir.elements import (
     Identifier,
     Reference,
 )
+from app.models.fhir.resources.data import (
+    DATA_DOMAIN_SYSTEM,
+    DEVICE_SYSTEM,
+    EMPTY_REASON_SYSTEM,
+    PSEUDONYM_SYSTEM,
+    URA_SYSTEM,
+    URA_SYSTEM_EXTENSION,
+)
 from app.models.fhir.resources.domain_resource import DomainResource
 from app.models.ura import UraNumber
 
@@ -27,7 +35,7 @@ class LocalizationList(DomainResource):
     extension: List[ReferenceExtension]
     status: Literal["current", "retired", "entered-in-error"]
     mode: Literal["working", "snapshot", "changes"]
-    subject: Reference
+    subject: Reference | None = None
     source: Reference
     code: CodeableConcept
     empty_reason: CodeableConcept
@@ -37,17 +45,11 @@ class LocalizationList(DomainResource):
         reference_extension = ReferenceExtension(
             value_reference=Reference(
                 identifier=Identifier(
-                    system="http://fhir.nl/fhir/NamingSystem/ura",
+                    system=URA_SYSTEM,
                     value=referral.ura_number,
                 )
             ),
-            url="http://minvws.github.io/generiekefuncties-docs/StructureDefinition/nl-gf-localization-custodian",
-        )
-        subject = Reference(
-            identifier=Identifier(
-                system="http://fhir.nl/fhir/NamingSystem/pseudo-bsn",
-                value=referral.pseudonym,
-            )
+            url=URA_SYSTEM_EXTENSION,
         )
         source = Reference(
             identifier=Identifier(
@@ -59,16 +61,15 @@ class LocalizationList(DomainResource):
         code = CodeableConcept(
             coding=[
                 Coding(
-                    display=referral.data_domain,
-                    system="http://minvws.github.io/generiekefuncties-docs/CodeSystem/nl-gf-zorgcontext-cs",
-                    code="TEST-CODE",
+                    system=DATA_DOMAIN_SYSTEM,
+                    code=referral.data_domain,
                 )
             ]
         )
         empty_reason = CodeableConcept(
             coding=[
                 Coding(
-                    system="http://minvws.github.io/generiekefuncties-docs/CodeSystem/nl-gf-zorgcontext-cs",
+                    system=EMPTY_REASON_SYSTEM,
                     code="withhled",
                 )
             ]
@@ -78,24 +79,42 @@ class LocalizationList(DomainResource):
             extension=[reference_extension],
             status="current",
             mode="working",
-            subject=subject,
             source=source,
             code=code,
             empty_reason=empty_reason,
         )
 
     def get_ura(self) -> UraNumber:
-        # TODO: Search for extension with URL "http://minvws.github.io/generiekefuncties-docs/StructureDefinition/nl-gf-localization-custodian"and value_reference with identifier http://fhir.nl/fhir/NamingSystem/ura
-        return UraNumber(self.extension[0].value_reference.identifier.value)
+        target_ura = next(
+            (
+                v.value_reference.identifier.value
+                for v in self.extension
+                if v.value_reference.identifier.system == URA_SYSTEM
+            ),
+            None,
+        )
+        if target_ura is None:
+            raise ValueError(f"Missing identifier with naming system {URA_SYSTEM} in List.extension")
+
+        return UraNumber(target_ura)
 
     def get_encoded_pseudonym(self) -> str:
-        # TODO: Search for Subject with identifier for system http://minvws.github.io/generiekefuncties-docs/NamingSystem/nvi-identifier
+        if self.subject is None:
+            raise ValueError("List.subject is required")
+
+        if self.subject.identifier.system != PSEUDONYM_SYSTEM:
+            raise ValueError(f"List.subject.identifier.system must be {PSEUDONYM_SYSTEM}")
+
         return self.subject.identifier.value
 
     def get_data_domain(self) -> DataDomain:
-        # TODO: Search for coding in Code with System "http://minvws.github.io/generiekefuncties-docs/CodeSystem/nl-gf-zorgcontext-cs"
-        return DataDomain(self.code.coding[0].code)
+        target = next((v.code for v in self.code.coding if v.system == DATA_DOMAIN_SYSTEM), None)
+        if target is None:
+            raise ValueError(f"Missing code with code system {DATA_DOMAIN_SYSTEM} in List.code.coding")
+
+        return DataDomain(target)
 
     def get_device(self) -> str:
-        # TODO: Search for Device in source with identifier system "http://example.org/device-identifiers"
+        if self.source.identifier.system != DEVICE_SYSTEM:
+            raise ValueError(f"List.source.identifier should include system {DEVICE_SYSTEM}")
         return self.source.identifier.value

@@ -43,12 +43,12 @@ class Identifier(FhirBaseModel):
     value: str
 
     @classmethod
-    def from_query(cls, query: str) -> Self:
+    def from_query(cls, query: str, system: str) -> Self:
         data = query.split("|")
         if len(data) != 2:
-            raise ValueError(
-                "Unable to retrieve required properties for Identifier object creation, missing delimiter or invalid query"
-            )
+            raise ValueError("Missing delimiter '|', unable to determine System for Identifier")
+        if data[0] != system:
+            raise ValueError(f"Unrecognized system, value must be {system}")
 
         return cls(system=data[0], value=data[1])
 

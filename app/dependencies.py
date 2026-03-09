@@ -4,8 +4,7 @@ import inject
 
 from app.config import Config
 from app.db.db import Database
-from app.services.device_service import DeviceService
-from app.services.localization_list import LocalizationListService
+from app.services.fhir.localization_list import LocalizationListService
 from app.services.oauth import OAuthService
 from app.services.organization import OrganizationService
 from app.services.prs.prs_registration_service import PrsRegistrationService
@@ -24,10 +23,6 @@ def get_database() -> Database:
 
 def get_referral_service() -> ReferralService:
     return inject.instance(ReferralService)
-
-
-def get_device_service() -> DeviceService:
-    return inject.instance(DeviceService)
 
 
 def get_organization_service() -> OrganizationService:
