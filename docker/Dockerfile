@@ -63,6 +63,10 @@ FROM base AS lean-builder
 
 COPY ./app /src/app
 
+COPY version.json /src/version.json
+
+COPY ./static /src/static
+
 RUN --mount=type=cache,target=${POETRY_CACHE_DIR} poetry install --only main --no-interaction
 
 RUN --mount=type=cache,target=${POETRY_CACHE_DIR} poetry build
