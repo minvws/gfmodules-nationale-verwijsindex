@@ -10,7 +10,6 @@ from app.config import (
     get_config,
 )
 from app.db.db import Database
-from app.debug.pseudonym_service_mock import PseudonymServiceMock
 from app.models.ura import UraNumber
 from app.services.client_oauth import ClientOAuthService
 from app.services.decrypt_service import DecryptService
@@ -102,6 +101,8 @@ def create_pseudonym_service(config: ConfigPseudonymApi) -> PseudonymService:
     if config.enabled:
         decryption_service = DecryptService(mtls_key=config.mtls_key)
         return PseudonymService(decryption_service)
+
+    from app.debug.pseudonym_service_mock import PseudonymServiceMock
 
     return PseudonymServiceMock()
 
