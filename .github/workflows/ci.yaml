@@ -210,7 +210,6 @@ jobs:
           build-args: |
             NEW_UID=${{ env.NEW_UID }}
             NEW_GID=${{ env.NEW_GID }}
-            standalone=true
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.35.0
@@ -255,4 +254,3 @@ jobs:
           build-args: |
             NEW_UID=${{ env.NEW_UID }}
             NEW_GID=${{ env.NEW_GID }}
-            standalone=true
