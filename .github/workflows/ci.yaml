@@ -203,7 +203,6 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile
-          target: debug-final
           push: false
           load: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -250,7 +249,6 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile
-          target: debug-final
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
