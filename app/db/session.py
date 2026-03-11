@@ -3,7 +3,7 @@ import random
 from time import sleep
 from typing import Any, Callable, List, ParamSpec, Tuple, Type, TypeVar
 
-from sqlalchemy import Engine, Insert, Result
+from sqlalchemy import Delete, Engine, Insert, Result
 from sqlalchemy.exc import DatabaseError, OperationalError, PendingRollbackError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.selectable import TypedReturnsRows
@@ -112,6 +112,15 @@ class DbSession:
         :return:
         """
         self._retry(self.session.rollback)
+
+    def delete_stmt(self, stmt: Delete) -> Result[R]:
+        """
+        Execute a statement in the current session
+
+        :param stmt:
+        :return:
+        """
+        return self._retry(self.session.execute, stmt)
 
     def execute(self, stmt: TypedReturnsRows[R] | Insert) -> Result[R]:
         """

@@ -19,8 +19,8 @@ from app.routers.data_reference import router as data_reference_router
 from app.routers.default import router as default_router
 from app.routers.fhir import router as fhir_router
 from app.routers.health import router as health_router
-from app.routers.localization_list import router as localization_list_router
 from app.routers.organization import router as organization_router
+from app.routers.v1.fhir.localization_list import router as v1_fhir_list_router
 from app.stats import StatsdMiddleware
 
 
@@ -92,10 +92,11 @@ def setup_fastapi() -> FastAPI:
     routers = [data_reference_router, organization_router]
 
     if config.app.alpha_routers_enabled:
-        routers.append(localization_list_router)
+        routers.extend([v1_fhir_list_router])
 
     for router in public_routers:
         fastapi.include_router(router)
+
     for router in routers:
         fastapi.include_router(router, dependencies=[Depends(get_auth_ctx)])
 

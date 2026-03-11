@@ -4,7 +4,7 @@ import inject
 
 from app.config import Config
 from app.db.db import Database
-from app.services.localization_list import LocalizationListService
+from app.services.fhir.localization_list import LocalizationListService
 from app.services.oauth import OAuthService
 from app.services.organization import OrganizationService
 from app.services.prs.prs_registration_service import PrsRegistrationService

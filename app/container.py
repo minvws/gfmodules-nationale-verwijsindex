@@ -14,7 +14,7 @@ from app.debug.pseudonym_service_mock import PseudonymServiceMock
 from app.models.ura import UraNumber
 from app.services.client_oauth import ClientOAuthService
 from app.services.decrypt_service import DecryptService
-from app.services.localization_list import LocalizationListService
+from app.services.fhir.localization_list import LocalizationListService
 from app.services.oauth import OAuthService
 from app.services.organization import OrganizationService
 from app.services.prs.prs_registration_service import PrsRegistrationService
@@ -51,7 +51,7 @@ def container_config(binder: inject.Binder) -> None:
     bind_oauth_service(binder, config.oauth)
 
     pseudonym_service = create_pseudonym_service(config.pseudonym_api)
-    bind_pseudonym_service(binder, pseudonym_service)
+    binder.bind(PseudonymService, pseudonym_service)
 
     localization_list_service = LocalizationListService(referral_service, pseudonym_service)
     binder.bind(LocalizationListService, localization_list_service)
@@ -96,13 +96,6 @@ def bind_oauth_service(binder: inject.Binder, config_oauth: ConfigOAuth) -> None
         from app.debug.oauth_service_mock import OAuthServiceMock
 
         binder.bind(OAuthService, OAuthServiceMock(UraNumber(config_oauth.override_ura_number)))
-
-
-def bind_pseudonym_service(binder: inject.Binder, service: PseudonymService) -> None:
-    if isinstance(service, PseudonymServiceMock):
-        binder.bind(service, PseudonymServiceMock)
-    else:
-        binder.bind(service, PseudonymService)
 
 
 def create_pseudonym_service(config: ConfigPseudonymApi) -> PseudonymService:

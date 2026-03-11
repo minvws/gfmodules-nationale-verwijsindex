@@ -54,6 +54,34 @@ class ReferralRepository(RepositoryBase):
         results = self.db_session.execute(stmt).scalars().all()
         return results
 
+    def delete_many(
+        self,
+        ura_number: str,
+        pseudonym: str | None = None,
+        data_domain: str | None = None,
+        source: str | None = None,
+        id: str | UUID | None = None,
+    ) -> int:
+        stmt = delete(ReferralEntity)
+
+        stmt = stmt.where(ReferralEntity.ura_number == ura_number)
+
+        if pseudonym is not None:
+            stmt = stmt.where(ReferralEntity.pseudonym == pseudonym)
+
+        if data_domain is not None:
+            stmt = stmt.where(ReferralEntity.data_domain == data_domain)
+
+        if source is not None:
+            stmt = stmt.where(ReferralEntity.source == source)
+
+        if id is not None:
+            stmt = stmt.where(ReferralEntity.id == id)
+
+        results = self.db_session.delete_stmt(stmt)  # type: ignore
+
+        return results.rowcount  # type: ignore
+
     def find(
         self,
         pseudonym: str,
@@ -124,7 +152,7 @@ class ReferralRepository(RepositoryBase):
         data_domain: str | None = None,
         source: str | None = None,
     ) -> bool:
-        conditions = [(ReferralEntity.ura_number == ura_number)]
+        conditions = [ReferralEntity.ura_number == ura_number]
         if pseudonym:
             conditions.append((ReferralEntity.pseudonym == pseudonym))
 
