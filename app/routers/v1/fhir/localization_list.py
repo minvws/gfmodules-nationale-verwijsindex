@@ -159,7 +159,6 @@ def create(
     referral_service: ReferralService = Depends(get_referral_service),
     pseudonym_service: PseudonymService = Depends(get_pseudonym_service),
 ) -> Any:
-    logging.info(f"Creating {data.model_dump_json()}")
     try:
         ura_number = data.get_ura()
         data_domain = data.get_data_domain()
@@ -173,7 +172,7 @@ def create(
             status_code=403,
             severity="error",
             code="security",
-            msg="Unauthorized access to perform CRUD operation",
+            msg="Registration is not linked to the authorized URA",
         )
 
     try:
