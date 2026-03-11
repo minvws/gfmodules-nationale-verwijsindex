@@ -451,7 +451,7 @@ def get_by_id(
 ) -> NVIDataReferenceOutput:
     referral = referral_service.get_by_id(id)
 
-    req_ura: UraNumber = request.state.auth.ura_number
+    req_ura = str(request.state.auth.ura_number)
     if req_ura != referral.ura_number:
         raise FHIRException(
             status_code=403,
@@ -485,7 +485,7 @@ def delete_by_id(
     referral_service: ReferralService = Depends(dependencies.get_referral_service),
 ) -> DeleteResponse:
     referral = referral_service.get_by_id(id)
-    req_ura: UraNumber = request.state.auth.ura_number
+    req_ura = str(request.state.auth.ura_number)
     if req_ura != referral.ura_number:
         raise FHIRException(
             status_code=403,
