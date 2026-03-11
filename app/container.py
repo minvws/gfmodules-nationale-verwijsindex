@@ -90,7 +90,7 @@ def create_prs_registration_service(
 
 def bind_oauth_service(binder: inject.Binder, config_oauth: ConfigOAuth) -> None:
     if config_oauth.enabled:
-        binder.bind(OAuthService, OAuthService)
+        binder.bind(OAuthService, OAuthService(config_oauth))
     else:
         from app.debug.oauth_service_mock import OAuthServiceMock
 
