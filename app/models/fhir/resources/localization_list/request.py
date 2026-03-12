@@ -22,3 +22,6 @@ class LocalizationListParams(BaseModel):
 
     def empty(self) -> bool:
         return self.patient is None and self.code is None and self.source is None
+
+    def is_localize_params(self) -> bool:
+        return self.patient is not None and self.code is not None and self.source is None

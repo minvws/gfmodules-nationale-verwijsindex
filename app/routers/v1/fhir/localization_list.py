@@ -290,7 +290,7 @@ def get(
     path="",
     response_model_exclude_none=True,
     summary="Get a Bundle of List resources with specific query params",
-    description="Retrieves a Bundle containing List resources based on query params. Localizaiton for a specific pseudonym can be done by specifying patient.identifier and source.identifier. Any other combination will return List resource specific to the URA Number of the requester",
+    description="Retrieves a Bundle containing List resources based on query params. Localization for a specific pseudonym can be done only by specifying patient.identifier and code. Any other combination will return List resource specific to the URA Number of the requester",
     response_class=FHIRJSONResponse,
     responses={
         200: {
@@ -372,7 +372,7 @@ def query(
     source: str | None = None
     ura_number: UraNumber | None = None
 
-    if params.empty():
+    if params.empty() or params.is_localize_params() is False:
         ura_number = request.state.auth.ura_number
 
     if params.patient:
@@ -414,8 +414,6 @@ def query(
                 code="invalid",
                 msg="Malformed source.identifier parameter",
             )
-
-        ura_number = request.state.auth.ura_number
 
     if params.code:
         code = params.code
