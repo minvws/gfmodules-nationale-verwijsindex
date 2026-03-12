@@ -11,9 +11,8 @@ from cryptography.hazmat.primitives import serialization
 from fastapi import Request
 from jwt import PyJWKClient
 
-from app.config import ConfigOAuth
+from app.config import ConfigOAuthTokenValidator
 from app.exceptions.fhir_exception import FHIRException
-from app.models.ura import UraNumber
 from app.utils.certificates.utils import enforce_cert_newlines
 
 SSL_CLIENT_CERT_HEADER_NAME = "x-forwarded-tls-client-cert"  # "x-proxy-ssl_client_cert"
@@ -22,12 +21,12 @@ INVALID_TOKEN = "Invalid token"
 logger = logging.getLogger(__name__)
 
 
-class OAuthService:
+class OAuthTokenValidator:
     """
     OAuth2 service for verifying tokens and mTLS binding
     """
 
-    def __init__(self, config: ConfigOAuth) -> None:
+    def __init__(self, config: ConfigOAuthTokenValidator) -> None:
         self.config = config
         self._ssl_context = self._create_ssl_context()
 
@@ -35,24 +34,22 @@ class OAuthService:
         """
         Create an SSL context for mTLS connections to the JWKS endpoint.
         """
-        if self.config.mtls_cert is None or self.config.mtls_key is None or self.config.verify_ca is None:
-            raise ValueError("mTLS certificate and key must be provided for OAuth2")
-
         context = ssl.create_default_context()
         if isinstance(self.config.verify_ca, bool) and self.config.verify_ca is True:
             context.verify_mode = ssl.CERT_REQUIRED
 
-        context.load_cert_chain(certfile=self.config.mtls_cert, keyfile=self.config.mtls_key)
+        if self.config.mtls_cert and self.config.mtls_key:
+            context.load_cert_chain(certfile=self.config.mtls_cert, keyfile=self.config.mtls_key)
         if isinstance(self.config.verify_ca, str):
             context.load_verify_locations(cafile=self.config.verify_ca)
 
         return context
 
-    def override_ura_number(self) -> UraNumber:
+    def enabled(self) -> bool:
         """
-        Get the override URA number when OAuth2 is disabled.
+        Check if OAuth2 is enabled.
         """
-        return UraNumber(self.config.override_ura_number)
+        return self.config.enabled
 
     def verify(self, request: Request) -> Dict[str, Any]:
         """
@@ -92,9 +89,11 @@ class OAuthService:
                     "require": ["exp", "iat", "sub", "aud", "iss", "scope", "cnf"],
                 },
             )
+            if not isinstance(claims, dict):
+                raise Exception("Invalid token claims format")
 
         except Exception as e:
-            logger.debug("Failed to decode JWT: %s", e)
+            logger.error("Failed to decode JWT: %s", e)
             raise FHIRException(
                 status_code=401,
                 severity="error",
@@ -140,7 +139,7 @@ class OAuthService:
             fp = None
 
         if fp is None:
-            logger.debug("mTLS binding failed")
+            logger.error("mTLS binding failed")
             raise FHIRException(
                 status_code=401,
                 severity="security",
@@ -149,7 +148,7 @@ class OAuthService:
             )
 
         if not hmac.compare_digest(fp, request_cert_fp):
-            logger.debug("mTLS binding failed")
+            logger.error("mTLS binding failed")
             raise FHIRException(
                 status_code=401,
                 severity="security",

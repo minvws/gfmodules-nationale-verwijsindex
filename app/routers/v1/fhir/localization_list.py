@@ -366,7 +366,6 @@ def query(
     referral_service: ReferralService = Depends(get_referral_service),
     pseudonym_service: PseudonymService = Depends(get_pseudonym_service),
 ) -> Any:
-
     code: str | None = None
     pseudonym: Pseudonym | None = None
     source: str | None = None

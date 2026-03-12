@@ -8,7 +8,7 @@ from starlette.requests import Request
 
 from app import dependencies
 from app.models.ura import UraNumber
-from app.services.oauth import OAuthService
+from app.services.oauth_token_validator import OAuthTokenValidator
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ bearer = HTTPBearer(auto_error=False)
 def get_auth_ctx(
     request: Request,
     creds: Optional[HTTPAuthorizationCredentials] = Depends(bearer),
-    oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
+    oauth_service: OAuthTokenValidator = Depends(dependencies.get_oauth_token_validator),
 ) -> AuthContext:
     try:
         claims = oauth_service.verify(request)

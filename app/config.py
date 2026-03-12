@@ -56,39 +56,40 @@ class ConfigUvicorn(BaseModel):
     reload_delay: float = Field(default=1)
     reload_dirs: list[str] = Field(default=["app"])
     use_ssl: bool = Field(default=False)
-    ssl_base_dir: str | None
-    ssl_cert_file: str | None
-    ssl_key_file: str | None
+    ssl_base_dir: str | None = Field(default=None)
+    ssl_cert_file: str | None = Field(default=None)
+    ssl_key_file: str | None = Field(default=None)
 
 
 class ConfigTelemetry(BaseModel):
     enabled: bool = Field(default=False)
-    endpoint: str | None
-    service_name: str | None
-    tracer_name: str | None
+    endpoint: str | None = Field(default=None)
+    service_name: str | None = Field(default=None)
+    tracer_name: str | None = Field(default=None)
 
 
 class ConfigStats(BaseModel):
     enabled: bool = Field(default=False)
-    host: str | None
-    port: int | None
-    module_name: str | None
+    host: str | None = Field(default=None)
+    port: int | None = Field(default=None)
+    module_name: str | None = Field(default=None)
 
 
-class ConfigOAuth(BaseModel):
-    enabled: bool = Field(default=False)
-    override_ura_number: str | None = Field(default=None)
-    jwks_url: str
-    issuer: str
-    audience: str
+class ConfigOAuthTokenValidator(BaseModel):
+    enabled: bool = False
+    override_ura_number: str = ""
+    audience: str = ""
+    issuer: str = ""
+    jwks_url: str = ""
     mtls_cert: str | None = Field(default=None)
     mtls_key: str | None = Field(default=None)
     verify_ca: str | bool = Field(default=True)
 
 
-class ConfigClientOAuth(BaseModel):
-    enabled: bool = Field(default=False)
-    issuer: str | None = Field(default=None)
+class ConfigOAuthTokenClient(BaseModel):
+    enabled: bool = False
+    endpoint: str = ""
+    timeout: int = Field(default=10, gt=0)
     mtls_cert: str | None = Field(default=None)
     mtls_key: str | None = Field(default=None)
     verify_ca: str | bool = Field(default=True)
@@ -101,8 +102,8 @@ class Config(BaseModel):
     telemetry: ConfigTelemetry
     stats: ConfigStats
     uvicorn: ConfigUvicorn
-    oauth: ConfigOAuth
-    client_oauth: ConfigClientOAuth
+    oauth_validator: ConfigOAuthTokenValidator
+    oauth_client: ConfigOAuthTokenClient
 
 
 def read_ini_file(path: str) -> Any:

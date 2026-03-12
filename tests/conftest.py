@@ -11,9 +11,9 @@ from app.config import ConfigDatabase
 from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
+from app.debug.oauth_token_client_mock import OAuthTokenClientMock
 from app.models.fhir.resources.organization.resource import Organization
 from app.models.ura import UraNumber
-from app.services.client_oauth import ClientOAuthService
 from app.services.http import HttpService
 from app.services.organization import OrganizationService
 from app.services.prs.prs_registration_service import PrsRegistrationService
@@ -81,11 +81,11 @@ def mock_org(mock_referral_entity: ReferralEntity) -> Organization:
 @pytest.fixture()
 def prs_registration_service(ura_number: UraNumber) -> PrsRegistrationService:
     config = get_test_config()
-    client_oauth_service = ClientOAuthService(config.client_oauth)
+    oauth_token_client = OAuthTokenClientMock()
     return PrsRegistrationService(
         config=config.pseudonym_api,
         ura_number=ura_number,
-        client_oauth_service=client_oauth_service,
+        client_oauth_service=oauth_token_client,
     )
 
 
