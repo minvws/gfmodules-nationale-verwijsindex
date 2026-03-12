@@ -11,7 +11,3 @@ class PrsRegistrationServiceMock(PrsRegistrationService):
 
     def register_nvi_at_prs(self) -> None:
         logger.debug("Not registering NVI at PRS because PRS Mock is enabled")
-
-    def fetch_oauth_token(self) -> str:
-        logger.debug("Not fetching OAUTH because PRS Mock is enabled")
-        return "Nope"
