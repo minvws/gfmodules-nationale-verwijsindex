@@ -1,9 +1,15 @@
+import base64
+import json
 import logging
-from typing import Any
+from typing import Tuple
+from uuid import UUID
 
 from app.exceptions.fhir_exception import FHIRException
-from app.models.fhir.bundle import Bundle, BundleEntry, EntryResponse
+from app.models.data_domain import DataDomain
+from app.models.fhir.bundle import Bundle, BundleEntry
+from app.models.fhir.resources.localization_list.request import LocalizationListParams
 from app.models.fhir.resources.localization_list.resource import LocalizationList
+from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
 from app.services.prs.pseudonym_service import PseudonymService
@@ -18,101 +24,198 @@ class LocalizationListService:
         self.referral_service = referral_service
         self.pseudonym_service = pseudonym_service
 
-    def process_entry(self, authenticated_ura: UraNumber, entry: BundleEntry[Any], index: int) -> BundleEntry[Any]:
-        if entry.request is None:
-            return BundleEntry(
-                response=EntryResponse.make_validation_response(f"Bundle.entry.{index}.request is required")
-            )
-
-        method = entry.request.method
-
-        if entry.resource is None:
-            return BundleEntry(
-                response=EntryResponse.make_validation_response(f"Bundle.entry.{index}.resource is required")
-            )
-
-        if not isinstance(entry.resource, LocalizationList):
-            return BundleEntry(
-                response=EntryResponse.make_validation_response(
-                    msg=f"Bundle.entry.{index}.resource must be a List resource",
-                    code="structure",
-                )
-            )
-        resource = entry.resource
+    def create(self, data: LocalizationList, authenticated_ura: UraNumber) -> LocalizationList:
         try:
-            pseudonym = self.extract_pseudonym(resource)
-        except Exception:
-            return BundleEntry(
-                response=EntryResponse.make_forbidden_respone("Error occurred with pseudonym decryption")
-            )
-
-        try:
-            ura_number = resource.get_ura()
-            data_domain = resource.get_data_domain()
-            source = resource.get_device()
+            ura_number = data.get_ura()
+            data_domain = data.get_data_domain()
+            device = data.get_device()
         except ValueError as e:
-            return BundleEntry(response=EntryResponse.make_validation_response(msg=str(e), code="invalid"))
+            raise FHIRException(status_code=400, severity="error", code="invalid", msg=str(e))
 
         if ura_number != authenticated_ura:
-            return BundleEntry(
-                response=EntryResponse.make_forbidden_respone(
-                    f"Unauthorized transaction on Bundle.entry.{index}.resource"
-                )
+            raise FHIRException(
+                status_code=403,
+                severity="error",
+                code="security",
+                msg="Registration is not linked to the authorized URA",
             )
 
-        match method:
-            case "POST":
-                try:
-                    new_data = self.referral_service.add_one(
-                        pseudonym=pseudonym,
-                        data_domain=data_domain,
-                        ura_number=ura_number,
-                        source=source,
-                    )
-                    return BundleEntry(
-                        resource=LocalizationList.from_referral(new_data),
-                        response=EntryResponse.make_good_response(
-                            f"Bundle.entry.{index}.resource has been created successfully"
-                        ),
-                    )
-                except FHIRException as e:
-                    return BundleEntry(response=EntryResponse(status=str(e.status_code), outcome=e.outcome))
-            case "DELETE":
-                try:
-                    self.referral_service.delete_one(
-                        pseudonym=pseudonym,
-                        data_domain=data_domain,
-                        ura_number=ura_number,
-                        source=source,
-                    )
-                    return BundleEntry(
-                        response=EntryResponse.make_good_response(
-                            f"Bundle.entry.{index}.resource has been deleted successfully",
-                            status="204",
-                        )
-                    )
-                except FHIRException as e:
-                    return BundleEntry(response=EntryResponse(status=str(e.status_code), outcome=e.outcome))
-            case _:
-                return BundleEntry(
-                    response=EntryResponse.make_forbidden_respone(
-                        f"Bundle.entry.{index}.request.method {method} is not allowed"
-                    )
+        try:
+            encoded_token = data.get_encoded_pseudonym()
+            oprf_data = decode_url_safe_token(encoded_token)
+            pseudoym = self.pseudonym_service.exchange(
+                oprf_jwe=oprf_data["evaluated_output"],
+                blind_factor=oprf_data["blind_factor"],
+            )
+        except Exception as e:
+            logger.error(f"error occurred while decoding pseudonym token: {e}")
+            raise FHIRException(
+                status_code=400,
+                severity="error",
+                code="invalid",
+                msg="Invalid pseudonym in patient.identifier",
+            )
+
+        new_referral = self.referral_service.add_one(
+            ura_number=ura_number,
+            pseudonym=pseudoym,
+            data_domain=data_domain,
+            source=device,
+        )
+
+        return LocalizationList.from_referral(new_referral)
+
+    def get(self, id: UUID, authenticated_ura: UraNumber) -> LocalizationList:
+        referral = self.referral_service.get_by_id(id)
+        if authenticated_ura != UraNumber(referral.ura_number):
+            raise FHIRException(
+                status_code=404,
+                severity="error",
+                code="not-found",
+                msg="Resource does not exist",
+            )
+
+        return LocalizationList.from_referral(referral)
+
+    def query(self, params: LocalizationListParams, authenticated_ura: UraNumber) -> Bundle[LocalizationList]:
+        code: str | None = None
+        pseudonym: Pseudonym | None = None
+        source: str | None = None
+        ura_number: UraNumber | None = None
+
+        if params.empty() or params.is_localize_params() is False:
+            ura_number = authenticated_ura
+
+        if params.patient:
+            try:
+                patient_identifier = params.get_patient_identifier()
+            except ValueError as e:
+                logger.error(f"error occurred while parcing query: {e}")
+                raise FHIRException(
+                    status_code=400,
+                    severity="error",
+                    code="invalid",
+                    msg="Malformed patient.identifier parameter",
                 )
 
-    def extract_pseudonym(self, resource: LocalizationList) -> Pseudonym:
-        try:
-            token = resource.get_encoded_pseudonym()
-            data = decode_url_safe_token(token)
-            pseudonym = self.pseudonym_service.exchange(oprf_jwe=data["pseudonym"], blind_factor=data["oprfKey"])
-            return pseudonym
-        except Exception as e:
-            logger.error(f"Error occurred while extracting pseudonym: {e}")
-            raise e
+            try:
+                oprf_data = decode_url_safe_token(patient_identifier.value)
+                pseudonym = self.pseudonym_service.exchange(
+                    oprf_jwe=oprf_data["evaluated_output"],
+                    blind_factor=oprf_data["blind_factor"],
+                )
+            except Exception as e:
+                logger.error(f"error occurred while decoding pseudonym token: {e}")
+                raise FHIRException(
+                    status_code=400,
+                    severity="error",
+                    code="invalid",
+                    msg="Invalid pseudonym in patient.identifier",
+                )
 
-    @staticmethod
-    def validate_localization_bundle_structure(bundle: Bundle[Any]) -> bool:
-        if len(bundle.entry) == 0 or bundle.entry is None:
-            return False
+        if params.source:
+            try:
+                source_identifier = params.get_source_identifier()
+                source = source_identifier.value
+            except ValueError as e:
+                logger.error(f"error occurred while parcing query: {e}")
+                raise FHIRException(
+                    status_code=400,
+                    severity="error",
+                    code="invalid",
+                    msg="Malformed source.identifier parameter",
+                )
 
-        return True
+        if params.code:
+            code = params.code
+
+        referrals = self.referral_service.get_many(
+            pseudonym=pseudonym,
+            source=source,
+            data_domain=DataDomain(code) if code else None,
+            ura_number=ura_number if ura_number else None,
+        )
+        bundle = Bundle(
+            type="searchset",
+            total=len(referrals),
+            entry=[BundleEntry(resource=LocalizationList.from_referral(r)) for r in referrals],
+        )
+
+        return bundle
+
+    def delete(self, id: UUID, authenticated_ura: UraNumber) -> Tuple[OperationOutcome, int]:
+        affected_rows = self.referral_service.delete_many(ura_number=authenticated_ura, id=id)
+        if affected_rows > 0:
+            return (
+                OperationOutcome.make_good_outcome(f"Resource {id} have been deleted successfully"),
+                201,
+            )
+        else:
+            return (
+                OperationOutcome.make_error_outcome(code="warning", msg=f"Resource {id} does not exist"),
+                404,
+            )
+
+    def delete_by_query(
+        self, params: LocalizationListParams, authenticated_ura: UraNumber
+    ) -> Tuple[OperationOutcome, int]:
+        code: str | None = None
+        pseudonym: Pseudonym | None = None
+        source: str | None = None
+        ura_number = authenticated_ura
+
+        if params.patient:
+            try:
+                patient_identifier = params.get_patient_identifier()
+            except ValueError as e:
+                logger.error(f"error occurred while parcing query: {e}")
+                raise FHIRException(
+                    status_code=400,
+                    severity="error",
+                    code="invalid",
+                    msg="Malformed patient.identifier parameter",
+                )
+
+            try:
+                decoded_token = base64.urlsafe_b64decode(patient_identifier.value)
+                oprf_data = json.loads(decoded_token)
+                pseudonym = self.pseudonym_service.exchange(
+                    oprf_jwe=oprf_data["evaluated_output"],
+                    blind_factor=oprf_data["blind_factor"],
+                )
+            except Exception as e:
+                logger.error(f"error occurred while decoding pseudonym token: {e}")
+                raise FHIRException(
+                    status_code=400,
+                    severity="error",
+                    code="invalid",
+                    msg="Invalid pseudonym in patient.identifier",
+                )
+
+        if params.source:
+            try:
+                source_identifier = params.get_source_identifier()
+                source = source_identifier.value
+            except ValueError as e:
+                logger.error(f"error occurred while parcing query: {e}")
+                raise FHIRException(
+                    status_code=400,
+                    severity="error",
+                    code="invalid",
+                    msg="Malformed source.identifier parameter",
+                )
+
+        if params.code:
+            code = params.code
+
+        self.referral_service.delete_many(
+            pseudonym=pseudonym,
+            source=source,
+            data_domain=DataDomain(code) if code else None,
+            ura_number=ura_number,
+        )
+
+        return (
+            OperationOutcome.make_good_outcome("Resources have beend deleted successfully"),
+            201,
+        )

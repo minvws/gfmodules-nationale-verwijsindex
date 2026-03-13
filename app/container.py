@@ -13,6 +13,7 @@ from app.db.db import Database
 from app.models.ura import UraNumber
 from app.services.client_oauth import ClientOAuthService
 from app.services.decrypt_service import DecryptService
+from app.services.fhir.bundle import BundleService
 from app.services.fhir.localization_list import LocalizationListService
 from app.services.oauth import OAuthService
 from app.services.organization import OrganizationService
@@ -54,6 +55,9 @@ def container_config(binder: inject.Binder) -> None:
 
     localization_list_service = LocalizationListService(referral_service, pseudonym_service)
     binder.bind(LocalizationListService, localization_list_service)
+
+    bundle_service = BundleService(localization_list_service)
+    binder.bind(BundleService, bundle_service)
 
     binder.bind(OrganizationService, organization_service)
 

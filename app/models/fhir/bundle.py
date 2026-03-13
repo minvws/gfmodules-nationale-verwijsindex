@@ -1,8 +1,9 @@
 from datetime import datetime
-from typing import Generic, List, Literal, Self, TypeVar
+from typing import Dict, Generic, List, Literal, Self, TypeVar
+from urllib.parse import parse_qs, urlparse
 from uuid import UUID, uuid4
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from app.models.fhir.resources.data_reference.resource import (
     NVIDataReferenceOutput,
@@ -12,6 +13,24 @@ from app.models.fhir.resources.operation_outcome.resource import OperationOutcom
 from app.models.fhir.resources.organization.resource import Organization
 
 T = TypeVar("T", bound=DomainResource)
+
+
+class EntryRequestDto(BaseModel):
+    resource: str | None = None
+    id: UUID | None = None
+    params: Dict[str, str] | None = None
+
+    @classmethod
+    def from_url(cls, url: str) -> Self:
+
+        parsed = urlparse(url)
+        path_parts = parsed.path.strip("/").split("/")
+
+        resource = path_parts[0] if path_parts else None
+        uuid = path_parts[1] if len(path_parts) > 1 else None
+
+        query_params = {k: v[0] for k, v in parse_qs(parsed.query).items()}
+        return cls(resource=resource, id=UUID(uuid), params=query_params)
 
 
 class EntryRequest(FhirBaseModel):
@@ -51,6 +70,15 @@ class EntryResponse(FhirBaseModel):
         message = msg if msg else "Resource has been modified successfully"
 
         return cls(status=status, outcome=OperationOutcome.make_good_outcome(msg=message))
+
+    @classmethod
+    def make_error_response(cls, msg: str | None = None, status: str = "500") -> Self:
+        msg = msg if msg else "Error occurred"
+
+        return cls(
+            status=status,
+            outcome=OperationOutcome.make_error_outcome(code="error", msg=msg),
+        )
 
 
 class BundleEntry(FhirBaseModel, Generic[T]):
