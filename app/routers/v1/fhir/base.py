@@ -11,7 +11,7 @@ from app.models.ura import UraNumber
 from app.services.fhir.bundle import BundleService
 
 logger = logging.getLogger(__name__)
-router = APIRouter(tags=["v1-alpha - FHIR"], prefix="/v1-alpha/fhir/List")
+router = APIRouter(tags=["v1-alpha - FHIR"], prefix="/v1-alpha/fhir")
 
 
 @router.post("", response_model_exclude_none=True)
