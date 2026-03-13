@@ -39,5 +39,5 @@ class NotFoundException(FHIRException):
             status_code=404,
             code="not-found",
             severity="error",
-            msg="NVIDataReference not found",
+            msg="Record not found",
         )
