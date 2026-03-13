@@ -27,10 +27,10 @@ class EntryRequestDto(BaseModel):
         path_parts = parsed.path.strip("/").split("/")
 
         resource = path_parts[0] if path_parts else None
-        uuid = path_parts[1] if len(path_parts) > 1 else None
+        target_id = UUID(path_parts[1]) if len(path_parts) > 1 else None
 
         query_params = {k: v[0] for k, v in parse_qs(parsed.query).items()}
-        return cls(resource=resource, id=UUID(uuid), params=query_params)
+        return cls(resource=resource, id=target_id, params=query_params)
 
 
 class EntryRequest(FhirBaseModel):
