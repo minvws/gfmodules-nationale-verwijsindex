@@ -156,7 +156,9 @@ class LocalizationListService:
                 404,
             )
 
-    def delete_by_query(self, params: LocalizationListParams, authenticated_ura: UraNumber) -> OperationOutcome:
+    def delete_by_query(
+        self, params: LocalizationListParams, authenticated_ura: UraNumber
+    ) -> Tuple[OperationOutcome, int]:
         code: str | None = None
         pseudonym: Pseudonym | None = None
         source: str | None = None
@@ -213,4 +215,7 @@ class LocalizationListService:
             ura_number=ura_number,
         )
 
-        return OperationOutcome.make_good_outcome("Resources have beend deleted successfully")
+        return (
+            OperationOutcome.make_good_outcome("Resources have beend deleted successfully"),
+            201,
+        )

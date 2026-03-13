@@ -368,6 +368,9 @@ def delete_for_query(
 ) -> Any:
 
     authenticated_ura = request.state.auth.ura_number
-    outcome = service.delete_by_query(params, authenticated_ura)
+    outcome, status_code = service.delete_by_query(params, authenticated_ura)
 
-    return FHIRJSONResponse(status_code=201, content=jsonable_encoder(outcome.model_dump(exclude_none=True)))
+    return FHIRJSONResponse(
+        status_code=status_code,
+        content=jsonable_encoder(outcome.model_dump(exclude_none=True)),
+    )

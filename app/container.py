@@ -56,7 +56,7 @@ def container_config(binder: inject.Binder) -> None:
     localization_list_service = LocalizationListService(referral_service, pseudonym_service)
     binder.bind(LocalizationListService, localization_list_service)
 
-    bundle_service = BundleService(referral_service, pseudonym_service)
+    bundle_service = BundleService(localization_list_service)
     binder.bind(BundleService, bundle_service)
 
     binder.bind(OrganizationService, organization_service)
