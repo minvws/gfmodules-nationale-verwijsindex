@@ -1,0 +1,118 @@
+import logging
+from typing import Any
+
+from app.exceptions.fhir_exception import FHIRException
+from app.models.fhir.bundle import Bundle, BundleEntry, EntryResponse
+from app.models.fhir.resources.localization_list.resource import LocalizationList
+from app.models.pseudonym import Pseudonym
+from app.models.ura import UraNumber
+from app.services.prs.pseudonym_service import PseudonymService
+from app.services.referral_service import ReferralService
+from app.utils.fhir import decode_url_safe_token
+
+logger = logging.getLogger(__name__)
+
+
+class BundleService:
+    def __init__(self, referral_service: ReferralService, pseudonym_service: PseudonymService) -> None:
+        self.referral_service = referral_service
+        self.pseudonym_service = pseudonym_service
+
+    def process_entry(self, authenticated_ura: UraNumber, entry: BundleEntry[Any], index: int) -> BundleEntry[Any]:
+        if entry.request is None:
+            return BundleEntry(
+                response=EntryResponse.make_validation_response(f"Bundle.entry.{index}.request is required")
+            )
+
+        method = entry.request.method
+
+        if entry.resource is None:
+            return BundleEntry(
+                response=EntryResponse.make_validation_response(f"Bundle.entry.{index}.resource is required")
+            )
+
+        if not isinstance(entry.resource, LocalizationList):
+            return BundleEntry(
+                response=EntryResponse.make_validation_response(
+                    msg=f"Bundle.entry.{index}.resource must be a List resource",
+                    code="structure",
+                )
+            )
+        resource = entry.resource
+        try:
+            pseudonym = self.extract_pseudonym(resource)
+        except Exception:
+            return BundleEntry(
+                response=EntryResponse.make_forbidden_respone("Error occurred with pseudonym decryption")
+            )
+
+        try:
+            ura_number = resource.get_ura()
+            data_domain = resource.get_data_domain()
+            source = resource.get_device()
+        except ValueError as e:
+            return BundleEntry(response=EntryResponse.make_validation_response(msg=str(e), code="invalid"))
+
+        if ura_number != authenticated_ura:
+            return BundleEntry(
+                response=EntryResponse.make_forbidden_respone(
+                    f"Unauthorized transaction on Bundle.entry.{index}.resource"
+                )
+            )
+
+        match method:
+            case "POST":
+                try:
+                    new_data = self.referral_service.add_one(
+                        pseudonym=pseudonym,
+                        data_domain=data_domain,
+                        ura_number=ura_number,
+                        source=source,
+                    )
+                    return BundleEntry(
+                        resource=LocalizationList.from_referral(new_data),
+                        response=EntryResponse.make_good_response(
+                            f"Bundle.entry.{index}.resource has been created successfully"
+                        ),
+                    )
+                except FHIRException as e:
+                    return BundleEntry(response=EntryResponse(status=str(e.status_code), outcome=e.outcome))
+            case "DELETE":
+                try:
+                    self.referral_service.delete_one(
+                        pseudonym=pseudonym,
+                        data_domain=data_domain,
+                        ura_number=ura_number,
+                        source=source,
+                    )
+                    return BundleEntry(
+                        response=EntryResponse.make_good_response(
+                            f"Bundle.entry.{index}.resource has been deleted successfully",
+                            status="204",
+                        )
+                    )
+                except FHIRException as e:
+                    return BundleEntry(response=EntryResponse(status=str(e.status_code), outcome=e.outcome))
+            case _:
+                return BundleEntry(
+                    response=EntryResponse.make_forbidden_respone(
+                        f"Bundle.entry.{index}.request.method {method} is not allowed"
+                    )
+                )
+
+    def extract_pseudonym(self, resource: LocalizationList) -> Pseudonym:
+        try:
+            token = resource.get_encoded_pseudonym()
+            data = decode_url_safe_token(token)
+            pseudonym = self.pseudonym_service.exchange(oprf_jwe=data["pseudonym"], blind_factor=data["oprfKey"])
+            return pseudonym
+        except Exception as e:
+            logger.error(f"Error occurred while extracting pseudonym: {e}")
+            raise e
+
+    @staticmethod
+    def validate_localization_bundle_structure(bundle: Bundle[Any]) -> bool:
+        if len(bundle.entry) == 0 or bundle.entry is None:
+            return False
+
+        return True

@@ -1,5 +1,3 @@
-import base64
-import json
 import logging
 from typing import Annotated, Any
 from uuid import UUID
@@ -8,10 +6,9 @@ from fastapi import APIRouter, Body, Depends, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.params import Query
 
-from app.dependencies import get_pseudonym_service, get_referral_service
-from app.exceptions.fhir_exception import FHIRException
-from app.models.data_domain import DataDomain
-from app.models.fhir.bundle import Bundle, BundleEntry
+from app.dependencies import (
+    get_localization_list_service,
+)
 from app.models.fhir.resources.data import (
     DATA_DOMAIN_SYSTEM,
     DEVICE_SYSTEM,
@@ -25,12 +22,9 @@ from app.models.fhir.resources.localization_list.request import (
 )
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
-from app.models.pseudonym import Pseudonym
 from app.models.response import DeleteResponse, FHIRJSONResponse
 from app.models.ura import UraNumber
-from app.services.prs.pseudonym_service import PseudonymService
-from app.services.referral_service import ReferralService
-from app.utils.fhir import decode_url_safe_token
+from app.services.fhir.localization_list import LocalizationListService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["v1-alpha - FHIR"], prefix="/v1-alpha/fhir/List")
@@ -156,49 +150,10 @@ def create(
         ),
     ],
     request: Request,
-    referral_service: ReferralService = Depends(get_referral_service),
-    pseudonym_service: PseudonymService = Depends(get_pseudonym_service),
+    service: LocalizationListService = Depends(get_localization_list_service),
 ) -> Any:
-    try:
-        ura_number = data.get_ura()
-        data_domain = data.get_data_domain()
-        device = data.get_device()
-    except ValueError as e:
-        raise FHIRException(status_code=400, severity="error", code="invalid", msg=str(e))
-
     authorized_ura: UraNumber = request.state.auth.ura_number
-    if ura_number != authorized_ura:
-        raise FHIRException(
-            status_code=403,
-            severity="error",
-            code="security",
-            msg="Registration is not linked to the authorized URA",
-        )
-
-    try:
-        encoded_token = data.get_encoded_pseudonym()
-        oprf_data = decode_url_safe_token(encoded_token)
-        pseudoym = pseudonym_service.exchange(
-            oprf_jwe=oprf_data["evaluated_output"],
-            blind_factor=oprf_data["blind_factor"],
-        )
-    except Exception as e:
-        logger.error(f"error occurred while decoding pseudonym token: {e}")
-        raise FHIRException(
-            status_code=400,
-            severity="error",
-            code="invalid",
-            msg="Invalid pseudonym in patient.identifier",
-        )
-
-    new_referral = referral_service.add_one(
-        ura_number=ura_number,
-        pseudonym=pseudoym,
-        data_domain=data_domain,
-        source=device,
-    )
-
-    return LocalizationList.from_referral(new_referral)
+    return service.create(data, authorized_ura)
 
 
 @router.get(
@@ -271,19 +226,11 @@ def create(
 def get(
     id: UUID,
     request: Request,
-    referral_service: ReferralService = Depends(get_referral_service),
+    service: LocalizationListService = Depends(get_localization_list_service),
 ) -> Any:
-    referral = referral_service.get_by_id(id)
-    authorized_ura: UraNumber = request.state.auth.ura_number
-    if authorized_ura != UraNumber(referral.ura_number):
-        raise FHIRException(
-            status_code=404,
-            severity="error",
-            code="not-found",
-            msg="Resource does not exist",
-        )
 
-    return LocalizationList.from_referral(referral)
+    authorized_ura: UraNumber = request.state.auth.ura_number
+    return service.get(id, authorized_ura)
 
 
 @router.get(
@@ -363,74 +310,10 @@ def get(
 def query(
     request: Request,
     params: Annotated[LocalizationListParams, Query()],
-    referral_service: ReferralService = Depends(get_referral_service),
-    pseudonym_service: PseudonymService = Depends(get_pseudonym_service),
+    service: LocalizationListService = Depends(get_localization_list_service),
 ) -> Any:
-
-    code: str | None = None
-    pseudonym: Pseudonym | None = None
-    source: str | None = None
-    ura_number: UraNumber | None = None
-
-    if params.empty() or params.is_localize_params() is False:
-        ura_number = request.state.auth.ura_number
-
-    if params.patient:
-        try:
-            patient_identifier = params.get_patient_identifier()
-        except ValueError as e:
-            logger.error(f"error occurred while parcing query: {e}")
-            raise FHIRException(
-                status_code=400,
-                severity="error",
-                code="invalid",
-                msg="Malformed patient.identifier parameter",
-            )
-
-        try:
-            oprf_data = decode_url_safe_token(patient_identifier.value)
-            pseudonym = pseudonym_service.exchange(
-                oprf_jwe=oprf_data["evaluated_output"],
-                blind_factor=oprf_data["blind_factor"],
-            )
-        except Exception as e:
-            logger.error(f"error occurred while decoding pseudonym token: {e}")
-            raise FHIRException(
-                status_code=400,
-                severity="error",
-                code="invalid",
-                msg="Invalid pseudonym in patient.identifier",
-            )
-
-    if params.source:
-        try:
-            source_identifier = params.get_source_identifier()
-            source = source_identifier.value
-        except ValueError as e:
-            logger.error(f"error occurred while parcing query: {e}")
-            raise FHIRException(
-                status_code=400,
-                severity="error",
-                code="invalid",
-                msg="Malformed source.identifier parameter",
-            )
-
-    if params.code:
-        code = params.code
-
-    referrals = referral_service.get_many(
-        pseudonym=pseudonym,
-        source=source,
-        data_domain=DataDomain(code) if code else None,
-        ura_number=ura_number if ura_number else None,
-    )
-    bundle = Bundle(
-        type="searchset",
-        total=len(referrals),
-        entry=[BundleEntry(resource=LocalizationList.from_referral(r)) for r in referrals],
-    )
-
-    return bundle
+    authorized_ura = request.state.auth.ura_number
+    return service.query(params, authorized_ura)
 
 
 @router.delete(
@@ -452,26 +335,14 @@ def query(
 def delete(
     id: UUID,
     request: Request,
-    referral_service: ReferralService = Depends(get_referral_service),
+    service: LocalizationListService = Depends(get_localization_list_service),
 ) -> Any:
     authorized_ura: UraNumber = request.state.auth.ura_number
-    affected_rows = referral_service.delete_many(ura_number=authorized_ura, id=id)
-    if affected_rows > 0:
-        return FHIRJSONResponse(
-            status_code=201,
-            content=jsonable_encoder(
-                OperationOutcome.make_good_outcome(f"Resource {id} have been deleted successfully").model_dump(
-                    exclude_none=True
-                )
-            ),
-        )
-    else:
-        return FHIRJSONResponse(
-            status_code=404,
-            content=jsonable_encoder(
-                OperationOutcome.make_error_outcome(code="warning", msg=f"Resource {id} does not exist")
-            ),
-        )
+    outcome, status_code = service.delete(id, authorized_ura)
+    return FHIRJSONResponse(
+        status_code=status_code,
+        content=jsonable_encoder(outcome.model_dump(exclude_none=True)),
+    )
 
 
 @router.delete(
@@ -493,67 +364,10 @@ def delete(
 def delete_for_query(
     request: Request,
     params: Annotated[LocalizationListParams, Query()],
-    referral_service: ReferralService = Depends(get_referral_service),
-    pseudonym_service: PseudonymService = Depends(get_pseudonym_service),
+    service: LocalizationListService = Depends(get_localization_list_service),
 ) -> Any:
-    code: str | None = None
-    pseudonym: Pseudonym | None = None
-    source: str | None = None
-    ura_number = request.state.auth.ura_number
 
-    if params.patient:
-        try:
-            patient_identifier = params.get_patient_identifier()
-        except ValueError as e:
-            logger.error(f"error occurred while parcing query: {e}")
-            raise FHIRException(
-                status_code=400,
-                severity="error",
-                code="invalid",
-                msg="Malformed patient.identifier parameter",
-            )
+    authenticated_ura = request.state.auth.ura_number
+    outcome = service.delete_by_query(params, authenticated_ura)
 
-        try:
-            decoded_token = base64.urlsafe_b64decode(patient_identifier.value)
-            oprf_data = json.loads(decoded_token)
-            pseudonym = pseudonym_service.exchange(
-                oprf_jwe=oprf_data["evaluated_output"],
-                blind_factor=oprf_data["blind_factor"],
-            )
-        except Exception as e:
-            logger.error(f"error occurred while decoding pseudonym token: {e}")
-            raise FHIRException(
-                status_code=400,
-                severity="error",
-                code="invalid",
-                msg="Invalid pseudonym in patient.identifier",
-            )
-
-    if params.source:
-        try:
-            source_identifier = params.get_source_identifier()
-            source = source_identifier.value
-        except ValueError as e:
-            logger.error(f"error occurred while parcing query: {e}")
-            raise FHIRException(
-                status_code=400,
-                severity="error",
-                code="invalid",
-                msg="Malformed source.identifier parameter",
-            )
-
-    if params.code:
-        code = params.code
-
-    referral_service.delete_many(
-        pseudonym=pseudonym,
-        source=source,
-        data_domain=DataDomain(code) if code else None,
-        ura_number=ura_number,
-    )
-    return FHIRJSONResponse(
-        status_code=201,
-        content=jsonable_encoder(
-            OperationOutcome.make_good_outcome("Resources have been deleted successfully").model_dump(exclude_none=True)
-        ),
-    )
+    return FHIRJSONResponse(status_code=201, content=jsonable_encoder(outcome.model_dump(exclude_none=True)))
