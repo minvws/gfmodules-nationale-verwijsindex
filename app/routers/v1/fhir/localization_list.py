@@ -27,7 +27,7 @@ from app.models.ura import UraNumber
 from app.services.fhir.localization_list import LocalizationListService
 
 logger = logging.getLogger(__name__)
-router = APIRouter(tags=["v1-alpha - FHIR"], prefix="/v1-alpha/fhir/List")
+router = APIRouter(tags=["v1-poc - FHIR"], prefix="/v1-poc/fhir/List")
 
 
 @router.post(
