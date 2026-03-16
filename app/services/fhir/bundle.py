@@ -41,7 +41,7 @@ class BundleService:
                         results = self.localizaton_list_service.get(resolved_url.id, authenticated_ura)
                         return BundleEntry(
                             resource=results,
-                            response=EntryResponse.make_good_response(),
+                            response=EntryResponse.make_good_response("Resource has been retrieved successfully"),
                         )
                     except FHIRException as e:
                         return BundleEntry(
@@ -90,7 +90,10 @@ class BundleService:
 
                 try:
                     results = self.localizaton_list_service.create(resource, authenticated_ura)
-                    return BundleEntry(resource=resource, response=EntryResponse.make_good_response())
+                    return BundleEntry(
+                        resource=resource,
+                        response=EntryResponse.make_good_response(msg="Resource has been created successfully"),
+                    )
                 except FHIRException as e:
                     return BundleEntry(
                         response=EntryResponse.make_error_response(
