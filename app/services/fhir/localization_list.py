@@ -12,6 +12,7 @@ from app.models.fhir.resources.localization_list.resource import LocalizationLis
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
+from app.routers.v1.fhir import SUBJECT_IDENTIFIER_PARAM
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 from app.utils.fhir import decode_url_safe_token
@@ -53,7 +54,7 @@ class LocalizationListService:
                 status_code=400,
                 severity="error",
                 code="invalid",
-                msg="Invalid pseudonym in patient.identifier",
+                msg=f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}",
             )
 
         new_referral = self.referral_service.add_one(
@@ -95,7 +96,7 @@ class LocalizationListService:
                     status_code=400,
                     severity="error",
                     code="invalid",
-                    msg="Malformed patient.identifier parameter",
+                    msg=f"Malformed {SUBJECT_IDENTIFIER_PARAM} parameter",
                 )
 
             try:
@@ -110,7 +111,7 @@ class LocalizationListService:
                     status_code=400,
                     severity="error",
                     code="invalid",
-                    msg="Invalid pseudonym in patient.identifier",
+                    msg=f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}",
                 )
 
         if params.source:
@@ -173,7 +174,7 @@ class LocalizationListService:
                     status_code=400,
                     severity="error",
                     code="invalid",
-                    msg="Malformed patient.identifier parameter",
+                    msg=f"Malformed {SUBJECT_IDENTIFIER_PARAM} parameter",
                 )
 
             try:
@@ -189,7 +190,7 @@ class LocalizationListService:
                     status_code=400,
                     severity="error",
                     code="invalid",
-                    msg="Invalid pseudonym in patient.identifier",
+                    msg=f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}",
                 )
 
         if params.source:
