@@ -237,7 +237,7 @@ def get(
     path="",
     response_model_exclude_none=True,
     summary="Get a Bundle of List resources with specific query params",
-    description="Retrieves a Bundle containing List resources based on query params. Localization for a specific pseudonym can be done only by specifying patient.identifier and code. Any other combination will return List resource specific to the URA Number of the requester",
+    description="Retrieves a Bundle containing List resources based on query params. Localization for a specific pseudonym can be done only by specifying subject.identifier and code. Any other combination will return List resource specific to the URA Number of the requester",
     response_class=FHIRJSONResponse,
     responses={
         200: {
