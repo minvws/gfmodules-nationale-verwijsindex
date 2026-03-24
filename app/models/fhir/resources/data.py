@@ -13,6 +13,6 @@ URA_SYSTEM_EXTENSION: Final[str] = (
     "http://minvws.github.io/generiekefuncties-docs/StructureDefinition/nl-gf-localization-custodian"
 )
 PSEUDONYM_SYSTEM: Final[str] = "http://minvws.github.io/generiekefuncties-docs/NamingSystem/nvi-identifier"
-DATA_DOMAIN_SYSTEM: Final[str] = "http://minvws.github.io/generiekefuncties-docs/CodeSystem/nl-gf-zorgcontext-cs"
+DATA_DOMAIN_SYSTEM: Final[str] = "http://minvws.github.io/generiekefuncties-docs/CodeSystem/nl-gf-data-categories-cs"
 EMPTY_REASON_SYSTEM: Final[str] = "http://terminology.hl7.org/CodeSystem/list-empty-reason"
-DEVICE_SYSTEM: Final[str] = "http://minvws.github.io/generiekefuncties-docs/NamingSystem/nvi-device-identifier"
+DEVICE_SYSTEM: Final[str] = "urn:ietf:rfc:3986"

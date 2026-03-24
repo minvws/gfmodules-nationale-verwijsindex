@@ -1,13 +1,15 @@
-from pydantic import BaseModel, Field
+from fastapi import Query
+from pydantic import BaseModel
 
 from app.models.fhir.elements import Identifier
-from app.models.fhir.resources.data import DEVICE_SYSTEM, PSEUDONYM_SYSTEM
+from app.models.fhir.resources.data import DATA_DOMAIN_SYSTEM, DEVICE_SYSTEM, PSEUDONYM_SYSTEM, SUBJECT_SYSTEM
+from app.routers.v1.fhir import DEVICE_IDENTIFIER_PARAM, SUBJECT_IDENTIFIER_PARAM
 
 
 class LocalizationListParams(BaseModel):
-    subject: str | None = Field(alias="subject:identifier", default=None)
-    code: str | None = Field(default=None)
-    source: str | None = Field(alias="source:identifier", default=None)
+    subject: str | None = Query(alias=SUBJECT_IDENTIFIER_PARAM, example=f"{SUBJECT_SYSTEM}|identifier", default=None)
+    code: str | None = Query(alias="CODE_PARAM", example=f"{DATA_DOMAIN_SYSTEM}|code", default=None)
+    source: str | None = Query(alias=DEVICE_IDENTIFIER_PARAM, example=f"{DEVICE_SYSTEM}|identifier", default=None)
 
     def get_subject_identifier(self) -> Identifier:
         if self.subject is None:
