@@ -24,6 +24,7 @@ from app.models.fhir.resources.localization_list.resource import LocalizationLis
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.response import DeleteResponse, FHIRJSONResponse
 from app.models.ura import UraNumber
+from app.routers.v1.fhir import SUBJECT_IDENTIFIER_PARAM
 from app.services.fhir.localization_list import LocalizationListService
 
 logger = logging.getLogger(__name__)
@@ -150,7 +151,7 @@ def create(
         ),
     ],
     request: Request,
-    service: LocalizationListService = Depends(get_localization_list_service),
+    service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
 ) -> Any:
     authorized_ura: UraNumber = request.state.auth.ura_number
     return service.create(data, authorized_ura)
@@ -226,7 +227,7 @@ def create(
 def get(
     id: UUID,
     request: Request,
-    service: LocalizationListService = Depends(get_localization_list_service),
+    service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
 ) -> Any:
 
     authorized_ura: UraNumber = request.state.auth.ura_number
@@ -237,7 +238,7 @@ def get(
     path="",
     response_model_exclude_none=True,
     summary="Get a Bundle of List resources with specific query params",
-    description="Retrieves a Bundle containing List resources based on query params. Localization for a specific pseudonym can be done only by specifying patient.identifier and code. Any other combination will return List resource specific to the URA Number of the requester",
+    description=f"Retrieves a Bundle containing List resources based on query params. Localization for a specific pseudonym can be done only by specifying {SUBJECT_IDENTIFIER_PARAM} and code. Any other combination will return List resource specific to the URA Number of the requester",
     response_class=FHIRJSONResponse,
     responses={
         200: {
@@ -310,7 +311,7 @@ def get(
 def query(
     request: Request,
     params: Annotated[LocalizationListParams, Query()],
-    service: LocalizationListService = Depends(get_localization_list_service),
+    service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
 ) -> Any:
     authorized_ura = request.state.auth.ura_number
     return service.query(params, authorized_ura)
@@ -335,7 +336,7 @@ def query(
 def delete(
     id: UUID,
     request: Request,
-    service: LocalizationListService = Depends(get_localization_list_service),
+    service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
 ) -> Any:
     authorized_ura: UraNumber = request.state.auth.ura_number
     outcome, status_code = service.delete(id, authorized_ura)
@@ -364,7 +365,7 @@ def delete(
 def delete_for_query(
     request: Request,
     params: Annotated[LocalizationListParams, Query()],
-    service: LocalizationListService = Depends(get_localization_list_service),
+    service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
 ) -> Any:
 
     authenticated_ura = request.state.auth.ura_number

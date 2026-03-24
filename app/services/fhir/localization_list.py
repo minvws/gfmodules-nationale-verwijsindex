@@ -12,6 +12,7 @@ from app.models.fhir.resources.localization_list.resource import LocalizationLis
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
+from app.routers.v1.fhir import SUBJECT_IDENTIFIER_PARAM
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 from app.utils.fhir import decode_url_safe_token
@@ -53,7 +54,7 @@ class LocalizationListService:
                 status_code=400,
                 severity="error",
                 code="invalid",
-                msg="Invalid pseudonym in patient.identifier",
+                msg=f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}",
             )
 
         new_referral = self.referral_service.add_one(
@@ -86,20 +87,20 @@ class LocalizationListService:
         if params.empty() or params.is_localize_params() is False:
             ura_number = authenticated_ura
 
-        if params.patient:
+        if params.subject:
             try:
-                patient_identifier = params.get_patient_identifier()
+                subject_identifier = params.get_subject_identifier()
             except ValueError as e:
                 logger.error(f"error occurred while parcing query: {e}")
                 raise FHIRException(
                     status_code=400,
                     severity="error",
                     code="invalid",
-                    msg="Malformed patient.identifier parameter",
+                    msg=f"Malformed {SUBJECT_IDENTIFIER_PARAM} parameter",
                 )
 
             try:
-                oprf_data = decode_url_safe_token(patient_identifier.value)
+                oprf_data = decode_url_safe_token(subject_identifier.value)
                 pseudonym = self.pseudonym_service.exchange(
                     oprf_jwe=oprf_data["evaluated_output"],
                     blind_factor=oprf_data["blind_factor"],
@@ -110,7 +111,7 @@ class LocalizationListService:
                     status_code=400,
                     severity="error",
                     code="invalid",
-                    msg="Invalid pseudonym in patient.identifier",
+                    msg=f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}",
                 )
 
         if params.source:
@@ -164,20 +165,20 @@ class LocalizationListService:
         source: str | None = None
         ura_number = authenticated_ura
 
-        if params.patient:
+        if params.subject:
             try:
-                patient_identifier = params.get_patient_identifier()
+                subject_identifier = params.get_subject_identifier()
             except ValueError as e:
                 logger.error(f"error occurred while parcing query: {e}")
                 raise FHIRException(
                     status_code=400,
                     severity="error",
                     code="invalid",
-                    msg="Malformed patient.identifier parameter",
+                    msg=f"Malformed {SUBJECT_IDENTIFIER_PARAM} parameter",
                 )
 
             try:
-                decoded_token = base64.urlsafe_b64decode(patient_identifier.value)
+                decoded_token = base64.urlsafe_b64decode(subject_identifier.value)
                 oprf_data = json.loads(decoded_token)
                 pseudonym = self.pseudonym_service.exchange(
                     oprf_jwe=oprf_data["evaluated_output"],
@@ -189,7 +190,7 @@ class LocalizationListService:
                     status_code=400,
                     severity="error",
                     code="invalid",
-                    msg="Invalid pseudonym in patient.identifier",
+                    msg=f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}",
                 )
 
         if params.source:
