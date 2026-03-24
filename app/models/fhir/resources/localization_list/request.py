@@ -7,7 +7,7 @@ from app.models.fhir.resources.data import DEVICE_SYSTEM, PSEUDONYM_SYSTEM
 class LocalizationListParams(BaseModel):
     subject: str | None = Field(alias="subject:identifier", default=None)
     code: str | None = Field(default=None)
-    source: str | None = Field(alias="source.identifier", default=None)
+    source: str | None = Field(alias="source:identifier", default=None)
 
     def get_subject_identifier(self) -> Identifier:
         if self.subject is None:
