@@ -26,4 +26,4 @@ def get_ura_from_cert(cert_path: str) -> UraNumber:
         return ura_number
     except (IOError, UziException, ValueError) as e:
         logger.error("Invalid UZI Certificate, the fist cert in the chain must be a valid uzi cert")
-        raise DeziCertError(f"Failed to load URA Number from ceritificate: {e}")
+        raise DeziCertError(f"Failed to load URA Number from certificate: {e}")
