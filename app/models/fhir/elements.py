@@ -31,7 +31,7 @@ class Coding(FhirBaseModel):
         if "display" in value:
             display = value["display"]
             if not isinstance(display, str):
-                raise ValueError("Coding.display must be for type String")
+                raise ValueError("Coding.display must be of type String")
 
         return value
 

@@ -10,7 +10,7 @@ from app.models.fhir.resources.localization_list.resource import LocalizationLis
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
-from app.routers.v1.fhir import CODE_PARAM, DEVICE_IDENTIFIER_PARAM, SUBJECT_IDENTIFIER_PARAM
+from app.routers.v1.fhir import SUBJECT_IDENTIFIER_PARAM
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 from app.utils.fhir import decode_url_safe_token
@@ -22,6 +22,22 @@ class LocalizationListService:
     def __init__(self, referral_service: ReferralService, pseudonym_service: PseudonymService) -> None:
         self.referral_service = referral_service
         self.pseudonym_service = pseudonym_service
+
+    def _token_to_pseudonym(self, token: str) -> Pseudonym:
+        try:
+            oprf_data = decode_url_safe_token(token)
+            return self.pseudonym_service.exchange(
+                oprf_jwe=oprf_data["evaluated_output"],
+                blind_factor=oprf_data["blind_factor"],
+            )
+        except Exception as e:
+            logger.error(f"error occurred while decoding pseudonym token: {e}")
+            raise FHIRException(
+                status_code=400,
+                severity="error",
+                code="invalid",
+                msg=f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}",
+            )
 
     def create(self, data: LocalizationList, authenticated_ura: UraNumber) -> LocalizationList:
         try:
@@ -39,21 +55,7 @@ class LocalizationListService:
                 msg="Registration is not linked to the authorized URA",
             )
 
-        try:
-            encoded_token = data.get_encoded_pseudonym()
-            oprf_data = decode_url_safe_token(encoded_token)
-            pseudoym = self.pseudonym_service.exchange(
-                oprf_jwe=oprf_data["evaluated_output"],
-                blind_factor=oprf_data["blind_factor"],
-            )
-        except Exception as e:
-            logger.error(f"error occurred while decoding pseudonym token: {e}")
-            raise FHIRException(
-                status_code=400,
-                severity="error",
-                code="invalid",
-                msg=f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}",
-            )
+        pseudoym = self._token_to_pseudonym(data.get_encoded_pseudonym())
 
         new_referral = self.referral_service.add_one(
             ura_number=ura_number,
@@ -76,74 +78,18 @@ class LocalizationListService:
 
         return LocalizationList.from_referral(referral)
 
-    def __parse_query_params(self, params: LocalizationListParams) -> Tuple[str | None, Pseudonym | None, str | None]:
-        code: str | None = None
-        pseudonym: Pseudonym | None = None
-        source: str | None = None
-
-        try:
-            subject_val = params.get_subject_identifier()
-        except ValueError as e:
-            logger.error(f"error occurred while parcing query: {e}")
-            raise FHIRException(
-                status_code=400,
-                severity="error",
-                code="invalid",
-                msg=f"Malformed {SUBJECT_IDENTIFIER_PARAM} parameter",
-            )
-
-        try:
-            source = params.get_source_identifier()
-        except ValueError as e:
-            logger.error(f"error occurred while parcing query: {e}")
-            raise FHIRException(
-                status_code=400,
-                severity="error",
-                code="invalid",
-                msg=f"Malformed {DEVICE_IDENTIFIER_PARAM} parameter",
-            )
-
-        try:
-            code = params.get_code_value()
-        except ValueError as e:
-            logger.error(f"error occurred while parsing code: {e}")
-            raise FHIRException(
-                status_code=400,
-                severity="error",
-                code="invalid",
-                msg=f"Malformed {CODE_PARAM} parameter",
-            )
-
-        if subject_val:
-            try:
-                oprf_data = decode_url_safe_token(subject_val)
-                pseudonym = self.pseudonym_service.exchange(
-                    oprf_jwe=oprf_data["evaluated_output"],
-                    blind_factor=oprf_data["blind_factor"],
-                )
-            except Exception as e:
-                logger.error(f"error occurred while decoding pseudonym token: {e}")
-                raise FHIRException(
-                    status_code=400,
-                    severity="error",
-                    code="invalid",
-                    msg=f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}",
-                )
-        logger.debug(f"Parsed query parameters: code={code}, pseudonym={pseudonym}, source={source}")
-        return code, pseudonym, source
-
     def query(self, params: LocalizationListParams, authenticated_ura: UraNumber) -> Bundle[LocalizationList]:
         ura_number: UraNumber | None = None
 
         if params.empty() or params.is_localize_params() is False:
             ura_number = authenticated_ura
 
-        code, pseudonym, source = self.__parse_query_params(params)
+        pseudonym = self._token_to_pseudonym(params.subject) if params.subject else None
 
         referrals = self.referral_service.get_many(
             pseudonym=pseudonym,
-            source=source,
-            data_domain=DataDomain(code) if code else None,
+            source=params.source,
+            data_domain=DataDomain(params.code) if params.code else None,
             ura_number=ura_number,
         )
         bundle = Bundle(
@@ -172,12 +118,12 @@ class LocalizationListService:
     ) -> Tuple[OperationOutcome, int]:
         ura_number = authenticated_ura
 
-        code, pseudonym, source = self.__parse_query_params(params)
+        pseudonym = self._token_to_pseudonym(params.subject) if params.subject else None
 
         self.referral_service.delete_many(
             pseudonym=pseudonym,
-            source=source,
-            data_domain=DataDomain(code) if code else None,
+            source=params.source,
+            data_domain=DataDomain(params.code) if params.code else None,
             ura_number=ura_number,
         )
 
