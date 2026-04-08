@@ -21,7 +21,6 @@ def assert_eq(
     """
 
     def compare(expected: ReferralEntity, actual: ReferralEntity) -> None:
-
         expected_attr = expected.__table__.columns.keys()
         actual_attr = actual.__table__.columns.keys()
 

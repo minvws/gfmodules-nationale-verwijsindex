@@ -32,7 +32,6 @@ class OperationOutcome(DomainResource):
 
     @classmethod
     def make_good_outcome(cls, msg: str) -> Self:
-
         return cls(
             issue=[
                 OperationOutcomeIssue(

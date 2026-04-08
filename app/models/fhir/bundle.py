@@ -22,7 +22,6 @@ class EntryRequestDto(BaseModel):
 
     @classmethod
     def from_url(cls, url: str) -> Self:
-
         parsed = urlparse(url)
         path_parts = parsed.path.strip("/").split("/")
 

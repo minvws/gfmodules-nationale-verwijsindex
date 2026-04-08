@@ -229,7 +229,6 @@ def get(
     request: Request,
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
 ) -> Any:
-
     authorized_ura: UraNumber = request.state.auth.ura_number
     return service.get(id, authorized_ura)
 
@@ -367,7 +366,6 @@ def delete_for_query(
     params: Annotated[LocalizationListParams, Query()],
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
 ) -> Any:
-
     authenticated_ura = request.state.auth.ura_number
     outcome, status_code = service.delete_by_query(params, authenticated_ura)
 

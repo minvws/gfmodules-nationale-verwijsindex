@@ -1,5 +1,3 @@
-import base64
-import json
 import logging
 from typing import Tuple
 from uuid import UUID
@@ -25,6 +23,22 @@ class LocalizationListService:
         self.referral_service = referral_service
         self.pseudonym_service = pseudonym_service
 
+    def _token_to_pseudonym(self, token: str) -> Pseudonym:
+        try:
+            oprf_data = decode_url_safe_token(token)
+            return self.pseudonym_service.exchange(
+                oprf_jwe=oprf_data["evaluated_output"],
+                blind_factor=oprf_data["blind_factor"],
+            )
+        except Exception as e:
+            logger.error(f"error occurred while decoding pseudonym token: {e}")
+            raise FHIRException(
+                status_code=400,
+                severity="error",
+                code="invalid",
+                msg=f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}",
+            )
+
     def create(self, data: LocalizationList, authenticated_ura: UraNumber) -> LocalizationList:
         try:
             ura_number = data.get_ura()
@@ -41,21 +55,7 @@ class LocalizationListService:
                 msg="Registration is not linked to the authorized URA",
             )
 
-        try:
-            encoded_token = data.get_encoded_pseudonym()
-            oprf_data = decode_url_safe_token(encoded_token)
-            pseudoym = self.pseudonym_service.exchange(
-                oprf_jwe=oprf_data["evaluated_output"],
-                blind_factor=oprf_data["blind_factor"],
-            )
-        except Exception as e:
-            logger.error(f"error occurred while decoding pseudonym token: {e}")
-            raise FHIRException(
-                status_code=400,
-                severity="error",
-                code="invalid",
-                msg=f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}",
-            )
+        pseudoym = self._token_to_pseudonym(data.get_encoded_pseudonym())
 
         new_referral = self.referral_service.add_one(
             ura_number=ura_number,
@@ -79,62 +79,18 @@ class LocalizationListService:
         return LocalizationList.from_referral(referral)
 
     def query(self, params: LocalizationListParams, authenticated_ura: UraNumber) -> Bundle[LocalizationList]:
-        code: str | None = None
-        pseudonym: Pseudonym | None = None
-        source: str | None = None
         ura_number: UraNumber | None = None
 
         if params.empty() or params.is_localize_params() is False:
             ura_number = authenticated_ura
 
-        if params.subject:
-            try:
-                subject_identifier = params.get_subject_identifier()
-            except ValueError as e:
-                logger.error(f"error occurred while parcing query: {e}")
-                raise FHIRException(
-                    status_code=400,
-                    severity="error",
-                    code="invalid",
-                    msg=f"Malformed {SUBJECT_IDENTIFIER_PARAM} parameter",
-                )
-
-            try:
-                oprf_data = decode_url_safe_token(subject_identifier.value)
-                pseudonym = self.pseudonym_service.exchange(
-                    oprf_jwe=oprf_data["evaluated_output"],
-                    blind_factor=oprf_data["blind_factor"],
-                )
-            except Exception as e:
-                logger.error(f"error occurred while decoding pseudonym token: {e}")
-                raise FHIRException(
-                    status_code=400,
-                    severity="error",
-                    code="invalid",
-                    msg=f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}",
-                )
-
-        if params.source:
-            try:
-                source_identifier = params.get_source_identifier()
-                source = source_identifier.value
-            except ValueError as e:
-                logger.error(f"error occurred while parcing query: {e}")
-                raise FHIRException(
-                    status_code=400,
-                    severity="error",
-                    code="invalid",
-                    msg="Malformed source.identifier parameter",
-                )
-
-        if params.code:
-            code = params.code
+        pseudonym = self._token_to_pseudonym(params.subject) if params.subject else None
 
         referrals = self.referral_service.get_many(
             pseudonym=pseudonym,
-            source=source,
-            data_domain=DataDomain(code) if code else None,
-            ura_number=ura_number if ura_number else None,
+            source=params.source,
+            data_domain=DataDomain(params.code) if params.code else None,
+            ura_number=ura_number,
         )
         bundle = Bundle(
             type="searchset",
@@ -148,7 +104,7 @@ class LocalizationListService:
         affected_rows = self.referral_service.delete_many(ura_number=authenticated_ura, id=id)
         if affected_rows > 0:
             return (
-                OperationOutcome.make_good_outcome(f"Resource {id} have been deleted successfully"),
+                OperationOutcome.make_good_outcome(f"Resource {id} has been deleted successfully"),
                 201,
             )
         else:
@@ -160,63 +116,18 @@ class LocalizationListService:
     def delete_by_query(
         self, params: LocalizationListParams, authenticated_ura: UraNumber
     ) -> Tuple[OperationOutcome, int]:
-        code: str | None = None
-        pseudonym: Pseudonym | None = None
-        source: str | None = None
         ura_number = authenticated_ura
 
-        if params.subject:
-            try:
-                subject_identifier = params.get_subject_identifier()
-            except ValueError as e:
-                logger.error(f"error occurred while parcing query: {e}")
-                raise FHIRException(
-                    status_code=400,
-                    severity="error",
-                    code="invalid",
-                    msg=f"Malformed {SUBJECT_IDENTIFIER_PARAM} parameter",
-                )
-
-            try:
-                decoded_token = base64.urlsafe_b64decode(subject_identifier.value)
-                oprf_data = json.loads(decoded_token)
-                pseudonym = self.pseudonym_service.exchange(
-                    oprf_jwe=oprf_data["evaluated_output"],
-                    blind_factor=oprf_data["blind_factor"],
-                )
-            except Exception as e:
-                logger.error(f"error occurred while decoding pseudonym token: {e}")
-                raise FHIRException(
-                    status_code=400,
-                    severity="error",
-                    code="invalid",
-                    msg=f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}",
-                )
-
-        if params.source:
-            try:
-                source_identifier = params.get_source_identifier()
-                source = source_identifier.value
-            except ValueError as e:
-                logger.error(f"error occurred while parcing query: {e}")
-                raise FHIRException(
-                    status_code=400,
-                    severity="error",
-                    code="invalid",
-                    msg="Malformed source.identifier parameter",
-                )
-
-        if params.code:
-            code = params.code
+        pseudonym = self._token_to_pseudonym(params.subject) if params.subject else None
 
         self.referral_service.delete_many(
             pseudonym=pseudonym,
-            source=source,
-            data_domain=DataDomain(code) if code else None,
+            source=params.source,
+            data_domain=DataDomain(params.code) if params.code else None,
             ura_number=ura_number,
         )
 
         return (
-            OperationOutcome.make_good_outcome("Resources have beend deleted successfully"),
+            OperationOutcome.make_good_outcome("Resources have been deleted successfully"),
             201,
         )
