@@ -16,7 +16,6 @@ from app.services.decrypt_service import DecryptService
 from app.services.fhir.bundle import BundleService
 from app.services.fhir.localization_list import LocalizationListService
 from app.services.oauth import OAuthService
-from app.services.organization import OrganizationService
 from app.services.prs.prs_registration_service import PrsRegistrationService
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
@@ -45,8 +44,6 @@ def container_config(binder: inject.Binder) -> None:
     referral_service = ReferralService(database=db)
     binder.bind(ReferralService, referral_service)
 
-    organization_service = OrganizationService(database=db)
-
     bind_prs_registration_service(binder, config.pseudonym_api)
     bind_oauth_service(binder, config.oauth)
 
@@ -58,8 +55,6 @@ def container_config(binder: inject.Binder) -> None:
 
     bundle_service = BundleService(localization_list_service)
     binder.bind(BundleService, bundle_service)
-
-    binder.bind(OrganizationService, organization_service)
 
     binder.bind(ConfigPseudonymApi, config.pseudonym_api)
     binder.bind(ConfigClientOAuth, config.client_oauth)

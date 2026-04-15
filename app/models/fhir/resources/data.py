@@ -1,13 +1,5 @@
 from typing import Final
 
-SOURCE_SYSTEM: Final[str] = "urn:oid:2.16.528.1.1007.3.3"  # NOSONAR
-SOURCE_TYPE_SYSTEM: Final[str] = "https://nvi.proeftuin.gf.irealisatie.nl/fhir/CodeSystem/nvi-organization-types"
-SUBJECT_SYSTEM: Final[str] = "https://nvi.proeftuin.gf.irealisatie.nl/fhir/NamingSystem/nvi-pseudonym"
-CARE_CONTEXT_SYSTEM: Final[str] = "https://nvi.proeftuin.gf.irealisatie.nl/fhir/CodeSystem/care-context-type"
-DEFAULT_DEVICE_IDENTIFIER: Final[str] = "default-device"
-
-## LocalizationList Data
-
 URA_SYSTEM: Final[str] = "http://fhir.nl/fhir/NamingSystem/ura"
 URA_SYSTEM_EXTENSION: Final[str] = (
     "http://minvws.github.io/generiekefuncties-docs/StructureDefinition/nl-gf-localization-custodian"
