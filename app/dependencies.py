@@ -6,6 +6,7 @@ from app.config import Config
 from app.db.db import Database
 from app.services.fhir.bundle import BundleService
 from app.services.fhir.localization_list import LocalizationListService
+from app.services.header_service import HeaderService
 from app.services.oauth import OAuthService
 from app.services.organization import OrganizationService
 from app.services.prs.prs_registration_service import PrsRegistrationService
@@ -52,3 +53,7 @@ def get_bundle_service() -> BundleService:
 
 def get_localization_list_service() -> LocalizationListService:
     return inject.instance(LocalizationListService)
+
+
+def get_header_service() -> HeaderService:
+    return inject.instance(HeaderService)

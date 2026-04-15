@@ -68,6 +68,10 @@ ssl_base_dir = secrets/ssl
 ssl_cert_file = server.cert
 ssl_key_file = server.key
 
+[header_auth]
+# Uses Kong for validation of incoming requests instead of oauth in app
+# Kong sends headers: X-Oin-Number, X-Source-Id, X-Ura-Number, X-Audience, X-Authorized-Role
+use_header_auth = False
 
 # Section for configuring the INCOMING OAuth connections (from external services to this service)
 [oauth]

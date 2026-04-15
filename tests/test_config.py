@@ -3,6 +3,7 @@ from app.config import (
     ConfigApp,
     ConfigClientOAuth,
     ConfigDatabase,
+    ConfigHeaderAuth,
     ConfigOAuth,
     ConfigPseudonymApi,
     ConfigStats,
@@ -43,6 +44,7 @@ def get_test_config() -> Config:
             ssl_cert_file="/file.cert",
             ssl_key_file="/file.key",
         ),
+        header_auth=ConfigHeaderAuth(use_header_auth=False),
         oauth=ConfigOAuth(
             issuer="http://example.com/",
             jwks_url="http://example.com/.well-known/jwks.json",

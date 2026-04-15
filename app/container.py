@@ -15,6 +15,7 @@ from app.services.client_oauth import ClientOAuthService
 from app.services.decrypt_service import DecryptService
 from app.services.fhir.bundle import BundleService
 from app.services.fhir.localization_list import LocalizationListService
+from app.services.header_service import HeaderService
 from app.services.oauth import OAuthService
 from app.services.organization import OrganizationService
 from app.services.prs.prs_registration_service import PrsRegistrationService
@@ -48,6 +49,11 @@ def container_config(binder: inject.Binder) -> None:
     organization_service = OrganizationService(database=db)
 
     bind_prs_registration_service(binder, config.pseudonym_api)
+
+    # @TODO clean or fix this
+    if config.header_auth.use_header_auth:
+        config.oauth.enabled = False  # If header auth is enabled, disable OAuth
+
     bind_oauth_service(binder, config.oauth)
 
     pseudonym_service = create_pseudonym_service(config.pseudonym_api)
@@ -63,6 +69,9 @@ def container_config(binder: inject.Binder) -> None:
 
     binder.bind(ConfigPseudonymApi, config.pseudonym_api)
     binder.bind(ConfigClientOAuth, config.client_oauth)
+
+    header_service = HeaderService(use_header_auth=config.header_auth.use_header_auth)
+    binder.bind(HeaderService, header_service)
 
     binder.bind_to_provider(DecryptService, lambda: DecryptService(mtls_key=config.pseudonym_api.mtls_key))
 

@@ -75,6 +75,10 @@ class ConfigStats(BaseModel):
     module_name: str | None
 
 
+class ConfigHeaderAuth(BaseModel):
+    use_header_auth: bool = Field(default=False)
+
+
 class ConfigOAuth(BaseModel):
     enabled: bool = Field(default=False)
     override_ura_number: str | None = Field(default=None)
@@ -100,6 +104,7 @@ class Config(BaseModel):
     pseudonym_api: ConfigPseudonymApi
     telemetry: ConfigTelemetry
     stats: ConfigStats
+    header_auth: ConfigHeaderAuth
     uvicorn: ConfigUvicorn
     oauth: ConfigOAuth
     client_oauth: ConfigClientOAuth

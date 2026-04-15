@@ -7,6 +7,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.params import Query
 
 from app.dependencies import (
+    get_header_service,
     get_localization_list_service,
 )
 from app.models.fhir.resources.data import (
@@ -22,10 +23,12 @@ from app.models.fhir.resources.localization_list.request import (
 )
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
+from app.models.headers import RequestedAction
 from app.models.response import DeleteResponse, FHIRJSONResponse
 from app.models.ura import UraNumber
 from app.routers.v1.fhir import SUBJECT_IDENTIFIER_PARAM
 from app.services.fhir.localization_list import LocalizationListService
+from app.services.header_service import HeaderService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["v1-poc - FHIR"], prefix="/v1-poc/fhir/List")
@@ -152,8 +155,12 @@ def create(
     ],
     request: Request,
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
+    header_service: Annotated[HeaderService, Depends(get_header_service)],
 ) -> Any:
     authorized_ura: UraNumber = request.state.auth.ura_number
+    headers = header_service.authorized_check(RequestedAction.MODIFYING, request)
+    if headers is not None:
+        authorized_ura = headers.x_ura_number
     return service.create(data, authorized_ura)
 
 
@@ -228,8 +235,12 @@ def get(
     id: UUID,
     request: Request,
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
+    header_service: Annotated[HeaderService, Depends(get_header_service)],
 ) -> Any:
     authorized_ura: UraNumber = request.state.auth.ura_number
+    headers = header_service.authorized_check(RequestedAction.MODIFYING, request)
+    if headers is not None:
+        authorized_ura = headers.x_ura_number
     return service.get(id, authorized_ura)
 
 
@@ -310,9 +321,14 @@ def get(
 def query(
     request: Request,
     params: Annotated[LocalizationListParams, Query()],
+    header_service: Annotated[HeaderService, Depends(get_header_service)],
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
 ) -> Any:
     authorized_ura = request.state.auth.ura_number
+    req_action = RequestedAction.LOCALIZING if params.is_localize_params() else RequestedAction.MODIFYING
+    headers = header_service.authorized_check(req_action, request)
+    if headers is not None:
+        authorized_ura = headers.x_ura_number
     return service.query(params, authorized_ura)
 
 
@@ -336,8 +352,12 @@ def delete(
     id: UUID,
     request: Request,
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
+    header_service: Annotated[HeaderService, Depends(get_header_service)],
 ) -> Any:
     authorized_ura: UraNumber = request.state.auth.ura_number
+    headers = header_service.authorized_check(RequestedAction.MODIFYING, request)
+    if headers is not None:
+        authorized_ura = headers.x_ura_number
     outcome, status_code = service.delete(id, authorized_ura)
     return FHIRJSONResponse(
         status_code=status_code,
@@ -365,8 +385,12 @@ def delete_for_query(
     request: Request,
     params: Annotated[LocalizationListParams, Query()],
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
+    header_service: Annotated[HeaderService, Depends(get_header_service)],
 ) -> Any:
     authenticated_ura = request.state.auth.ura_number
+    headers = header_service.authorized_check(RequestedAction.MODIFYING, request)
+    if headers is not None:
+        authenticated_ura = UraNumber(headers.x_ura_number)
     outcome, status_code = service.delete_by_query(params, authenticated_ura)
 
     return FHIRJSONResponse(
