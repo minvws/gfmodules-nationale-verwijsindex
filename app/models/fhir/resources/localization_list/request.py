@@ -5,7 +5,7 @@ from fastapi import Query
 from pydantic import BaseModel, field_validator
 
 from app.models.fhir.elements import Coding, Identifier
-from app.models.fhir.resources.data import DATA_DOMAIN_SYSTEM, DEVICE_SYSTEM, PSEUDONYM_SYSTEM
+from app.models.fhir.resources.data import DEVICE_SYSTEM, PSEUDONYM_SYSTEM
 from app.routers.v1.fhir import CODE_PARAM, DEVICE_IDENTIFIER_PARAM, SUBJECT_IDENTIFIER_PARAM
 
 logger = logging.getLogger(__name__)
@@ -38,9 +38,6 @@ class LocalizationListParams(BaseModel):
     subject: str | None = Query(
         alias=SUBJECT_IDENTIFIER_PARAM, openapi_examples=_create_openapi_examples(PSEUDONYM_SYSTEM), default=None
     )
-    code: str | None = Query(
-        alias=CODE_PARAM, openapi_examples=_create_openapi_examples(DATA_DOMAIN_SYSTEM), default=None
-    )
     source: str | None = Query(
         alias=DEVICE_IDENTIFIER_PARAM, openapi_examples=_create_openapi_examples(DEVICE_SYSTEM), default=None
     )
@@ -60,20 +57,6 @@ class LocalizationListParams(BaseModel):
             return None
         return identifier.value
 
-    @field_validator("code", mode="before")
-    @classmethod
-    def validate_code(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
-        try:
-            coding = Coding.from_query(query=value, system=DATA_DOMAIN_SYSTEM)
-            logger.debug("Validated code: %r", coding)
-        except ValueError as e:
-            raise ValueError(f"Invalid code: {e}")
-        if not coding.system or not coding.code:
-            return None
-        return coding.code
-
     @field_validator("source", mode="before")
     @classmethod
     def validate_source(cls, value: str | None) -> str | None:
@@ -89,7 +72,7 @@ class LocalizationListParams(BaseModel):
         return identifier.value
 
     def empty(self) -> bool:
-        return self.subject is None and self.code is None and self.source is None
+        return self.subject is None and self.source is None
 
     def is_localize_params(self) -> bool:
-        return self.subject is not None and self.code is not None and self.source is None
+        return self.subject is not None and self.source is None

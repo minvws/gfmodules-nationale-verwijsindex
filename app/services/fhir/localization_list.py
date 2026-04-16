@@ -41,7 +41,6 @@ class LocalizationListService:
     def create(self, data: LocalizationList, authenticated_ura: UraNumber) -> LocalizationList:
         try:
             ura_number = data.get_ura()
-            data_domain = data.get_data_domain()
             device = data.get_device()
         except ValueError as e:
             raise FHIRException(status_code=400, severity="error", code="invalid", msg=str(e))
@@ -59,7 +58,6 @@ class LocalizationListService:
         new_referral = self.referral_service.add_one(
             ura_number=ura_number,
             pseudonym=pseudoym,
-            data_domain=data_domain,
             source=device,
         )
 
@@ -88,7 +86,6 @@ class LocalizationListService:
         referrals = self.referral_service.get_many(
             pseudonym=pseudonym,
             source=params.source,
-            data_domain=params.code,
             ura_number=ura_number,
         )
         bundle = Bundle(
@@ -122,7 +119,6 @@ class LocalizationListService:
         self.referral_service.delete_many(
             pseudonym=pseudonym,
             source=params.source,
-            data_domain=params.code,
             ura_number=ura_number,
         )
 
