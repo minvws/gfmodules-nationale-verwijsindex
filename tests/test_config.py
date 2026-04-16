@@ -4,7 +4,6 @@ from app.config import (
     ConfigClientOAuth,
     ConfigDatabase,
     ConfigOAuth,
-    ConfigPseudonymApi,
     ConfigStats,
     ConfigTelemetry,
     ConfigUvicorn,
@@ -20,13 +19,6 @@ def get_test_config() -> Config:
         database=ConfigDatabase(
             dsn="sqlite:///:memory:",
             create_tables=True,
-        ),
-        pseudonym_api=ConfigPseudonymApi(
-            endpoint="http://example.com",
-            timeout=30,
-            mtls_cert="",
-            mtls_key="",
-            verify_ca=True,
         ),
         telemetry=ConfigTelemetry(
             enabled=False,

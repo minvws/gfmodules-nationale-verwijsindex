@@ -37,15 +37,6 @@ class ConfigDatabase(BaseModel):
     pool_recycle: int = Field(default=3600, ge=0)
 
 
-class ConfigPseudonymApi(BaseModel):
-    enabled: bool = Field(default=True)
-    endpoint: str
-    timeout: int = Field(default=30, gt=0)
-    mtls_cert: str
-    mtls_key: str
-    verify_ca: str | bool = Field(default=True)
-
-
 class ConfigUvicorn(BaseModel):
     swagger_enabled: bool = Field(default=False)
     docs_url: str = Field(default="/docs")
@@ -97,7 +88,6 @@ class ConfigClientOAuth(BaseModel):
 class Config(BaseModel):
     app: ConfigApp
     database: ConfigDatabase
-    pseudonym_api: ConfigPseudonymApi
     telemetry: ConfigTelemetry
     stats: ConfigStats
     uvicorn: ConfigUvicorn

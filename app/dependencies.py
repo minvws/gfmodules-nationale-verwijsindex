@@ -7,8 +7,6 @@ from app.db.db import Database
 from app.services.fhir.bundle import BundleService
 from app.services.fhir.localization_list import LocalizationListService
 from app.services.oauth import OAuthService
-from app.services.prs.prs_registration_service import PrsRegistrationService
-from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 from app.utils.load_capability_statement import CapabilityStatement
 
@@ -23,14 +21,6 @@ def get_database() -> Database:
 
 def get_referral_service() -> ReferralService:
     return inject.instance(ReferralService)
-
-
-def get_pseudonym_service() -> PseudonymService:
-    return inject.instance(PseudonymService)
-
-
-def get_prs_registration_service() -> PrsRegistrationService:
-    return inject.instance(PrsRegistrationService)
 
 
 def get_oauth_service() -> OAuthService:

@@ -10,34 +10,17 @@ from app.models.fhir.resources.localization_list.resource import LocalizationLis
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
-from app.routers.v1.fhir import SUBJECT_IDENTIFIER_PARAM
-from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
-from app.utils.fhir import decode_url_safe_token
 
 logger = logging.getLogger(__name__)
 
 
 class LocalizationListService:
-    def __init__(self, referral_service: ReferralService, pseudonym_service: PseudonymService) -> None:
+    def __init__(self, referral_service: ReferralService) -> None:
         self.referral_service = referral_service
-        self.pseudonym_service = pseudonym_service
 
     def _token_to_pseudonym(self, token: str) -> Pseudonym:
-        try:
-            oprf_data = decode_url_safe_token(token)
-            return self.pseudonym_service.exchange(
-                oprf_jwe=oprf_data["evaluated_output"],
-                blind_factor=oprf_data["blind_factor"],
-            )
-        except Exception as e:
-            logger.error(f"error occurred while decoding pseudonym token: {e}")
-            raise FHIRException(
-                status_code=400,
-                severity="error",
-                code="invalid",
-                msg=f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}",
-            )
+        return Pseudonym(token)
 
     def create(self, data: LocalizationList, authenticated_ura: UraNumber) -> LocalizationList:
         try:

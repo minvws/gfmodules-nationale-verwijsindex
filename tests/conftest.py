@@ -12,15 +12,12 @@ from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
 from app.models.ura import UraNumber
-from app.services.client_oauth import ClientOAuthService
 from app.services.http import HttpService
-from app.services.prs.prs_registration_service import PrsRegistrationService
 from app.services.referral_service import ReferralService
 from app.utils.certificates.utils import (
     load_certificate,
     load_one_certificate_file,
 )
-from tests.test_config import get_test_config
 
 TEST_SCRIPT_PATH: Final[str] = "tools/generate_test_certs.sh"
 TEST_CERTIFICATE_PATH: Final[str] = "tests/secrets/mock-server-cert.crt"
@@ -45,13 +42,12 @@ def referral_repository(database: Database) -> ReferralRepository:
 
 @pytest.fixture()
 def http_service() -> HttpService:
-    config = get_test_config()
     return HttpService(
-        endpoint=config.pseudonym_api.endpoint,
-        timeout=config.pseudonym_api.timeout,
-        mtls_cert=config.pseudonym_api.mtls_cert,
-        mtls_key=config.pseudonym_api.mtls_key,
-        verify_ca=config.pseudonym_api.verify_ca,
+        endpoint="",
+        timeout=0,
+        mtls_cert="",
+        mtls_key="",
+        verify_ca="",
     )
 
 
@@ -68,17 +64,6 @@ def mock_referral_entity() -> ReferralEntity:
         data_domain="ImagingStudy",
         source="Some-Device",
         organization_type="Hospital",
-    )
-
-
-@pytest.fixture()
-def prs_registration_service(ura_number: UraNumber) -> PrsRegistrationService:
-    config = get_test_config()
-    client_oauth_service = ClientOAuthService(config.client_oauth)
-    return PrsRegistrationService(
-        config=config.pseudonym_api,
-        ura_number=ura_number,
-        client_oauth_service=client_oauth_service,
     )
 
 

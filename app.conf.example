@@ -19,15 +19,6 @@ pool_pre_ping=False
 # Recycle the connection after this time (in seconds)
 pool_recycle=1800
 
-[pseudonym_api]
-# If not enabled, mock services are injected if app is build with debug mode
-enabled=False
-endpoint=http://localhost:8504
-timeout=10
-mtls_cert=secrets/ssl/pseudonym_api.cert
-mtls_key=secrets/ssl/pseudonym_api.key
-verify_ca=secrets/ssl/pseudonym_api_ca.cert
-
 [telemetry]
 # Telemetry is enabled or not
 enabled = False
