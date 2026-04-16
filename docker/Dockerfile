@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # syntax directive is used to enable Docker BuildKit
 
-ARG PYTHON_VERSION=3.14.2
+ARG PYTHON_VERSION=3.14
 
 FROM python:${PYTHON_VERSION}-slim AS base
 
@@ -13,11 +13,7 @@ ARG NEW_GID
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    POETRY_CACHE_DIR=/tmp/poetry-cache \
-    POETRY_VIRTUALENVS_CREATE=false
-
-ENV APP_NAME=gfmodules_national_referral_index
-ENV APP_VERSION=0.1.0
+    POETRY_VERSION=2.3.4
 
 # Create a non-privileged user that the app will run under.
 RUN groupadd --system ${APP_GROUP} --gid=${NEW_GID} && \
@@ -28,112 +24,93 @@ RUN groupadd --system ${APP_GROUP} --gid=${NEW_GID} && \
         --gid ${NEW_GID} \
         ${APP_USER}
 
-RUN apt update && \
-    apt install -y \
-        git \
-        gnupg2 \
-        make \
-        postgresql-client \
-        postgresql-client-common \
-        curl \
-        pkg-config \
+# Runtime-only system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
         openssl \
+        libssl3 \
+        libsodium23 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR ${PROJECT_DIR}
+
+# Builder stage for compilation and dependencies
+FROM base AS builder
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        git \
+        ca-certificates \
+        pkg-config \
         libssl-dev \
         libsodium-dev \
-        build-essential
+        build-essential \
+        swig \
+    && rm -rf /var/lib/apt/lists/*
 
-# We need to compile liboprf from source as the current distributed versions are outdated.
-RUN git clone https://github.com/stef/liboprf.git && cd liboprf/src && make
+# Install poetry
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip && \
+    pip install poetry==${POETRY_VERSION}
 
-RUN pip3 install --upgrade pip && \
-    pip3 install poetry --no-cache-dir
+# Compile liboprf
+WORKDIR /liboprf
+RUN git clone --depth 1 --branch v0.9.3 https://github.com/stef/liboprf.git . && \
+    cd src && \
+    make
 
-RUN chown -R ${APP_USER}:${APP_GROUP} /usr/local/lib/python3.14/site-packages/packaging*
-
+# Install Python dependencies into a virtualenv
 WORKDIR ${PROJECT_DIR}
+COPY ./pyproject.toml ./poetry.lock ./
 
-COPY ./pyproject.toml ./poetry.lock README.md ./
+ENV POETRY_CACHE_DIR=/tmp/poetry-cache \
+    POETRY_VIRTUALENVS_CREATE=true \
+    POETRY_VIRTUALENVS_IN_PROJECT=true
 
+RUN --mount=type=cache,target=${POETRY_CACHE_DIR} \
+    poetry install --no-root --no-interaction --only main
 
-
-#
-# This stage is the builder stage which builds a clean package without dev and debug packages
-#
-FROM base AS lean-builder
-
-COPY ./app /src/app
-
-COPY version.json /src/version.json
-
-COPY ./static /src/static
-
-RUN --mount=type=cache,target=${POETRY_CACHE_DIR} poetry install --only main --no-interaction
-
-RUN --mount=type=cache,target=${POETRY_CACHE_DIR} poetry build
-
-RUN tar xzvf /src/dist/${APP_NAME}-${APP_VERSION}.tar.gz -C /src/dist
-
-
-
-#
-# This stage is the debug builder which builds poetry with dev dependencies
-#
-FROM base AS debug-builder
-
-RUN --mount=type=cache,target=${POETRY_CACHE_DIR} poetry install --no-root --no-interaction
-
-
-
-#
-# This stage builds the final debug stage with debug package
-#
-FROM base AS debug-final
-
-# We need to copy the compiled shared libraries from the builder stage to the correct location so they can be found.
-RUN mkdir -p /usr/lib/x86_64-linux-gnu/
-COPY --from=debug-builder liboprf/src/noise_xk/lib*.so /usr/local/lib/
-COPY --from=debug-builder liboprf/src/lib*.so /usr/local/lib/
-RUN ldconfig
-
-COPY --from=debug-builder /usr/local /usr/local
-RUN chown -R ${APP_USER}:${APP_GROUP} /usr/local/lib/python3.14
-
-COPY ./docker/init.sh /docker-entrypoint.sh
-
-USER ${APP_USER}
-
-EXPOSE 8502
-WORKDIR ${PROJECT_DIR}
-
-ENV PYTHONPATH=${PROJECT_DIR}
-
-CMD ["/docker-entrypoint.sh"]
-
-
-
-#
-# This stage builds the final stage without debug and build dependencies
-#
+# Final stage
 FROM base AS final
 
-# We need to copy the compiled shared libraries from the builder stage to the correct location so they can be found.
-RUN mkdir -p /usr/lib/x86_64-linux-gnu/
-COPY --from=lean-builder liboprf/src/noise_xk/lib*.so /usr/local/lib/
-COPY --from=lean-builder liboprf/src/lib*.so /usr/local/lib/
+# Copy compiled libraries
+COPY --from=builder /liboprf/src/noise_xk/lib*.so /usr/local/lib/
+COPY --from=builder /liboprf/src/lib*.so /usr/local/lib/
 RUN ldconfig
 
-COPY --from=lean-builder /usr/local /usr/local
-RUN chown -R ${APP_USER}:${APP_GROUP} /usr/local/lib/python3.14
+# Copy only the virtualenv — no pip, no poetry, no build tools
+COPY --from=builder --chown=${APP_USER}:${APP_GROUP} /src/.venv /src/.venv
 
-COPY --from=lean-builder /src/dist/${APP_NAME}-${APP_VERSION} /src
+# Copy only what the app needs at runtime (no tests, docs, CI artifacts, etc.)
+COPY --chown=${APP_USER}:${APP_GROUP} app/ /src/app/
+COPY --chown=${APP_USER}:${APP_GROUP} app.conf.example /src/
 
-COPY ./docker/init-standalone.sh /docker-entrypoint.sh
+# version.json is generated from build args so CI workspace artifacts never leak in
+ARG RELEASE_VERSION=dev
+ARG GIT_SHA=unknown
+RUN echo "{\"version\": \"${RELEASE_VERSION}\", \"git_ref\": \"${GIT_SHA}\"}" > /src/version.json \
+    && chown ${APP_USER}:${APP_GROUP} /src/version.json
+
+COPY --chmod=755 ./docker/init-standalone.sh /usr/local/bin/
+COPY --chmod=755 ./docker/init.sh /usr/local/bin/
+
+ARG standalone=false
+
+RUN if [ "$standalone" = "true" ] ; then \
+    ln -sf /usr/local/bin/init-standalone.sh /docker-entrypoint.sh; \
+  else \
+    ln -sf /usr/local/bin/init.sh /docker-entrypoint.sh ; \
+  fi
 
 USER ${APP_USER}
 
 EXPOSE 8502
 WORKDIR ${PROJECT_DIR}
 
-ENV PYTHONPATH=${PROJECT_DIR}
+ENV PYTHONPATH=${PROJECT_DIR} \
+    VIRTUAL_ENV=/src/.venv \
+    PATH="/src/.venv/bin:$PATH"
 
 CMD ["/docker-entrypoint.sh"]
