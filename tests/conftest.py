@@ -11,11 +11,9 @@ from app.config import ConfigDatabase
 from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
-from app.models.fhir.resources.organization.resource import Organization
 from app.models.ura import UraNumber
 from app.services.client_oauth import ClientOAuthService
 from app.services.http import HttpService
-from app.services.organization import OrganizationService
 from app.services.prs.prs_registration_service import PrsRegistrationService
 from app.services.referral_service import ReferralService
 from app.utils.certificates.utils import (
@@ -74,11 +72,6 @@ def mock_referral_entity() -> ReferralEntity:
 
 
 @pytest.fixture()
-def mock_org(mock_referral_entity: ReferralEntity) -> Organization:
-    return Organization.from_referral(mock_referral_entity)
-
-
-@pytest.fixture()
 def prs_registration_service(ura_number: UraNumber) -> PrsRegistrationService:
     config = get_test_config()
     client_oauth_service = ClientOAuthService(config.client_oauth)
@@ -92,11 +85,6 @@ def prs_registration_service(ura_number: UraNumber) -> PrsRegistrationService:
 @pytest.fixture()
 def referral_service(database: Database) -> ReferralService:
     return ReferralService(database=database)
-
-
-@pytest.fixture()
-def organization_service(database: Database) -> OrganizationService:
-    return OrganizationService(database=database)
 
 
 @pytest.fixture(scope="session")
