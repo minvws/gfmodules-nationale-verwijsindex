@@ -4,9 +4,9 @@ from typing import Any
 from fastapi import Query
 from pydantic import BaseModel, field_validator
 
-from app.models.fhir.elements import Coding, Identifier
+from app.models.fhir.elements import Identifier
 from app.models.fhir.resources.data import DEVICE_SYSTEM, PSEUDONYM_SYSTEM
-from app.routers.v1.fhir import CODE_PARAM, DEVICE_IDENTIFIER_PARAM, SUBJECT_IDENTIFIER_PARAM
+from app.routers.v1.fhir import DEVICE_IDENTIFIER_PARAM, SUBJECT_IDENTIFIER_PARAM
 
 logger = logging.getLogger(__name__)
 

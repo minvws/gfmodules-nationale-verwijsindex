@@ -190,8 +190,8 @@ def test_delete_patient_registrations_should_succeed(
     referral_service.add_one(
         pseudonym=patient_1,
         ura_number=ura_number,
-        source="SomeDevice",
-        organization_type="ziekenhuis",
+        source="SomeDevice2",
+        organization_type="ziekenhuis2",
     )
 
     patient_2 = Pseudonym("ps-2")

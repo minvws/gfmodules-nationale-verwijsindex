@@ -53,8 +53,8 @@ def test_find_many_should_return_two_item(
     mock_referral_entity_2 = ReferralEntity(
         ura_number="0000123",
         pseudonym="some-pseudonym",
-        source="Some-Device",
-        organization_type="hospital",
+        source="Some-Device2",
+        organization_type="hospital2",
     )
     with referral_repository.db_session:
         referral_repository.add_one(mock_referral_entity)
@@ -174,7 +174,7 @@ def test_find_should_return_empty_list_when_conditions_are_no_match(
 ) -> None:
     with referral_repository.db_session:
         referral_repository.add_one(mock_referral_entity)
-        actual = referral_repository.find(pseudonym=mock_referral_entity.pseudonym)
+        actual = referral_repository.find(pseudonym="some-other-pseudonym")
 
         assert actual == []
 
