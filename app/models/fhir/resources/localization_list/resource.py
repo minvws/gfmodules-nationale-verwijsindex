@@ -4,7 +4,6 @@ from pydantic import ConfigDict
 from pydantic.alias_generators import to_camel
 
 from app.db.models.referral import ReferralEntity
-from app.models.data_domain import DataDomain
 from app.models.fhir.elements import (
     CodeableConcept,
     Coding,
@@ -107,12 +106,12 @@ class LocalizationList(DomainResource):
 
         return self.subject.identifier.value
 
-    def get_data_domain(self) -> DataDomain:
+    def get_data_domain(self) -> str:
         target = next((v.code for v in self.code.coding if v.system == DATA_DOMAIN_SYSTEM), None)
         if target is None:
             raise ValueError(f"Missing code with code system {DATA_DOMAIN_SYSTEM} in List.code.coding")
 
-        return DataDomain(target)
+        return target
 
     def get_device(self) -> str:
         if self.source.identifier.system != DEVICE_SYSTEM:

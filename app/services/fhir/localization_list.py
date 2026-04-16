@@ -3,7 +3,6 @@ from typing import Tuple
 from uuid import UUID
 
 from app.exceptions.fhir_exception import FHIRException
-from app.models.data_domain import DataDomain
 from app.models.fhir.bundle import Bundle, BundleEntry
 from app.models.fhir.resources.localization_list.request import LocalizationListParams
 from app.models.fhir.resources.localization_list.resource import LocalizationList
@@ -89,7 +88,7 @@ class LocalizationListService:
         referrals = self.referral_service.get_many(
             pseudonym=pseudonym,
             source=params.source,
-            data_domain=DataDomain(params.code) if params.code else None,
+            data_domain=params.code,
             ura_number=ura_number,
         )
         bundle = Bundle(
@@ -123,7 +122,7 @@ class LocalizationListService:
         self.referral_service.delete_many(
             pseudonym=pseudonym,
             source=params.source,
-            data_domain=DataDomain(params.code) if params.code else None,
+            data_domain=params.code,
             ura_number=ura_number,
         )
 
