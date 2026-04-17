@@ -41,3 +41,13 @@ class NotFoundException(FHIRException):
             severity="error",
             msg="Record not found",
         )
+
+
+class UnauthorizedAction(FHIRException):
+    def __init__(self, role: str, action: str) -> None:
+        super().__init__(
+            status_code=401,
+            code="security",
+            severity="error",
+            msg=f"{action} is not authorized for role {role}. ",
+        )
