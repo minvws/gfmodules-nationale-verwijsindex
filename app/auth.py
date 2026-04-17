@@ -7,8 +7,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.requests import Request
 
 from app import dependencies
+from app.models.auth.headers import AuthHeaders
 from app.models.ura import UraNumber
-from app.services.oauth import OAuthService
+from app.services.auth.header import AuthHeaderService
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,10 @@ class AuthContext:
     scope: List[str]
     # URA number of the authenticated user
     ura_number: UraNumber
+    # OIN Number
+    oin: str | None = None
+    # authrozied role
+    role: str | None = None
 
 
 bearer = HTTPBearer(auto_error=False)
@@ -45,18 +50,36 @@ bearer = HTTPBearer(auto_error=False)
 def get_auth_ctx(
     request: Request,
     creds: Optional[HTTPAuthorizationCredentials] = Depends(bearer),
-    oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
+    # oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
+    auth_headers_service: AuthHeaderService = Depends(dependencies.get_auth_header_service),
 ) -> AuthContext:
     try:
-        claims = oauth_service.verify(request)
-    except OAuthError as e:
-        logger.error(f"OAuth verification failed: {e.description}")
-        raise HTTPException(status_code=e.status_code, detail=e.description) from e
+        auth_headers = AuthHeaders.from_request(request)
+    except ValueError as e:
+        logger.error(f"Failed to extract AuthHeaders: {e}")
+        raise HTTPException(status_code=401, detail=f"Invalid Authorizaiton Headers in request {e}")
 
+    validated_auth_headers = auth_headers_service.validate(auth_headers)
     ctx = AuthContext(
-        claims=claims,
-        scope=claims["scope"],
-        ura_number=UraNumber(claims["sub"]),
+        claims={},
+        scope=validated_auth_headers.scope,
+        ura_number=UraNumber(validated_auth_headers.ura),
+        oin=validated_auth_headers.oin,
+        role=validated_auth_headers.authorized_role,
     )
     request.state.auth = ctx
     return ctx
+
+    # try:
+    #     claims = oauth_service.verify(request)
+    # except OAuthError as e:
+    #     logger.error(f"OAuth verification failed: {e.description}")
+    #     raise HTTPException(status_code=e.status_code, detail=e.description) from e
+    #
+    # ctx = AuthContext(
+    #     claims=claims,
+    #     scope=claims["scope"],
+    #     ura_number=UraNumber(claims["sub"]),
+    # )
+    # request.state.auth = ctx
+    # return ctx

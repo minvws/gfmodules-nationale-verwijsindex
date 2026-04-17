@@ -4,6 +4,7 @@ import inject
 
 from app.config import Config
 from app.db.db import Database
+from app.services.auth.header import AuthHeaderService
 from app.services.fhir.bundle import BundleService
 from app.services.fhir.localization_list import LocalizationListService
 from app.services.oauth import OAuthService
@@ -35,6 +36,10 @@ def get_prs_registration_service() -> PrsRegistrationService:
 
 def get_oauth_service() -> OAuthService:
     return inject.instance(OAuthService)
+
+
+def get_auth_header_service() -> AuthHeaderService:
+    return inject.instance(AuthHeaderService)
 
 
 def get_capability_statement() -> dict[str, Any]:
