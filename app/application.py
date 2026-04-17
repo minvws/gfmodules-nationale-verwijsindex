@@ -88,10 +88,7 @@ def setup_fastapi() -> FastAPI:
     container.configure()
 
     public_routers = [default_router, health_router, fhir_router]
-    routers = [
-        v1_fhir_list_router,
-        v1_fhir_base_router,
-    ]
+    routers = [v1_fhir_list_router, v1_fhir_base_router]
 
     for router in public_routers:
         fastapi.include_router(router)

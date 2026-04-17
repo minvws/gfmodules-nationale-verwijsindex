@@ -12,6 +12,7 @@ from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
 from app.models.ura import UraNumber
+from app.services.auth.header import AuthHeaderService
 from app.services.client_oauth import ClientOAuthService
 from app.services.http import HttpService
 from app.services.prs.prs_registration_service import PrsRegistrationService
@@ -84,6 +85,12 @@ def prs_registration_service(ura_number: UraNumber) -> PrsRegistrationService:
 @pytest.fixture()
 def referral_service(database: Database) -> ReferralService:
     return ReferralService(database=database)
+
+
+@pytest.fixture()
+def auth_header_service() -> AuthHeaderService:
+    config = get_test_config()
+    return AuthHeaderService(config=config.oauth)
 
 
 @pytest.fixture(scope="session")
