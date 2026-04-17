@@ -2,6 +2,7 @@
 # syntax directive is used to enable Docker BuildKit
 
 ARG PYTHON_VERSION=3.14
+ARG DEV=false
 
 FROM python:${PYTHON_VERSION}-slim AS base
 
@@ -37,6 +38,8 @@ WORKDIR ${PROJECT_DIR}
 # Builder stage for compilation and dependencies
 FROM base AS builder
 
+ARG DEV
+
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
@@ -70,10 +73,16 @@ ENV POETRY_CACHE_DIR=/tmp/poetry-cache \
     POETRY_VIRTUALENVS_IN_PROJECT=true
 
 RUN --mount=type=cache,target=${POETRY_CACHE_DIR} \
-    poetry install --no-root --no-interaction --only main
+    if [ "${DEV}" = "true" ]; then \
+        poetry install --no-root --no-interaction; \
+    else \
+        poetry install --no-root --no-interaction --only main; \
+    fi
 
 # Final stage
 FROM base AS final
+
+ARG DEV
 
 # Copy compiled libraries
 COPY --from=builder /liboprf/src/noise_xk/lib*.so /usr/local/lib/
@@ -82,6 +91,11 @@ RUN ldconfig
 
 # Copy only the virtualenv — no pip, no poetry, no build tools
 COPY --from=builder --chown=${APP_USER}:${APP_GROUP} /src/.venv /src/.venv
+
+# Optionally install poetry for local development images
+RUN if [ "${DEV}" = "true" ]; then \
+    pip install --no-cache-dir poetry==${POETRY_VERSION}; \
+  fi
 
 # Copy only what the app needs at runtime (no tests, docs, CI artifacts, etc.)
 COPY --chown=${APP_USER}:${APP_GROUP} app/ /src/app/
