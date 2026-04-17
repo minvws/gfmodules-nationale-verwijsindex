@@ -11,6 +11,7 @@ from app.config import (
 )
 from app.db.db import Database
 from app.models.ura import UraNumber
+from app.services.auth.header import AuthHeaderService
 from app.services.client_oauth import ClientOAuthService
 from app.services.decrypt_service import DecryptService
 from app.services.fhir.bundle import BundleService
@@ -43,6 +44,9 @@ def container_config(binder: inject.Binder) -> None:
 
     referral_service = ReferralService(database=db)
     binder.bind(ReferralService, referral_service)
+
+    auth_header_service = AuthHeaderService(config=config.oauth)
+    binder.bind(AuthHeaderService, auth_header_service)
 
     bind_prs_registration_service(binder, config.pseudonym_api)
     bind_oauth_service(binder, config.oauth)

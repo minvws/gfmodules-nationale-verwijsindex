@@ -7,7 +7,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.requests import Request
 
 from app import dependencies
+from app.models.auth.headers import AuthHeaders
 from app.models.ura import UraNumber
+from app.services.auth.header import AuthHeaderService
 from app.services.oauth import OAuthService
 
 logger = logging.getLogger(__name__)
@@ -37,6 +39,10 @@ class AuthContext:
     scope: List[str]
     # URA number of the authenticated user
     ura_number: UraNumber
+    # OIN Number
+    oin: str | None = None
+    # authrozied role
+    role: str | None = None
 
 
 bearer = HTTPBearer(auto_error=False)
@@ -46,9 +52,23 @@ def get_auth_ctx(
     request: Request,
     creds: Optional[HTTPAuthorizationCredentials] = Depends(bearer),
     oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
+    auth_headers_service: AuthHeaderService = Depends(dependencies.get_auth_header_service),
 ) -> AuthContext:
+    validated_request = auth_headers_service.validate(request)
+    auth_headers = AuthHeaders.from_request_or_none(validated_request)
+    if auth_headers:
+        ctx = AuthContext(
+            claims={},
+            scope=auth_headers.x_scope,
+            ura_number=UraNumber(auth_headers.x_ura_number),
+            oin=auth_headers.x_oin_number,
+            role=auth_headers.x_authorized_role,
+        )
+        request.state.auth = ctx
+        return ctx
+
     try:
-        claims = oauth_service.verify(request)
+        claims = oauth_service.verify(validated_request)
     except OAuthError as e:
         logger.error(f"OAuth verification failed: {e.description}")
         raise HTTPException(status_code=e.status_code, detail=e.description) from e
