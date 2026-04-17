@@ -7,6 +7,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.requests import Request
 
 from app import dependencies
+from app.models.auth.headers import AuthHeaders
 from app.models.ura import UraNumber
 from app.services.oauth import OAuthService
 
@@ -37,6 +38,10 @@ class AuthContext:
     scope: List[str]
     # URA number of the authenticated user
     ura_number: UraNumber
+    # OIN Number
+    oin: str | None = None
+    # authrozied role
+    role: str | None = None
 
 
 bearer = HTTPBearer(auto_error=False)
@@ -47,6 +52,18 @@ def get_auth_ctx(
     creds: Optional[HTTPAuthorizationCredentials] = Depends(bearer),
     oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
 ) -> AuthContext:
+    auth_headers = AuthHeaders.from_request_or_none(request)
+    if auth_headers:
+        ctx = AuthContext(
+            claims={},
+            scope=auth_headers.x_scope,
+            ura_number=UraNumber(auth_headers.x_ura_number),
+            oin=auth_headers.x_oin_number,
+            role=auth_headers.x_authorized_role,
+        )
+        request.state.auth = ctx
+        return ctx
+
     try:
         claims = oauth_service.verify(request)
     except OAuthError as e:
