@@ -5,8 +5,8 @@ from fastapi import Query
 from pydantic import BaseModel, field_validator
 
 from app.models.fhir.elements import Identifier
-from app.models.fhir.resources.data import DEVICE_SYSTEM, PSEUDONYM_SYSTEM
-from app.routers.v1.fhir import DEVICE_IDENTIFIER_PARAM, SUBJECT_IDENTIFIER_PARAM
+from app.models.fhir.resources.data import DATA_DOMAIN_SYSTEM, DEVICE_SYSTEM, PSEUDONYM_SYSTEM
+from app.routers.v1.fhir import CODE_PARAM, DEVICE_IDENTIFIER_PARAM, SUBJECT_IDENTIFIER_PARAM
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,13 @@ class LocalizationListParams(BaseModel):
 
     subject: str | None = Query(
         alias=SUBJECT_IDENTIFIER_PARAM, openapi_examples=_create_openapi_examples(PSEUDONYM_SYSTEM), default=None
+    )
+    code: str | None = Query(  # This parameter has no effect anymore and will be removed when v1 API is deprecated
+        alias=CODE_PARAM,
+        openapi_examples=_create_openapi_examples(DATA_DOMAIN_SYSTEM),
+        default=None,
+        deprecated=True,
+        description="This parameter is deprecated and has no effect. It will be removed in a future version of the API.",
     )
     source: str | None = Query(
         alias=DEVICE_IDENTIFIER_PARAM, openapi_examples=_create_openapi_examples(DEVICE_SYSTEM), default=None

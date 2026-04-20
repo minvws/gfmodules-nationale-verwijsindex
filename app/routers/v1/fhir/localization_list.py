@@ -10,6 +10,7 @@ from app.dependencies import (
     get_localization_list_service,
 )
 from app.models.fhir.resources.data import (
+    DATA_DOMAIN_SYSTEM,
     DEVICE_SYSTEM,
     EMPTY_REASON_SYSTEM,
     PSEUDONYM_SYSTEM,
@@ -35,7 +36,7 @@ router = APIRouter(tags=["v1-poc - FHIR"], prefix="/v1-poc/fhir/List")
     status_code=201,
     response_model_exclude_none=True,
     summary="Post a new List",
-    description="Create a new List resource",
+    description="Create a new List resource. The code parameter for data domain is deprecated and ignored by this router.",
     response_class=FHIRJSONResponse,
     responses={
         201: {
@@ -75,6 +76,15 @@ router = APIRouter(tags=["v1-poc - FHIR"], prefix="/v1-poc/fhir/List")
                                 {
                                     "code": "withheld",
                                     "system": EMPTY_REASON_SYSTEM,
+                                }
+                            ]
+                        },
+                        "code": {
+                            "coding": [
+                                {
+                                    "code": "MEDAFSPRAAK",
+                                    "system": DATA_DOMAIN_SYSTEM,
+                                    "display": "Medicatieafspraak",
                                 }
                             ]
                         },
@@ -125,6 +135,15 @@ def create(
                         {
                             "code": "withheld",
                             "system": EMPTY_REASON_SYSTEM,
+                        }
+                    ]
+                },
+                "code": {
+                    "coding": [
+                        {
+                            "code": "MEDAFSPRAAK",
+                            "system": DATA_DOMAIN_SYSTEM,
+                            "display": "Medicatieafspraak",
                         }
                     ]
                 },
@@ -186,6 +205,15 @@ def create(
                                 }
                             ]
                         },
+                        "code": {
+                            "coding": [
+                                {
+                                    "code": "MEDAFSPRAAK",
+                                    "system": DATA_DOMAIN_SYSTEM,
+                                    "display": "Medicatieafspraak",
+                                }
+                            ]
+                        },
                     }
                 }
             },
@@ -209,7 +237,12 @@ def get(
     path="",
     response_model_exclude_none=True,
     summary="Get a Bundle of List resources with specific query params",
-    description=f"Retrieves a Bundle containing List resources based on query params. Localization for a specific pseudonym can be done only by specifying {SUBJECT_IDENTIFIER_PARAM} and code. Any other combination will return List resource specific to the URA Number of the requester",
+    description=(
+        f"Retrieves a Bundle containing List resources based on query params. "
+        f"Localization for a specific pseudonym can be done by specifying only {SUBJECT_IDENTIFIER_PARAM}. "
+        "The code query parameter for data domain is deprecated and ignored by this router. "
+        "Any other combination will return List resource specific to the URA Number of the requester"
+    ),
     response_class=FHIRJSONResponse,
     responses={
         200: {
@@ -256,11 +289,20 @@ def get(
                                             }
                                         ]
                                     },
-                                }
+                                    "code": {
+                                        "coding": [
+                                            {
+                                                "code": "MEDAFSPRAAK",
+                                                "system": DATA_DOMAIN_SYSTEM,
+                                                "display": "Medicatieafspraak",
+                                            }
+                                        ]
+                                    },
+                                },
                             }
                         ],
-                    }
-                }
+                    },
+                },
             },
         },
         400: {"model": OperationOutcome},
