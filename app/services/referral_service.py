@@ -6,7 +6,6 @@ from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
 from app.exceptions.fhir_exception import FHIRException, NotFoundException
-from app.models.data_domain import DataDomain
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
 
@@ -30,7 +29,6 @@ class ReferralService:
     def add_one(
         self,
         pseudonym: Pseudonym,
-        data_domain: DataDomain,
         ura_number: UraNumber,
         source: str,
         organization_type: str | None = None,
@@ -43,7 +41,6 @@ class ReferralService:
 
             if referral_repository.exists(
                 pseudonym=str(pseudonym),
-                data_domain=str(data_domain),
                 ura_number=str(ura_number),
                 source=source,
             ):
@@ -57,7 +54,6 @@ class ReferralService:
             new_referral: ReferralEntity = referral_repository.add_one(
                 ReferralEntity(
                     pseudonym=str(pseudonym),
-                    data_domain=str(data_domain),
                     ura_number=str(ura_number),
                     source=source,
                     organization_type=organization_type,
@@ -68,7 +64,6 @@ class ReferralService:
     def get_one(
         self,
         pseudonym: Pseudonym,
-        data_domain: DataDomain,
         ura_number: UraNumber,
         source: str,
     ) -> ReferralEntity | None:
@@ -76,7 +71,6 @@ class ReferralService:
             repo = session.get_repository(ReferralRepository)
             referral = repo.find_one(
                 pseudonym=str(pseudonym),
-                data_domain=str(data_domain),
                 ura_number=str(ura_number),
                 source=source,
             )
@@ -90,7 +84,6 @@ class ReferralService:
         self,
         ura_number: UraNumber | None = None,
         pseudonym: Pseudonym | None = None,
-        data_domain: DataDomain | None = None,
         source: str | None = None,
     ) -> Sequence[ReferralEntity]:
         with self.database.get_db_session() as session:
@@ -98,7 +91,6 @@ class ReferralService:
             referrals = repo.find_many(
                 ura_number=str(ura_number) if ura_number else None,
                 pseudonym=str(pseudonym) if pseudonym else None,
-                data_domain=str(data_domain) if data_domain else None,
                 source=source,
             )
 
@@ -108,7 +100,6 @@ class ReferralService:
         self,
         ura_number: UraNumber,
         pseudonym: Pseudonym | None = None,
-        data_domain: DataDomain | None = None,
         source: str | None = None,
         id: str | UUID | None = None,
     ) -> int:
@@ -117,7 +108,6 @@ class ReferralService:
             affected_rows = repo.delete_many(
                 ura_number=str(ura_number),
                 pseudonym=str(pseudonym) if pseudonym else None,
-                data_domain=str(data_domain) if data_domain else None,
                 source=source,
                 id=id,
             )
@@ -129,7 +119,6 @@ class ReferralService:
     def delete_one(
         self,
         pseudonym: Pseudonym,
-        data_domain: DataDomain,
         ura_number: UraNumber,
         source: str,
     ) -> None:
@@ -140,7 +129,6 @@ class ReferralService:
             referral_repository = session.get_repository(ReferralRepository)
             referral = referral_repository.find_one(
                 pseudonym=str(pseudonym),
-                data_domain=str(data_domain),
                 ura_number=str(ura_number),
                 source=source,
             )
@@ -157,7 +145,6 @@ class ReferralService:
     def get_registrations(
         self,
         ura_number: UraNumber,
-        data_domain: DataDomain | None = None,
         pseudonym: Pseudonym | None = None,
         source: str | None = None,
     ) -> Sequence[ReferralEntity]:
@@ -165,7 +152,6 @@ class ReferralService:
             repo = session.get_repository(ReferralRepository)
             data = repo.find_many(
                 ura_number=str(ura_number),
-                data_domain=str(data_domain) if data_domain else None,
                 pseudonym=str(pseudonym) if pseudonym else None,
                 source=source,
             )
@@ -184,7 +170,6 @@ class ReferralService:
     def delete_specific_registration(
         self,
         ura_number: UraNumber,
-        data_domain: DataDomain,
         pseudonym: Pseudonym,
         source: str,
     ) -> None:
@@ -192,7 +177,6 @@ class ReferralService:
             repo = session.get_repository(ReferralRepository)
             exists = repo.exists(
                 ura_number=str(ura_number),
-                data_domain=str(data_domain),
                 pseudonym=str(pseudonym),
                 source=source,
             )
@@ -202,7 +186,6 @@ class ReferralService:
             repo.delete(
                 ura_number=str(ura_number),
                 pseudonym=str(pseudonym),
-                data_domain=str(data_domain),
                 source=source,
             )
 

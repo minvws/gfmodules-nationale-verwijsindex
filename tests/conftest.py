@@ -65,7 +65,6 @@ def mock_referral_entity() -> ReferralEntity:
     return ReferralEntity(
         ura_number="0000123",
         pseudonym="some-pseudonym",
-        data_domain="ImagingStudy",
         source="Some-Device",
         organization_type="Hospital",
     )

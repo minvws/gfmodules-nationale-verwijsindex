@@ -41,7 +41,6 @@ def test_find_many_should_return_one_item(
 
         actual = referral_repository.find_many(
             pseudonym=mock_referral_entity.pseudonym,
-            data_domain=mock_referral_entity.data_domain,
             ura_number=mock_referral_entity.ura_number,
         )
 
@@ -54,9 +53,8 @@ def test_find_many_should_return_two_item(
     mock_referral_entity_2 = ReferralEntity(
         ura_number="0000123",
         pseudonym="some-pseudonym",
-        data_domain="MedicationStatement",
-        source="Some-Device",
-        organization_type="hospital",
+        source="Some-Device2",
+        organization_type="hospital2",
     )
     with referral_repository.db_session:
         referral_repository.add_one(mock_referral_entity)
@@ -77,14 +75,12 @@ def test_find_many_with_alternative_params_should_succeed(
     mock_referral_1 = ReferralEntity(
         ura_number="0000123",
         pseudonym="ps-1",
-        data_domain="ImagingStudy",
         source="Some-Device",
         organization_type="Hospital",
     )
     mock_referral_2 = ReferralEntity(
         ura_number="0000124",
         pseudonym="ps-2",
-        data_domain="MedicationStatement",
         source="Some-Other-Device",
         organization_type="Hospital",
     )
@@ -106,7 +102,6 @@ def test_find_many_should_return_empty_list(
 
         actual = referral_repository.find_many(
             pseudonym="differenet-pseudonym",
-            data_domain=mock_referral_entity.data_domain,
             ura_number=mock_referral_entity.ura_number,
         )
 
@@ -122,7 +117,6 @@ def test_find_should_return_one_referral(
 
         actual = referral_repository.find(
             pseudonym=mock_referral_entity.pseudonym,
-            data_domain=mock_referral_entity.data_domain,
         )
 
         assert expected == actual
@@ -134,10 +128,9 @@ def test_find_should_return_two_referrals(
     with referral_repository.db_session:
         another_referral = ReferralEntity(
             pseudonym=mock_referral_entity.pseudonym,
-            data_domain=mock_referral_entity.data_domain,
             ura_number="00000123",
             source="Some-Device",
-            organization_type=mock_referral_entity.data_domain,
+            organization_type=mock_referral_entity.organization_type,
         )
         referral_repository.add_one(mock_referral_entity)
         referral_2 = referral_repository.add_one(another_referral)
@@ -145,7 +138,6 @@ def test_find_should_return_two_referrals(
 
         actual = referral_repository.find(
             pseudonym=mock_referral_entity.pseudonym,
-            data_domain=mock_referral_entity.data_domain,
         )
 
         assert expected == actual
@@ -157,7 +149,6 @@ def test_find_should_return_two_referrals_from_different_organizations(
     with referral_repository.db_session:
         different_org_referral = ReferralEntity(
             pseudonym=mock_referral_entity.pseudonym,
-            data_domain=mock_referral_entity.data_domain,
             ura_number="00000123",
             source="Some-Device",
             organization_type="pharmacy",
@@ -169,7 +160,6 @@ def test_find_should_return_two_referrals_from_different_organizations(
         assert referral_2.organization_type is not None
         actual = referral_repository.find(
             pseudonym=mock_referral_entity.pseudonym,
-            data_domain=mock_referral_entity.data_domain,
             org_types=[
                 mock_referral_entity.organization_type,
                 referral_2.organization_type,
@@ -184,7 +174,7 @@ def test_find_should_return_empty_list_when_conditions_are_no_match(
 ) -> None:
     with referral_repository.db_session:
         referral_repository.add_one(mock_referral_entity)
-        actual = referral_repository.find(pseudonym=mock_referral_entity.pseudonym, data_domain="SomeDataDomain")
+        actual = referral_repository.find(pseudonym="some-other-pseudonym")
 
         assert actual == []
 
@@ -203,7 +193,6 @@ def test_add_one_with_same_id_should_raise_exception(
         mock_referral_entity_2 = ReferralEntity(
             id=mock_referral_entity.id,
             pseudonym="some-other-pseudonym",
-            data_domain="some-other-data-domain",
         )
         referral_repository.add_one(mock_referral_entity)
         with pytest.raises(SQLAlchemyError) as exec:
@@ -219,7 +208,6 @@ def test_add_one_with_same_unique_index_should_raise_exception(
         mock_2 = ReferralEntity(
             ura_number=mock_referral_entity.ura_number,
             pseudonym=mock_referral_entity.pseudonym,
-            data_domain=mock_referral_entity.data_domain,
         )
         referral_repository.add_one(mock_referral_entity)
         with pytest.raises(SQLAlchemyError) as exec:
@@ -236,7 +224,6 @@ def test_delete_one_should_succeed(
         assert (
             referral_repository.exists(
                 pseudonym=mock_referral_entity.pseudonym,
-                data_domain=mock_referral_entity.data_domain,
                 ura_number=mock_referral_entity.ura_number,
             )
             is True
@@ -247,7 +234,6 @@ def test_delete_one_should_succeed(
         assert (
             referral_repository.exists(
                 pseudonym=mock_referral_entity.pseudonym,
-                data_domain=mock_referral_entity.data_domain,
                 ura_number=mock_referral_entity.ura_number,
             )
             is False
@@ -268,7 +254,6 @@ def test_delete_with_only_ura_number_should_remove_all_recordss(
     referral_1 = ReferralEntity(
         ura_number="0000123",
         pseudonym="ps-1",
-        data_domain="ImagingStudy",
         source="SomeDevice",
         organization_type="Hospital",
     )
@@ -276,14 +261,12 @@ def test_delete_with_only_ura_number_should_remove_all_recordss(
         ura_number="0000123",
         pseudonym="ps-2",
         source="SomeOtherDevice",
-        data_domain="MedicationStatement",
         organization_type="Hospital",
     )
     # referral from a different provider
     referral_3 = ReferralEntity(
         ura_number="0000125",
         pseudonym="ps-3",
-        data_domain="ImagingStudy",
         source="AntoherDevice",
         organization_type="Pharmacy",
     )
@@ -304,14 +287,12 @@ def test_delete_with_pseudonym_should_remove_all_records_for_patient(
     referral_1 = ReferralEntity(
         ura_number="0000123",
         pseudonym="ps-1",
-        data_domain="ImagingStudy",
         source="ImagingMachine",
         organization_type="Hospital",
     )
     referral_2 = ReferralEntity(
         ura_number="0000123",
         pseudonym="ps-1",
-        data_domain="MedicationStatement",
         source="SomeEPD",
         organization_type="Hospital",
     )
@@ -319,7 +300,6 @@ def test_delete_with_pseudonym_should_remove_all_records_for_patient(
     referral_3 = ReferralEntity(
         ura_number="0000123",
         pseudonym="ps-2",
-        data_domain="ImagingStudy",
         source="SomeXRay",
         organization_type="Pharmacy",
     )
@@ -359,7 +339,6 @@ def test_exists_should_return_true_if_record_is_there(
 
         exist = referral_repository.exists(
             pseudonym=mock_referral_entity.pseudonym,
-            data_domain=mock_referral_entity.data_domain,
             ura_number=mock_referral_entity.ura_number,
         )
 
@@ -372,7 +351,6 @@ def test_exists_should_return_false_if_record_is_not_there(
     with referral_repository.db_session:
         exist = referral_repository.exists(
             pseudonym=mock_referral_entity.pseudonym,
-            data_domain=mock_referral_entity.data_domain,
             ura_number=mock_referral_entity.ura_number,
         )
 

@@ -4,7 +4,6 @@ from pydantic import ConfigDict
 from pydantic.alias_generators import to_camel
 
 from app.db.models.referral import ReferralEntity
-from app.models.data_domain import DataDomain
 from app.models.fhir.elements import (
     CodeableConcept,
     Coding,
@@ -13,7 +12,6 @@ from app.models.fhir.elements import (
     Reference,
 )
 from app.models.fhir.resources.data import (
-    DATA_DOMAIN_SYSTEM,
     DEVICE_SYSTEM,
     EMPTY_REASON_SYSTEM,
     PSEUDONYM_SYSTEM,
@@ -37,7 +35,6 @@ class LocalizationList(DomainResource):
     mode: Literal["working", "snapshot", "changes"]
     subject: Reference | None = None
     source: Reference
-    code: CodeableConcept
     empty_reason: CodeableConcept
 
     @classmethod
@@ -58,19 +55,11 @@ class LocalizationList(DomainResource):
             ),
             type="Device",
         )
-        code = CodeableConcept(
-            coding=[
-                Coding(
-                    system=DATA_DOMAIN_SYSTEM,
-                    code=referral.data_domain,
-                )
-            ]
-        )
         empty_reason = CodeableConcept(
             coding=[
                 Coding(
                     system=EMPTY_REASON_SYSTEM,
-                    code="withhled",
+                    code="withheld",
                 )
             ]
         )
@@ -80,7 +69,6 @@ class LocalizationList(DomainResource):
             status="current",
             mode="working",
             source=source,
-            code=code,
             empty_reason=empty_reason,
         )
 
@@ -106,13 +94,6 @@ class LocalizationList(DomainResource):
             raise ValueError(f"List.subject.identifier.system must be {PSEUDONYM_SYSTEM}")
 
         return self.subject.identifier.value
-
-    def get_data_domain(self) -> DataDomain:
-        target = next((v.code for v in self.code.coding if v.system == DATA_DOMAIN_SYSTEM), None)
-        if target is None:
-            raise ValueError(f"Missing code with code system {DATA_DOMAIN_SYSTEM} in List.code.coding")
-
-        return DataDomain(target)
 
     def get_device(self) -> str:
         if self.source.identifier.system != DEVICE_SYSTEM:

@@ -6,7 +6,6 @@ from fastapi import HTTPException
 
 from app.db.models.referral import ReferralEntity
 from app.exceptions.fhir_exception import FHIRException
-from app.models.data_domain import DataDomain
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
 from app.services.referral_service import ReferralService
@@ -51,7 +50,6 @@ def test_add_one_should_succeed(
 ) -> None:
     expected = referral_service.add_one(
         pseudonym=Pseudonym("ps-1"),
-        data_domain=DataDomain("ImagingStudy"),
         ura_number=ura_number,
         source="SomeDevice",
         organization_type="ziekenhuis",
@@ -66,11 +64,9 @@ def test_add_referral_should_raise_exception_with_duplicates(
     referral_service: ReferralService, ura_number: UraNumber
 ) -> None:
     patient = Pseudonym("ps-1")
-    data_domain = DataDomain("ImagingStudy")
     org_type = "ziekenhuis"
     referral_service.add_one(
         pseudonym=patient,
-        data_domain=data_domain,
         ura_number=ura_number,
         source="SomeDevice",
         organization_type=org_type,
@@ -78,7 +74,6 @@ def test_add_referral_should_raise_exception_with_duplicates(
     with pytest.raises(HTTPException) as exec:
         referral_service.add_one(
             pseudonym=patient,
-            data_domain=data_domain,
             ura_number=ura_number,
             source="SomeDevice",
             organization_type=org_type,
@@ -92,10 +87,8 @@ def test_delete_one_should_succeed(
     ura_number: UraNumber,
 ) -> None:
     patient = Pseudonym("ps-1")
-    data_domain = DataDomain("MedicationAgreement")
     data = referral_service.add_one(
         pseudonym=patient,
-        data_domain=data_domain,
         ura_number=ura_number,
         source="SomeDevice",
         organization_type="huisarts",
@@ -105,7 +98,6 @@ def test_delete_one_should_succeed(
     assert_eq(data, nvi_reference)
     referral_service.delete_one(
         pseudonym=patient,
-        data_domain=data_domain,
         ura_number=ura_number,
         source="SomeDevice",
     )
@@ -119,12 +111,10 @@ def test_delete_one_should_raise_exception_when_not_found(
     referral_service: ReferralService, ura_number: UraNumber
 ) -> None:
     patient = Pseudonym("ps-1")
-    data_domain = DataDomain("ImagingStudy")
 
     with pytest.raises(HTTPException) as exec:
         referral_service.delete_one(
             pseudonym=patient,
-            data_domain=data_domain,
             source="SomeDevice",
             ura_number=ura_number,
         )
@@ -137,11 +127,9 @@ def test_get_registration_with_specific_patient_should_succeed(
     ura_number: UraNumber,
 ) -> None:
     localisation_pseudonym = Pseudonym("ps-1")
-    data_domain = DataDomain("ImagingStudy")
 
     data = referral_service.add_one(
         pseudonym=localisation_pseudonym,
-        data_domain=data_domain,
         ura_number=ura_number,
         source="SomeDevice",
         organization_type="ziekenhuis",
@@ -149,7 +137,6 @@ def test_get_registration_with_specific_patient_should_succeed(
 
     referral_service.add_one(
         pseudonym=Pseudonym("ps-2"),
-        data_domain=data_domain,
         ura_number=ura_number,
         source="SomeDevice",
         organization_type="ziekenhuis",
@@ -160,7 +147,6 @@ def test_get_registration_with_specific_patient_should_succeed(
     actual = referral_service.get_registrations(
         ura_number=UraNumber(data.ura_number),
         pseudonym=localisation_pseudonym,
-        data_domain=DataDomain(data.data_domain),
     )
 
     assert len(expected) == len(actual)
@@ -170,20 +156,16 @@ def test_get_registration_with_specific_patient_should_succeed(
 def test_get_registrations_should_succeed(referral_service: ReferralService, ura_number: UraNumber) -> None:
     patient_1 = Pseudonym("ps-1")
     patient_2 = Pseudonym("ps-2")
-    data_domain_1 = DataDomain("ImagingStudy")
-    data_domain_2 = DataDomain("MedicationAgreement")
     org_type = "ziekenhuis"
 
     expected_1 = referral_service.add_one(
         pseudonym=patient_1,
-        data_domain=data_domain_1,
         ura_number=ura_number,
         source="SomeDevice",
         organization_type=org_type,
     )
     expected_2 = referral_service.add_one(
         pseudonym=patient_2,
-        data_domain=data_domain_2,
         ura_number=ura_number,
         source="SomeDevice",
         organization_type=org_type,
@@ -201,23 +183,20 @@ def test_delete_patient_registrations_should_succeed(
     patient_1 = Pseudonym("ps-1")
     referral_service.add_one(
         pseudonym=patient_1,
-        data_domain=DataDomain("ImagingStudy"),
         ura_number=ura_number,
         source="SomeDevice",
         organization_type="ziekenhuis",
     )
     referral_service.add_one(
         pseudonym=patient_1,
-        data_domain=DataDomain("MedicationAgreement"),
         ura_number=ura_number,
-        source="SomeDevice",
-        organization_type="ziekenhuis",
+        source="SomeDevice2",
+        organization_type="ziekenhuis2",
     )
 
     patient_2 = Pseudonym("ps-2")
     patient_2_reference_1 = referral_service.add_one(
         pseudonym=patient_2,
-        data_domain=DataDomain("MedicationAgreement"),
         ura_number=ura_number,
         source="SomeDevice",
         organization_type="ziekenhuis",
@@ -243,11 +222,9 @@ def test_delete_patient_registrations_should_raise_exception_when_not_found(
 
 def test_delete_specific_registration_should_suceed(referral_service: ReferralService, ura_number: UraNumber) -> None:
     patient = Pseudonym("ps-1")
-    data_domain = DataDomain("MedicationAgreement")
     org_type = "umc"
     referral_service.add_one(
         pseudonym=patient,
-        data_domain=data_domain,
         ura_number=ura_number,
         source="SomeDevice",
         organization_type=org_type,
@@ -255,13 +232,11 @@ def test_delete_specific_registration_should_suceed(referral_service: ReferralSe
 
     referral_service.delete_specific_registration(
         ura_number=ura_number,
-        data_domain=data_domain,
         source="SomeDevice",
         pseudonym=patient,
     )
     actual = referral_service.get_registrations(
         ura_number=ura_number,
-        data_domain=data_domain,
         pseudonym=patient,
     )
 
@@ -272,11 +247,9 @@ def test_delete_specific_registration_should_raise_exception_when_no_match_found
     referral_service: ReferralService, ura_number: UraNumber
 ) -> None:
     patient = Pseudonym("ps-1")
-    data_domain = DataDomain("MedicationAgreement")
     with pytest.raises(HTTPException) as exec:
         referral_service.delete_specific_registration(
             ura_number=ura_number,
-            data_domain=data_domain,
             pseudonym=patient,
             source="SomeDevice",
         )
@@ -288,19 +261,15 @@ def test_delete_organizaton_should_succeed(referral_service: ReferralService, ur
     ura_a = ura_number
     ura_a_type = "ziekenhuis"
     patient_1 = Pseudonym("ps-1")
-    patient_1_data_domain = DataDomain("ImagingStudy")
     patient_1_referecne = referral_service.add_one(
         pseudonym=patient_1,
-        data_domain=patient_1_data_domain,
         ura_number=ura_a,
         source="SomeDevice",
         organization_type=ura_a_type,
     )
     patient_2 = Pseudonym("ps-2")
-    patient_2_data_domain = DataDomain("MedicationAgreement")
     patient_2_reference = referral_service.add_one(
         pseudonym=patient_2,
-        data_domain=patient_2_data_domain,
         ura_number=ura_a,
         source="SomeDevice",
         organization_type=ura_a_type,
@@ -312,11 +281,9 @@ def test_delete_organizaton_should_succeed(referral_service: ReferralService, ur
 
     ura_b = UraNumber("98765432")
     patient_3 = Pseudonym("ps-3")
-    patient_3_data_domain = DataDomain("MedicationAgreement")
     ura_b_type = "ziekenhuis"
     patient_3_reference = referral_service.add_one(
         pseudonym=patient_3,
-        data_domain=patient_3_data_domain,
         ura_number=ura_b,
         source="SomeDevice",
         organization_type=ura_b_type,
@@ -341,10 +308,8 @@ def test_delete_specific_organization_should_raise_exception_when_no_match_found
 
 def test_delete_by_id_should_succeed(referral_service: ReferralService, ura_number: UraNumber) -> None:
     patient = Pseudonym("ps-1")
-    data_domain = DataDomain("ImagingStudy")
     patient_reference = referral_service.add_one(
         pseudonym=patient,
-        data_domain=data_domain,
         ura_number=ura_number,
         source="SomeDevice",
         organization_type="ziekenhuis",
@@ -372,11 +337,9 @@ def test_get_one_should_succeed(
     ura_number: UraNumber,
 ) -> None:
     pseudonym = Pseudonym("ps-1")
-    data_domain = DataDomain("ImagingStudy")
 
     expected = referral_service.add_one(
         pseudonym=pseudonym,
-        data_domain=data_domain,
         ura_number=ura_number,
         source="SomeDevice",
         organization_type="ziekenhuis",
@@ -384,7 +347,6 @@ def test_get_one_should_succeed(
 
     actual = referral_service.get_one(
         pseudonym=pseudonym,
-        data_domain=data_domain,
         ura_number=ura_number,
         source="SomeDevice",
     )
@@ -395,10 +357,8 @@ def test_get_one_should_succeed(
 
 def test_get_one_should_return_none_when_not_found(referral_service: ReferralService, ura_number: UraNumber) -> None:
     pseudonym = Pseudonym("ps-1")
-    data_domain = DataDomain("ImagingStudy")
     actual = referral_service.get_one(
         pseudonym=pseudonym,
-        data_domain=data_domain,
         ura_number=ura_number,
         source="SomeDevice",
     )
