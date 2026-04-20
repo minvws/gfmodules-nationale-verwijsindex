@@ -8,6 +8,17 @@ from app.services.http import HttpService
 PATCHED_MODULE = "app.services.http.request"
 
 
+@pytest.fixture()
+def http_service() -> HttpService:
+    return HttpService(
+        endpoint="https://example.com/api",
+        timeout=5,
+        mtls_cert="path/to/cert.crt",
+        mtls_key="path/to/key.key",
+        verify_ca="path/to/ca.crt",
+    )
+
+
 @patch(PATCHED_MODULE)
 def test_do_request_should_succeed(response: MagicMock, http_service: HttpService) -> None:
     data = {"message": "hello world"}

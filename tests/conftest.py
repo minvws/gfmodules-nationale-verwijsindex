@@ -12,7 +12,6 @@ from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
 from app.models.ura import UraNumber
-from app.services.http import HttpService
 from app.services.referral_service import ReferralService
 from app.utils.certificates.utils import (
     load_certificate,
@@ -38,17 +37,6 @@ def database() -> Generator[Database, Any, None]:
 @pytest.fixture()
 def referral_repository(database: Database) -> ReferralRepository:
     return ReferralRepository(db_session=database.get_db_session())
-
-
-@pytest.fixture()
-def http_service() -> HttpService:
-    return HttpService(
-        endpoint="",
-        timeout=0,
-        mtls_cert="",
-        mtls_key="",
-        verify_ca="",
-    )
 
 
 @pytest.fixture(scope="session")
