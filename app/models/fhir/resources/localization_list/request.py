@@ -38,8 +38,12 @@ class LocalizationListParams(BaseModel):
     subject: str | None = Query(
         alias=SUBJECT_IDENTIFIER_PARAM, openapi_examples=_create_openapi_examples(PSEUDONYM_SYSTEM), default=None
     )
-    code: str | None = Query(
-        alias=CODE_PARAM, openapi_examples=_create_openapi_examples(DATA_DOMAIN_SYSTEM), default=None
+    code: str | None = Query(  # This parameter has no effect anymore and will be removed when v1 API is deprecated
+        alias=CODE_PARAM,
+        openapi_examples=_create_openapi_examples(DATA_DOMAIN_SYSTEM),
+        default=None,
+        deprecated=True,
+        description="This parameter is deprecated and has no effect. It will be removed in a future version of the API.",
     )
     source: str | None = Query(
         alias=DEVICE_IDENTIFIER_PARAM, openapi_examples=_create_openapi_examples(DEVICE_SYSTEM), default=None
