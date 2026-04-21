@@ -31,6 +31,7 @@ RUN apt-get update && \
         openssl \
         libssl3 \
         libsodium23 \
+        postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR ${PROJECT_DIR}
