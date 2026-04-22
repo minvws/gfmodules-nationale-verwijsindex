@@ -45,9 +45,7 @@ def get_test_config() -> Config:
         ),
         oauth=ConfigOAuth(
             issuer="http://example.com/",
-            jwks_url="http://example.com/.well-known/jwks.json",
             audience="test-audience",
-            enabled=False,
             override_ura_number="12345678",
         ),
         client_oauth=ConfigClientOAuth(
