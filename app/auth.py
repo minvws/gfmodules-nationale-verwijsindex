@@ -50,7 +50,6 @@ bearer = HTTPBearer(auto_error=False)
 def get_auth_ctx(
     request: Request,
     creds: Optional[HTTPAuthorizationCredentials] = Depends(bearer),
-    # oauth_service: OAuthService = Depends(dependencies.get_oauth_service),
     auth_headers_service: AuthHeaderService = Depends(dependencies.get_auth_header_service),
 ) -> AuthContext:
     try:
@@ -69,17 +68,3 @@ def get_auth_ctx(
     )
     request.state.auth = ctx
     return ctx
-
-    # try:
-    #     claims = oauth_service.verify(request)
-    # except OAuthError as e:
-    #     logger.error(f"OAuth verification failed: {e.description}")
-    #     raise HTTPException(status_code=e.status_code, detail=e.description) from e
-    #
-    # ctx = AuthContext(
-    #     claims=claims,
-    #     scope=claims["scope"],
-    #     ura_number=UraNumber(claims["sub"]),
-    # )
-    # request.state.auth = ctx
-    # return ctx
