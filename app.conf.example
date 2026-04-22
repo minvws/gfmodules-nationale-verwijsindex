@@ -71,8 +71,6 @@ ssl_key_file = server.key
 
 # Section for configuring the INCOMING OAuth connections (from external services to this service)
 [oauth]
-# If not enabled, mock services are injected if app is build with debug mode
-enabled = False
 # If not enabled, we assume this URA number is what is calling our service
 override_ura_number = 11112222
 
@@ -80,8 +78,6 @@ override_ura_number = 11112222
 audience = nvi.service
 # The issuer that issued the incoming OAuth tokens
 issuer = https://oauth:443
-# The URL to fetch the JWKS keys for validating incoming tokens
-jwks_url = https://oauth:443/oauth/jwks.json
 # Any MTLS settings for connecting to the oauth server (to fetch JWKS keys)
 mtls_cert = secrets/epd-1.ldn.crt
 mtls_key =  secrets/epd-1.ldn.key

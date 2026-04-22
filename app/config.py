@@ -76,9 +76,7 @@ class ConfigStats(BaseModel):
 
 
 class ConfigOAuth(BaseModel):
-    enabled: bool = Field(default=False)
     override_ura_number: str | None = Field(default=None)
-    jwks_url: str
     issuer: str
     audience: str
     mtls_cert: str | None = Field(default=None)
