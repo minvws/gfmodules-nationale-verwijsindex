@@ -51,6 +51,7 @@ class ClientOAuthService:
                     "grant_type": "client_credentials",
                     "scope": scope,
                     "target_audience": audience,
+                    "authorized_role": "source",
                 },
             )
             data = response.json()
