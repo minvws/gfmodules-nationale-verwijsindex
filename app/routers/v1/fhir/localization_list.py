@@ -155,9 +155,9 @@ def create(
     request: Request,
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
 ) -> Any:
-    valid_action = AuthContextService.validate_action(request.state.auth, RequestedAction.MODIFYING)
+    valid_action = AuthContextService.validate_action(request.state.auth, RequestedAction.MANAGING)
     if not valid_action:
-        raise UnauthorizedAction(request.state.auth.role, RequestedAction.MODIFYING.value)
+        raise UnauthorizedAction(request.state.auth.role, RequestedAction.MANAGING.value)
 
     authorized_ura: UraNumber = request.state.auth.ura_number
     return service.create(data, authorized_ura)
@@ -235,6 +235,10 @@ def get(
     request: Request,
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
 ) -> Any:
+    valid_action = AuthContextService.validate_action(request.state.auth, RequestedAction.MANAGING)
+    if not valid_action:
+        raise UnauthorizedAction(request.state.auth.role, RequestedAction.MANAGING.value)
+
     authorized_ura: UraNumber = request.state.auth.ura_number
     return service.get(id, authorized_ura)
 
@@ -352,9 +356,9 @@ def delete(
     request: Request,
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
 ) -> Any:
-    valid_action = AuthContextService.validate_action(request.state.auth, RequestedAction.MODIFYING)
+    valid_action = AuthContextService.validate_action(request.state.auth, RequestedAction.MANAGING)
     if not valid_action:
-        raise UnauthorizedAction(request.state.auth.role, RequestedAction.MODIFYING.value)
+        raise UnauthorizedAction(request.state.auth.role, RequestedAction.MANAGING.value)
 
     authorized_ura: UraNumber = request.state.auth.ura_number
     outcome, status_code = service.delete(id, authorized_ura)
@@ -385,9 +389,9 @@ def delete_for_query(
     params: Annotated[LocalizationListParams, Query()],
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
 ) -> Any:
-    valid_action = AuthContextService.validate_action(request.state.auth, RequestedAction.MODIFYING)
+    valid_action = AuthContextService.validate_action(request.state.auth, RequestedAction.MANAGING)
     if not valid_action:
-        raise UnauthorizedAction(request.state.auth.role, RequestedAction.MODIFYING.value)
+        raise UnauthorizedAction(request.state.auth.role, RequestedAction.MANAGING.value)
 
     authenticated_ura = request.state.auth.ura_number
     outcome, status_code = service.delete_by_query(params, authenticated_ura)

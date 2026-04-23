@@ -39,7 +39,7 @@ def test_validate_action_should_return_true_when_role_consulting_and_action_loca
 def test_validate_action_sould_return_false_when_role_consulting_and_action_modifying(
     auth_context_consulting: AuthContext,
 ) -> None:
-    actual = AuthContextService.validate_action(auth_context_consulting, RequestedAction.MODIFYING)
+    actual = AuthContextService.validate_action(auth_context_consulting, RequestedAction.MANAGING)
 
     assert actual is False
 
@@ -47,7 +47,7 @@ def test_validate_action_sould_return_false_when_role_consulting_and_action_modi
 def test_validate_should_return_true_when_role_source_and_action_modifying(
     auth_context_source: AuthContext,
 ) -> None:
-    actual = AuthContextService.validate_action(auth_context_source, RequestedAction.MODIFYING)
+    actual = AuthContextService.validate_action(auth_context_source, RequestedAction.MANAGING)
 
     assert actual is True
 
