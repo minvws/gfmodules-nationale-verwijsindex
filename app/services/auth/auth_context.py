@@ -6,7 +6,7 @@ from app.models.auth.headers import AuthorizationRoles
 
 class RequestedAction(Enum):
     LOCALIZING = "localizing"
-    MODIFYING = "modifying"
+    MANAGING = "managing"
 
 
 class AuthContextService:
@@ -17,5 +17,5 @@ class AuthContextService:
             case RequestedAction.LOCALIZING:
                 return AuthorizationRoles.CONSULTING.value == role
 
-            case RequestedAction.MODIFYING:
+            case RequestedAction.MANAGING:
                 return AuthorizationRoles.SOURCE.value == role
