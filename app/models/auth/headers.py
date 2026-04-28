@@ -1,13 +1,10 @@
-import logging
 from enum import Enum
-from typing import Any, Dict, List, Self
+from typing import Annotated, Any, Dict, List, Self
 
 from fastapi import Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.ura import UraNumber
-
-logger = logging.getLogger(__name__)
 
 
 class AuthorizationRoles(Enum):
@@ -18,13 +15,13 @@ class AuthorizationRoles(Enum):
 class AuthHeaders(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    oin: str | None = Field(alias="x-gf-oin", default=None)
-    source_id: str | None = Field(alias="x-gf-source-id", default=None)
-    ura: str = Field(alias="x-gf-ura")
-    audience: str = Field(alias="x-gf-audience")
-    authorized_role: str = Field(alias="x-gf-authorized-role")
-    scope: List[str] = Field(alias="x-gf-scope")
-    cert_type: str = Field(alias="x-gf-cert-type")
+    oin: Annotated[str | None, Field(alias="x-gf-oin", default=None)]
+    source_id: Annotated[str | None, Field(alias="x-gf-source-id", default=None)]
+    ura: Annotated[str, Field(alias="x-gf-ura")]
+    audience: Annotated[str, Field(alias="x-gf-audience")]
+    authorized_role: Annotated[str, Field(alias="x-gf-authorized-role")]
+    scope: Annotated[List[str], Field(alias="x-gf-scope")]
+    cert_type: Annotated[str, Field(alias="x-gf-cert-type")]
 
     @field_validator("ura", mode="before")
     @classmethod
@@ -42,19 +39,19 @@ class AuthHeaders(BaseModel):
         try:
             results = AuthorizationRoles(data)
             return results.value
-        except Exception as e:
-            raise ValueError(f"Invalid AuthorizationRoles : {e}")
+        except ValueError as e:
+            raise ValueError(f"Invalid AuthorizationRoles : {data}") from e
 
     @classmethod
     def from_request(cls, req: Request) -> Self:
         headers = req.headers
         data: Dict[str, Any] = {}
-        optinal_fields = ["oin", "x-gf-oin", "source_id", "x-gf-source-id"]
+        optional_fields = ["oin", "x-gf-oin", "source_id", "x-gf-source-id"]
         for name, field in cls.model_fields.items():
             header_name = field.alias or name
             value = headers.get(header_name)
 
-            if header_name not in optinal_fields and value is None:
+            if header_name not in optional_fields and value is None:
                 raise ValueError(f"{header_name} is required for {cls.__name__}")
 
             if header_name == "x-gf-scope" and value is not None:

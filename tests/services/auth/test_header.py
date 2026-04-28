@@ -7,7 +7,7 @@ from app.services.auth.header import AuthHeaderService
 
 
 def test_validate_should_succeed(ura_number: UraNumber, auth_header_service: AuthHeaderService) -> None:
-    expected = AuthHeaders(  # type: ignore
+    expected = AuthHeaders(
         oin="oin123",
         source_id="source123",
         ura=ura_number.value,
@@ -25,7 +25,7 @@ def test_validate_should_succeed(ura_number: UraNumber, auth_header_service: Aut
 def test_validate_should_panic_with_invalid_audience(
     ura_number: UraNumber, auth_header_service: AuthHeaderService
 ) -> None:
-    data = AuthHeaders(  # type: ignore
+    data = AuthHeaders(
         oin="oin123",
         source_id="source123",
         ura=ura_number.value,

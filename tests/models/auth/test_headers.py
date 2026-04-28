@@ -23,12 +23,12 @@ def auth_headers_dict(ura_number: UraNumber) -> Dict[str, Any]:
 
 @pytest.fixture()
 def auth_headers(ura_number: UraNumber) -> AuthHeaders:
-    return AuthHeaders(  # type: ignore
+    return AuthHeaders(
         oin="oin123",
         source_id="source123",
         ura=ura_number.value,
         audience="audience",
-        authorized_role=AuthorizationRoles.CONSULTING,
+        authorized_role=AuthorizationRoles.CONSULTING.value,
         scope=["epd:read"],
         cert_type="oin",
     )
