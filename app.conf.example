@@ -61,6 +61,8 @@ host = 0.0.0.0
 port = 8501
 # Live reload for uvicorn server
 reload = True
+# The root path if behind a proxy
+root_path =
 
 # SSL configuration
 use_ssl = False
