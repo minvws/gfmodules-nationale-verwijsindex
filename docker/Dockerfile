@@ -105,6 +105,7 @@ RUN if [ "${DEV}" = "true" ]; then \
 # Copy only what the app needs at runtime (no tests, docs, CI artifacts, etc.)
 COPY --chown=${APP_USER}:${APP_GROUP} app/ /src/app/
 COPY --chown=${APP_USER}:${APP_GROUP} app.conf.example /src/
+COPY --chown=${APP_USER}:${APP_GROUP} static /src/static
 
 # version.json is generated from build args so CI workspace artifacts never leak in
 ARG RELEASE_VERSION=dev
