@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request
 
@@ -53,7 +53,7 @@ def register(
     },
 )
 def metadata(
-    capability_statement: dict[str, Any] = Depends(get_capability_statement),
+    capability_statement: Annotated[dict[str, Any], Depends(get_capability_statement)],
 ) -> FHIRJSONResponse:
     """Return the FHIR CapabilityStatement for this server."""
     return FHIRJSONResponse(content=capability_statement)
