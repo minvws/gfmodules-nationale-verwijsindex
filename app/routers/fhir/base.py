@@ -1,9 +1,8 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, Depends, Request
 
-from app.data import NVI_ORGANIZATION_TYPES
 from app.dependencies import get_bundle_service, get_capability_statement
 from app.exceptions.fhir_exception import FHIRException
 from app.models.fhir.bundle import Bundle
@@ -58,45 +57,3 @@ def metadata(
 ) -> FHIRJSONResponse:
     """Return the FHIR CapabilityStatement for this server."""
     return FHIRJSONResponse(content=capability_statement)
-
-
-@router.get(
-    "/CodeSystem/nvi-organization-type",
-    status_code=200,
-    summary="get CodeSystems for Organization types (SourceType)",
-    description="Retrieves the acceptable codes values for an SourceType (Organization) in the NVI",
-    responses={
-        200: {
-            "description": "A CodeSystem that contains value sets for the organization types accepted byt he NVI",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "resourceType": "CodeSystem",
-                        "name": "Some name",
-                        "title": "Some title",
-                        "status": "draft",
-                        "description": "Some description",
-                        "caseSensitive": True,
-                        "concept": [
-                            {
-                                "code": "zbc",
-                                "display": "Zelfstandig behandelcentrum",
-                            },
-                        ],
-                    }
-                }
-            },
-        }
-    },
-)
-def get_org_types() -> Dict[str, Any]:
-    data = {
-        "resourceType": "CodeSystem",
-        "name": "NVIOrganizationTypes",
-        "title": "NVI Zorgaanbieder Types",
-        "status": "draft",
-        "description": "Classificatie van zorgaanbieders voor NVI registraties. Dit is een voorlopige definitie; VWS zal op korte termijn een definitieve standaard publiceren.",
-        "caseSensitive": True,
-        "concept": [org_type.model_dump() for org_type in NVI_ORGANIZATION_TYPES],
-    }
-    return data
