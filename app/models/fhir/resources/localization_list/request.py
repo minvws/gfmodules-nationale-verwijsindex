@@ -5,10 +5,18 @@ from fastapi import Query
 from pydantic import BaseModel, field_validator
 
 from app.models.fhir.elements import Identifier
-from app.models.fhir.resources.data import DATA_DOMAIN_SYSTEM, DEVICE_SYSTEM, PSEUDONYM_SYSTEM
-from app.routers.v1.fhir import CODE_PARAM, DEVICE_IDENTIFIER_PARAM, SUBJECT_IDENTIFIER_PARAM
+from app.models.fhir.resources.data import (
+    DATA_DOMAIN_SYSTEM,
+    DEVICE_SYSTEM,
+    PSEUDONYM_SYSTEM,
+)
 
 logger = logging.getLogger(__name__)
+
+
+SUBJECT_IDENTIFIER_PARAM = "subject:identifier"
+DEVICE_IDENTIFIER_PARAM = "source:identifier"
+CODE_PARAM = "code"
 
 
 def _create_openapi_examples(system: str) -> dict[str, Any]:
@@ -36,7 +44,9 @@ class LocalizationListParams(BaseModel):
     model_config = {"extra": "forbid"}
 
     subject: str | None = Query(
-        alias=SUBJECT_IDENTIFIER_PARAM, openapi_examples=_create_openapi_examples(PSEUDONYM_SYSTEM), default=None
+        alias=SUBJECT_IDENTIFIER_PARAM,
+        openapi_examples=_create_openapi_examples(PSEUDONYM_SYSTEM),
+        default=None,
     )
     code: str | None = Query(  # This parameter has no effect anymore and will be removed when v1 API is deprecated
         alias=CODE_PARAM,
@@ -46,7 +56,9 @@ class LocalizationListParams(BaseModel):
         description="This parameter is deprecated and has no effect. It will be removed in a future version of the API.",
     )
     source: str | None = Query(
-        alias=DEVICE_IDENTIFIER_PARAM, openapi_examples=_create_openapi_examples(DEVICE_SYSTEM), default=None
+        alias=DEVICE_IDENTIFIER_PARAM,
+        openapi_examples=_create_openapi_examples(DEVICE_SYSTEM),
+        default=None,
     )
 
     @field_validator("subject", mode="before")

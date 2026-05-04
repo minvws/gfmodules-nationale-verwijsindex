@@ -19,18 +19,18 @@ from app.models.fhir.resources.data import (
     URA_SYSTEM_EXTENSION,
 )
 from app.models.fhir.resources.localization_list.request import (
+    SUBJECT_IDENTIFIER_PARAM,
     LocalizationListParams,
 )
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.response import DeleteResponse, FHIRJSONResponse
 from app.models.ura import UraNumber
-from app.routers.v1.fhir import SUBJECT_IDENTIFIER_PARAM
 from app.services.auth.auth_context import AuthContextService, RequestedAction
 from app.services.fhir.localization_list import LocalizationListService
 
 logger = logging.getLogger(__name__)
-router = APIRouter(tags=["v1-poc - FHIR"], prefix="/v1-poc/fhir/List")
+router = APIRouter(tags=["poc - FHIR"], prefix="/fhir/List")
 
 
 @router.post(
