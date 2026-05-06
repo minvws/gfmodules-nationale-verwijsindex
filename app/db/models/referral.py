@@ -1,7 +1,8 @@
+from datetime import datetime
 from typing import Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy import String, UniqueConstraint
+from sqlalchemy import TIMESTAMP, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import Uuid
 
@@ -24,6 +25,4 @@ class ReferralEntity(Base):
     pseudonym: Mapped[str] = mapped_column("pseudonym", String)
     source: Mapped[str] = mapped_column("source", String)
     organization_type: Mapped[Optional[str]] = mapped_column("organization_type", String)
-
-    def __repr__(self) -> str:
-        return f"<ReferralEntity(ura_number={self.ura_number}, pseudonym={self.pseudonym}, source={self.source}, organization_type={self.organization_type}>"
+    created_at: Mapped[datetime] = mapped_column("created_at", TIMESTAMP, default=datetime.now)
