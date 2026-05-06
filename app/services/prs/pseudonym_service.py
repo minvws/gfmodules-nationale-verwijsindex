@@ -5,7 +5,7 @@ import pyoprf
 
 from app.models.pseudonym import Pseudonym
 from app.services.decrypt_service import DecryptError, DecryptService
-from app.services.prs.exception import PseudonymError
+from app.services.exceptions import PseudonymError
 
 logger = logging.getLogger(__name__)
 

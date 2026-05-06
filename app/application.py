@@ -15,6 +15,7 @@ from app.routers.default import router as default_router
 from app.routers.fhir.base import router as fhir_base_router
 from app.routers.fhir.localization_list import router as fhir_list_router
 from app.routers.health import router as health_router
+from app.routers.registrations import router as registrations_router
 from app.stats import StatsdMiddleware
 
 
@@ -84,7 +85,7 @@ def setup_fastapi() -> FastAPI:
     container.configure()
 
     public_routers = [default_router, health_router]
-    routers = [fhir_list_router, fhir_base_router]
+    routers = [fhir_list_router, fhir_base_router, registrations_router]
 
     for router in public_routers:
         fastapi.include_router(router)

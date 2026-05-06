@@ -55,7 +55,7 @@ class InvalidHeaderPropertyError(Exception):
         super().__init__(f"Invalid header property {prop}: unrecognized `{value}`")
 
 
-class PseudonymDecodingError(Exception):
+class PseudonymError(Exception):
     def __init__(self, msg: str | None = None) -> None:
         error_msg = "Error occurred while decoding pseudonym" if msg is None else msg
-        super().__init__(f"Pseudonym Decoding Error: {error_msg}")
+        super().__init__(error_msg)

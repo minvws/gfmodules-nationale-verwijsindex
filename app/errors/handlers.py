@@ -15,7 +15,7 @@ from app.services.exceptions import (
     InvalidHeaderPropertyError,
     InvalidModelError,
     NotFoundError,
-    PseudonymDecodingError,
+    PseudonymError,
     UnauthorizedError,
 )
 
@@ -79,7 +79,7 @@ def hanlde_invalid_model_errors(request: Request, exception: InvalidModelError) 
     return JSONResponse(status_code=status_code, content=str(exception))
 
 
-def handle_pseudonym_decoding_error(request: Request, exception: PseudonymDecodingError) -> Response:
+def handle_pseudonym_decoding_error(request: Request, exception: PseudonymError) -> Response:
     path = request.url.path
     status_code = 400
     if "fhir" in path:
@@ -174,7 +174,7 @@ def default_exception_handler(req: Request, exc: Exception) -> JSONResponse:
 def register_exceptions(app: FastAPI) -> None:
     app.add_exception_handler(NotFoundError, handle_not_found_error)
     app.add_exception_handler(UnauthorizedError, handle_unauthorized_error)
-    app.add_exception_handler(PseudonymDecodingError, handle_pseudonym_decoding_error)
+    app.add_exception_handler(PseudonymError, handle_pseudonym_decoding_error)
     app.add_exception_handler(ConflictError, handle_conflict_error)
     app.add_exception_handler(InvalidHeaderPropertyError, handle_invalid_header_property_error)
 

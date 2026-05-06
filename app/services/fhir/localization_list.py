@@ -13,7 +13,7 @@ from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
 from app.services.exceptions import (
     NotFoundError,
-    PseudonymDecodingError,
+    PseudonymError,
     UnauthorizedUraError,
 )
 from app.services.prs.pseudonym_service import PseudonymService
@@ -37,7 +37,7 @@ class LocalizationListService:
             )
         except Exception as e:
             logger.error(f"error occurred while decoding pseudonym token: {e}")
-            raise PseudonymDecodingError(f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}")
+            raise PseudonymError(f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}")
 
     def create(self, data: LocalizationList, authenticated_ura: UraNumber) -> LocalizationList:
         ura_number = data.get_ura()
