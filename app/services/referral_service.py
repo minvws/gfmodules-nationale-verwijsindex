@@ -5,9 +5,9 @@ from uuid import UUID
 from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
-from app.exceptions.fhir_exception import FHIRException, NotFoundException
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
+from app.services.fhir.exceptions import FHIRException, NotFoundException
 
 logger = logging.getLogger(__name__)
 
@@ -75,10 +75,7 @@ class ReferralService:
                 source=source,
             )
 
-        if referral:
-            return referral
-
-        return None
+        return referral
 
     def get_many(
         self,
@@ -141,62 +138,6 @@ class ReferralService:
                 )
 
             referral_repository.delete_one(referral)
-
-    def get_registrations(
-        self,
-        ura_number: UraNumber,
-        pseudonym: Pseudonym | None = None,
-        source: str | None = None,
-    ) -> Sequence[ReferralEntity]:
-        with self.database.get_db_session() as session:
-            repo = session.get_repository(ReferralRepository)
-            data = repo.find_many(
-                ura_number=str(ura_number),
-                pseudonym=str(pseudonym) if pseudonym else None,
-                source=source,
-            )
-
-        return data
-
-    def delete_patient_registrations(self, ura_number: UraNumber, pseudonym: Pseudonym) -> None:
-        with self.database.get_db_session() as session:
-            repo = session.get_repository(ReferralRepository)
-            exists = repo.exists(ura_number=str(ura_number), pseudonym=str(pseudonym))
-            if not exists:
-                raise NotFoundException
-
-            repo.delete(ura_number=str(ura_number), pseudonym=str(pseudonym))
-
-    def delete_specific_registration(
-        self,
-        ura_number: UraNumber,
-        pseudonym: Pseudonym,
-        source: str,
-    ) -> None:
-        with self.database.get_db_session() as session:
-            repo = session.get_repository(ReferralRepository)
-            exists = repo.exists(
-                ura_number=str(ura_number),
-                pseudonym=str(pseudonym),
-                source=source,
-            )
-            if not exists:
-                raise NotFoundException
-
-            repo.delete(
-                ura_number=str(ura_number),
-                pseudonym=str(pseudonym),
-                source=source,
-            )
-
-    def delete_specific_organization(self, ura_number: UraNumber) -> None:
-        with self.database.get_db_session() as session:
-            repo = session.get_repository(ReferralRepository)
-            org_exists = repo.exists(ura_number=str(ura_number))
-            if not org_exists:
-                raise NotFoundException
-
-            repo.delete(ura_number=str(ura_number))
 
     def delete_by_id(self, id: UUID) -> None:
         with self.database.get_db_session() as session:
