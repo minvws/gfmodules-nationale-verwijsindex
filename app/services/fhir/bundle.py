@@ -1,11 +1,11 @@
 import logging
 from typing import Any
 
-from app.exceptions.fhir_exception import FHIRException
 from app.models.fhir.bundle import Bundle, BundleEntry, EntryRequestDto, EntryResponse
 from app.models.fhir.resources.localization_list.request import LocalizationListParams
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.ura import UraNumber
+from app.services.fhir.exceptions import FHIRException
 from app.services.fhir.localization_list import LocalizationListService
 
 logger = logging.getLogger(__name__)

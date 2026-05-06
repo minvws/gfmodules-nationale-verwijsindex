@@ -5,9 +5,9 @@ from uuid import UUID
 from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
-from app.exceptions.fhir_exception import FHIRException, NotFoundException
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
+from app.services.fhir.exceptions import FHIRException, NotFoundException
 
 logger = logging.getLogger(__name__)
 

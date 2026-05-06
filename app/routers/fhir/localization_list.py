@@ -9,7 +9,6 @@ from fastapi.params import Query
 from app.dependencies import (
     get_localization_list_service,
 )
-from app.exceptions.fhir_exception import UnauthorizedAction
 from app.models.fhir.resources.data import (
     DATA_DOMAIN_SYSTEM,
     DEVICE_SYSTEM,
@@ -27,6 +26,7 @@ from app.models.fhir.resources.operation_outcome.resource import OperationOutcom
 from app.models.response import DeleteResponse, FHIRJSONResponse
 from app.models.ura import UraNumber
 from app.services.auth.auth_context import AuthContextService, RequestedAction
+from app.services.fhir.exceptions import UnauthorizedAction
 from app.services.fhir.localization_list import LocalizationListService
 
 logger = logging.getLogger(__name__)

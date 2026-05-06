@@ -4,13 +4,13 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Request
 
 from app.dependencies import get_bundle_service, get_capability_statement
-from app.exceptions.fhir_exception import FHIRException
 from app.models.fhir.bundle import Bundle
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.response import FHIRJSONResponse
 from app.models.ura import UraNumber
 from app.services.fhir.bundle import BundleService
+from app.services.fhir.exceptions import FHIRException
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["poc - FHIR"], prefix="/fhir")

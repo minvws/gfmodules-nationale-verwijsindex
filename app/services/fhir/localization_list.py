@@ -2,13 +2,16 @@ import logging
 from typing import Tuple
 from uuid import UUID
 
-from app.exceptions.fhir_exception import FHIRException
 from app.models.fhir.bundle import Bundle, BundleEntry
-from app.models.fhir.resources.localization_list.request import SUBJECT_IDENTIFIER_PARAM, LocalizationListParams
+from app.models.fhir.resources.localization_list.request import (
+    SUBJECT_IDENTIFIER_PARAM,
+    LocalizationListParams,
+)
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
+from app.services.fhir.exceptions import FHIRException
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 from app.utils.fhir import decode_url_safe_token

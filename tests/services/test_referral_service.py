@@ -5,9 +5,9 @@ import pytest
 from fastapi import HTTPException
 
 from app.db.models.referral import ReferralEntity
-from app.exceptions.fhir_exception import FHIRException
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
+from app.services.fhir.exceptions import FHIRException
 from app.services.referral_service import ReferralService
 
 
