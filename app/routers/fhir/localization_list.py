@@ -6,9 +6,11 @@ from fastapi import APIRouter, Body, Depends, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.params import Query
 
+from app.auth import AuthContext
 from app.dependencies import (
     get_localization_list_service,
 )
+from app.models.auth.data import AuthorizationScope, RequestedAction
 from app.models.fhir.resources.data import (
     DATA_DOMAIN_SYSTEM,
     DEVICE_SYSTEM,
@@ -25,8 +27,8 @@ from app.models.fhir.resources.localization_list.resource import LocalizationLis
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.response import DeleteResponse, FHIRJSONResponse
 from app.models.ura import UraNumber
-from app.services.auth.auth_context import AuthContextService, RequestedAction
-from app.services.fhir.exceptions import UnauthorizedAction
+from app.services.auth.auth_context import AuthContextService
+from app.services.fhir.exceptions import UnauthorizedAction, UnauthorizedScope
 from app.services.fhir.localization_list import LocalizationListService
 
 logger = logging.getLogger(__name__)
@@ -155,9 +157,13 @@ def create(
     request: Request,
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
 ) -> Any:
-    valid_action = AuthContextService.validate_action(request.state.auth, RequestedAction.MANAGING)
+    ctx: AuthContext = request.state.auth
+    if AuthorizationScope.CREATE not in ctx.scope:
+        raise UnauthorizedScope(scopes=ctx.scope, required_scope=AuthorizationScope.CREATE)
+
+    valid_action = AuthContextService.validate_action(ctx, RequestedAction.MANAGING)
     if not valid_action:
-        raise UnauthorizedAction(request.state.auth.role, RequestedAction.MANAGING.value)
+        raise UnauthorizedAction(RequestedAction.MANAGING, ctx.role)
 
     authorized_ura: UraNumber = request.state.auth.ura_number
     return service.create(data, authorized_ura)
@@ -235,9 +241,13 @@ def get(
     request: Request,
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
 ) -> Any:
-    valid_action = AuthContextService.validate_action(request.state.auth, RequestedAction.MANAGING)
+    ctx: AuthContext = request.state.auth
+    if AuthorizationScope.READ not in ctx.scope:
+        raise UnauthorizedScope(scopes=ctx.scope, required_scope=AuthorizationScope.READ)
+
+    valid_action = AuthContextService.validate_action(ctx, RequestedAction.MANAGING)
     if not valid_action:
-        raise UnauthorizedAction(request.state.auth.role, RequestedAction.MANAGING.value)
+        raise UnauthorizedAction(RequestedAction.MANAGING, ctx.role)
 
     authorized_ura: UraNumber = request.state.auth.ura_number
     return service.get(id, authorized_ura)
@@ -327,9 +337,13 @@ def query(
     params: Annotated[LocalizationListParams, Query()],
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
 ) -> Any:
-    valid_action = AuthContextService.validate_action(request.state.auth, RequestedAction.LOCALIZING)
+    ctx: AuthContext = request.state.auth
+    if AuthorizationScope.LOCALIZE not in ctx.scope:
+        raise UnauthorizedScope(scopes=ctx.scope, required_scope=AuthorizationScope.LOCALIZE)
+
+    valid_action = AuthContextService.validate_action(ctx, RequestedAction.LOCALIZING)
     if not valid_action:
-        raise UnauthorizedAction(request.state.auth.role, RequestedAction.LOCALIZING.value)
+        raise UnauthorizedAction(RequestedAction.LOCALIZING, ctx.role)
 
     authorized_ura = request.state.auth.ura_number
     return service.query(params, authorized_ura)
@@ -356,9 +370,13 @@ def delete(
     request: Request,
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
 ) -> Any:
-    valid_action = AuthContextService.validate_action(request.state.auth, RequestedAction.MANAGING)
+    ctx: AuthContext = request.state.auth
+    if AuthorizationScope.DELETE not in ctx.scope:
+        raise UnauthorizedScope(scopes=ctx.scope, required_scope=AuthorizationScope.DELETE)
+
+    valid_action = AuthContextService.validate_action(ctx, RequestedAction.MANAGING)
     if not valid_action:
-        raise UnauthorizedAction(request.state.auth.role, RequestedAction.MANAGING.value)
+        raise UnauthorizedAction(RequestedAction.MANAGING, ctx.role)
 
     authorized_ura: UraNumber = request.state.auth.ura_number
     outcome, status_code = service.delete(id, authorized_ura)
@@ -389,9 +407,13 @@ def delete_for_query(
     params: Annotated[LocalizationListParams, Query()],
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
 ) -> Any:
-    valid_action = AuthContextService.validate_action(request.state.auth, RequestedAction.MANAGING)
+    ctx: AuthContext = request.state.auth
+    if AuthorizationScope.DELETE not in ctx.scope:
+        raise UnauthorizedScope(scopes=ctx.scope, required_scope=AuthorizationScope.DELETE)
+
+    valid_action = AuthContextService.validate_action(ctx, RequestedAction.MANAGING)
     if not valid_action:
-        raise UnauthorizedAction(request.state.auth.role, RequestedAction.MANAGING.value)
+        raise UnauthorizedAction(RequestedAction.MANAGING, ctx.role)
 
     authenticated_ura = request.state.auth.ura_number
     outcome, status_code = service.delete_by_query(params, authenticated_ura)

@@ -1,12 +1,5 @@
-from enum import Enum
-
 from app.auth import AuthContext
-from app.models.auth.headers import AuthorizationRoles
-
-
-class RequestedAction(Enum):
-    LOCALIZING = "localizing"
-    MANAGING = "managing"
+from app.models.auth.data import AuthorizationRole, RequestedAction
 
 
 class AuthContextService:
@@ -15,7 +8,7 @@ class AuthContextService:
         role = auth_headers.role
         match action:
             case RequestedAction.LOCALIZING:
-                return AuthorizationRoles.CONSULTING.value == role
+                return AuthorizationRole.CONSULTING == role
 
             case RequestedAction.MANAGING:
-                return AuthorizationRoles.SOURCE.value == role
+                return AuthorizationRole.SOURCE == role

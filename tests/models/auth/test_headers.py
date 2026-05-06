@@ -4,7 +4,8 @@ from unittest.mock import Mock
 import pytest
 from fastapi import Request
 
-from app.models.auth.headers import AuthHeaders, AuthorizationRoles
+from app.models.auth.data import AuthorizationRole
+from app.models.auth.headers import AuthHeaders
 from app.models.ura import UraNumber
 
 
@@ -15,8 +16,8 @@ def auth_headers_dict(ura_number: UraNumber) -> Dict[str, Any]:
         "source_id": "source123",
         "ura": ura_number.value,
         "audience": "audience",
-        "authorized_role": AuthorizationRoles.CONSULTING.value,
-        "scope": ["epd:read"],
+        "authorized_role": AuthorizationRole.CONSULTING.value,
+        "scope": ["nvi:read"],
         "cert_type": "oin",
     }
 
@@ -28,8 +29,8 @@ def auth_headers(ura_number: UraNumber) -> AuthHeaders:
         source_id="source123",
         ura=ura_number.value,
         audience="audience",
-        authorized_role=AuthorizationRoles.CONSULTING.value,
-        scope=["epd:read"],
+        authorized_role=AuthorizationRole.CONSULTING.value,
+        scope=["nvi:read"],
         cert_type="oin",
     )
 
@@ -41,8 +42,8 @@ def header_data(ura_number: UraNumber) -> Dict[str, Any]:
         "x-gf-source-id": "source123",
         "x-gf-ura": ura_number.value,
         "x-gf-audience": "audience",
-        "x-gf-authorized-role": AuthorizationRoles.CONSULTING.value,
-        "x-gf-scope": "epd:read",
+        "x-gf-authorized-role": AuthorizationRole.CONSULTING.value,
+        "x-gf-scope": "nvi:read",
         "x-gf-cert-type": "oin",
     }
 
@@ -134,3 +135,17 @@ def test_from_request_should_panic_with_missing_prop(
         AuthHeaders.from_request(mock_request)
 
     assert "x-gf-ura is required for AuthHeaders" in str(exec.value)
+
+
+def test_from_header_should_panic_with_invalid_scope(
+    header_data: Dict[str, Any],
+) -> None:
+    data = header_data.copy()
+    data["x-gf-scope"] = "nvi:invalid-scope"
+    mock_request = Mock(spec=Request)
+    mock_request.headers = data
+
+    with pytest.raises(ValueError) as exec:
+        AuthHeaders.from_request(mock_request)
+
+    assert "Invalid scope nvi:invalid-scope" in str(exec.value)

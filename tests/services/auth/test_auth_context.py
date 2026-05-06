@@ -1,19 +1,19 @@
 import pytest
 
 from app.auth import AuthContext
-from app.models.auth.headers import AuthorizationRoles
+from app.models.auth.data import AuthorizationRole, AuthorizationScope, RequestedAction
 from app.models.ura import UraNumber
-from app.services.auth.auth_context import AuthContextService, RequestedAction
+from app.services.auth.auth_context import AuthContextService
 
 
 @pytest.fixture()
 def auth_context_consulting(ura_number: UraNumber) -> AuthContext:
     return AuthContext(
         claims={},
-        scope=["nvi:read"],
+        scope=[AuthorizationScope.READ],
         ura_number=ura_number,
         oin="some-oin",
-        role=AuthorizationRoles.CONSULTING.value,
+        role=AuthorizationRole.CONSULTING,
     )
 
 
@@ -21,10 +21,10 @@ def auth_context_consulting(ura_number: UraNumber) -> AuthContext:
 def auth_context_source(ura_number: UraNumber) -> AuthContext:
     return AuthContext(
         claims={},
-        scope=["nvi:read"],
+        scope=[AuthorizationScope.READ],
         ura_number=ura_number,
         oin="some-oin",
-        role=AuthorizationRoles.SOURCE.value,
+        role=AuthorizationRole.SOURCE,
     )
 
 

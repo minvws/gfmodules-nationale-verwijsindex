@@ -7,6 +7,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.requests import Request
 
 from app import dependencies
+from app.models.auth.data import AuthorizationRole, AuthorizationScope
 from app.models.auth.headers import AuthHeaders
 from app.models.ura import UraNumber
 from app.services.auth.header import AuthHeaderService
@@ -35,13 +36,13 @@ class AuthContext:
     # List of claims from the token
     claims: Dict[str, Any]
     # OAuth scope
-    scope: List[str]
+    scope: List[AuthorizationScope]
     # URA number of the authenticated user
     ura_number: UraNumber
     # OIN Number
     oin: str | None = None
     # authrozied role
-    role: str | None = None
+    role: AuthorizationRole | None = None
 
 
 bearer = HTTPBearer(auto_error=False)
@@ -61,10 +62,10 @@ def get_auth_ctx(
     validated_auth_headers = auth_headers_service.validate(auth_headers)
     ctx = AuthContext(
         claims={},
-        scope=validated_auth_headers.scope,
+        scope=[AuthorizationScope(s) for s in validated_auth_headers.scope],
         ura_number=UraNumber(validated_auth_headers.ura),
         oin=validated_auth_headers.oin,
-        role=validated_auth_headers.authorized_role,
+        role=AuthorizationRole(validated_auth_headers.authorized_role),
     )
     request.state.auth = ctx
     return ctx

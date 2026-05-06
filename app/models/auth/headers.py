@@ -1,15 +1,10 @@
-from enum import Enum
 from typing import Annotated, Any, Dict, List, Self
 
 from fastapi import Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.models.auth.data import AuthorizationRole, AuthorizationScope
 from app.models.ura import UraNumber
-
-
-class AuthorizationRoles(Enum):
-    CONSULTING = "consulting"
-    SOURCE = "source"
 
 
 class AuthHeaders(BaseModel):
@@ -37,10 +32,26 @@ class AuthHeaders(BaseModel):
     @classmethod
     def validate_authorized_role(cls, data: Any) -> str:
         try:
-            results = AuthorizationRoles(data)
+            results = AuthorizationRole(data)
             return results.value
         except ValueError as e:
             raise ValueError(f"Invalid AuthorizationRoles : {data}") from e
+
+    @field_validator("scope", mode="before")
+    def validate_scope(cls, data: Any) -> List[str]:
+        if not isinstance(data, list):
+            raise ValueError(f"Invalid scope type in AuthorizationRoles: {data}")
+
+        results = []
+        for entry in data:
+            try:
+                scope = AuthorizationScope(entry)
+            except ValueError as e:
+                raise ValueError(f"Invalid scope {entry}: {e}")
+
+            results.append(scope.value)
+
+        return results
 
     @classmethod
     def from_request(cls, req: Request) -> Self:
