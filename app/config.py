@@ -24,7 +24,6 @@ class LogLevel(str, Enum):
 
 class ConfigApp(BaseModel):
     loglevel: LogLevel = Field(default=LogLevel.info)
-    alpha_routers_enabled: bool = Field(default=False)
 
 
 class ConfigDatabase(BaseModel):
