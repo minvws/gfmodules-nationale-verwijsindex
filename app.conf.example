@@ -2,9 +2,6 @@
 # Loglevel can be one of: debug, info, warning, error, critical
 loglevel=debug
 
-# Enables alpha routes when True
-alpha_routers_enabled=True
-
 [database]
 # Dsn for database connection
 dsn=postgresql+psycopg://postgres:postgres@postgres:5432/postgres
