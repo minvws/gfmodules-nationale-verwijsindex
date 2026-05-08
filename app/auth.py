@@ -1,12 +1,12 @@
 import logging
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.requests import Request
 
 from app import dependencies
+from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.data import AuthorizationRole, AuthorizationScope
 from app.models.auth.headers import AuthHeaders
 from app.models.ura import UraNumber
@@ -27,22 +27,22 @@ class OAuthError(Exception):
         self.status_code = status_code
 
 
-@dataclass(frozen=True)
-class AuthContext:
-    """
-    Authentication context extracted from the bearer token. This can be used in the route handlers
-    """
-
-    # List of claims from the token
-    claims: Dict[str, Any]
-    # OAuth scope
-    scope: List[AuthorizationScope]
-    # URA number of the authenticated user
-    ura_number: UraNumber
-    # OIN Number
-    oin: str | None = None
-    # authrozied role
-    role: AuthorizationRole | None = None
+# @dataclass(frozen=True)
+# class AuthContext:
+#     """
+#     Authentication context extracted from the bearer token. This can be used in the route handlers
+#     """
+#
+#     # List of claims from the token
+#     claims: Dict[str, Any]
+#     # OAuth scope
+#     scope: List[AuthorizationScope]
+#     # URA number of the authenticated user
+#     ura_number: UraNumber
+#     # OIN Number
+#     oin: str | None = None
+#     # authrozied role
+#     role: AuthorizationRole | None = None
 
 
 bearer = HTTPBearer(auto_error=False)
@@ -60,12 +60,18 @@ def get_auth_ctx(
         raise HTTPException(status_code=401, detail=f"Invalid Authorizaiton Headers in request {e}")
 
     validated_auth_headers = auth_headers_service.validate(auth_headers)
-    ctx = AuthContext(
-        claims={},
-        scope=[AuthorizationScope(s) for s in validated_auth_headers.scope],
+    claims = AuthenticationClaims(
         ura_number=UraNumber(validated_auth_headers.ura),
+        source_id=validated_auth_headers.source_id,
         oin=validated_auth_headers.oin,
+    )
+    ctx = AuthContext(
+        claims=claims,
+        scope=[AuthorizationScope(s) for s in validated_auth_headers.scope],
+        # ura_number=UraNumber(validated_auth_headers.ura),
+        # oin=validated_auth_headers.oin,
         role=AuthorizationRole(validated_auth_headers.authorized_role),
+        audience=validated_auth_headers.audience,
     )
     request.state.auth = ctx
     return ctx
