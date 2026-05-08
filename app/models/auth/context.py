@@ -8,8 +8,8 @@ from app.models.ura import UraNumber
 @dataclass(frozen=True)
 class AuthenticationClaims:
     ura_number: UraNumber
-    source_id: str | None = None
     oin: str | None = None
+    source_id: str | None = None
 
 
 @dataclass(frozen=True)

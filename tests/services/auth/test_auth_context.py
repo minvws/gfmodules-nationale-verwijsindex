@@ -1,6 +1,6 @@
 import pytest
 
-from app.auth import AuthContext
+from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.data import AuthorizationRole, AuthorizationScope, RequestedAction
 from app.models.ura import UraNumber
 from app.services.auth.auth_context import AuthContextService
@@ -9,10 +9,12 @@ from app.services.auth.auth_context import AuthContextService
 @pytest.fixture()
 def auth_context_consulting(ura_number: UraNumber) -> AuthContext:
     return AuthContext(
-        claims={},
+        claims=AuthenticationClaims(
+            ura_number=ura_number,
+            oin="some-oin",
+        ),
+        audience="some-audience",
         scope=[AuthorizationScope.READ],
-        ura_number=ura_number,
-        oin="some-oin",
         role=AuthorizationRole.CONSULTING,
     )
 
@@ -20,10 +22,9 @@ def auth_context_consulting(ura_number: UraNumber) -> AuthContext:
 @pytest.fixture()
 def auth_context_source(ura_number: UraNumber) -> AuthContext:
     return AuthContext(
-        claims={},
+        claims=AuthenticationClaims(ura_number=ura_number, oin="some-oin", source_id="some-source-id"),
+        audience="some-audience",
         scope=[AuthorizationScope.READ],
-        ura_number=ura_number,
-        oin="some-oin",
         role=AuthorizationRole.SOURCE,
     )
 
@@ -56,5 +57,21 @@ def test_validate_should_return_false_when_role_source_and_action_localizing(
     auth_context_source: AuthContext,
 ) -> None:
     actual = AuthContextService.validate_action(auth_context_source, RequestedAction.LOCALIZING)
+
+    assert actual is False
+
+
+def test_is_managing_request_should_return_true_when_source_exists(
+    auth_context_source: AuthContext,
+) -> None:
+    actual = AuthContextService.is_managing_request(auth_context_source)
+
+    assert actual is True
+
+
+def test_is_managing_request_should_return_fals_when_source_is_missing(
+    auth_context_consulting: AuthContext,
+) -> None:
+    actual = AuthContextService.is_managing_request(auth_context_consulting)
 
     assert actual is False

@@ -27,24 +27,6 @@ class OAuthError(Exception):
         self.status_code = status_code
 
 
-# @dataclass(frozen=True)
-# class AuthContext:
-#     """
-#     Authentication context extracted from the bearer token. This can be used in the route handlers
-#     """
-#
-#     # List of claims from the token
-#     claims: Dict[str, Any]
-#     # OAuth scope
-#     scope: List[AuthorizationScope]
-#     # URA number of the authenticated user
-#     ura_number: UraNumber
-#     # OIN Number
-#     oin: str | None = None
-#     # authrozied role
-#     role: AuthorizationRole | None = None
-
-
 bearer = HTTPBearer(auto_error=False)
 
 
@@ -68,8 +50,6 @@ def get_auth_ctx(
     ctx = AuthContext(
         claims=claims,
         scope=[AuthorizationScope(s) for s in validated_auth_headers.scope],
-        # ura_number=UraNumber(validated_auth_headers.ura),
-        # oin=validated_auth_headers.oin,
         role=AuthorizationRole(validated_auth_headers.authorized_role),
         audience=validated_auth_headers.audience,
     )
