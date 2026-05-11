@@ -6,10 +6,10 @@ from fastapi import APIRouter, Body, Depends, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.params import Query
 
-from app.auth import AuthContext
 from app.dependencies import (
     get_localization_list_service,
 )
+from app.models.auth.context import AuthContext
 from app.models.auth.data import AuthorizationScope, RequestedAction
 from app.models.fhir.resources.data import (
     DATA_DOMAIN_SYSTEM,
@@ -28,7 +28,11 @@ from app.models.fhir.resources.operation_outcome.resource import OperationOutcom
 from app.models.response import DeleteResponse, FHIRJSONResponse
 from app.models.ura import UraNumber
 from app.services.auth.auth_context import AuthContextService
-from app.services.fhir.exceptions import UnauthorizedAction, UnauthorizedScope
+from app.services.fhir.exceptions import (
+    UnauthorizedAction,
+    UnauthorizedManagingRequest,
+    UnauthorizedScope,
+)
 from app.services.fhir.localization_list import LocalizationListService
 
 logger = logging.getLogger(__name__)
@@ -165,7 +169,11 @@ def create(
     if not valid_action:
         raise UnauthorizedAction(RequestedAction.MANAGING, ctx.role)
 
-    authorized_ura: UraNumber = request.state.auth.ura_number
+    valid_managing_request = AuthContextService.is_managing_request(ctx)
+    if not valid_managing_request:
+        raise UnauthorizedManagingRequest()
+
+    authorized_ura: UraNumber = ctx.claims.ura_number
     return service.create(data, authorized_ura)
 
 
@@ -414,6 +422,10 @@ def delete_for_query(
     valid_action = AuthContextService.validate_action(ctx, RequestedAction.MANAGING)
     if not valid_action:
         raise UnauthorizedAction(RequestedAction.MANAGING, ctx.role)
+
+    valid_managing_request = AuthContextService.is_managing_request(ctx)
+    if not valid_managing_request:
+        raise UnauthorizedManagingRequest()
 
     authenticated_ura = request.state.auth.ura_number
     outcome, status_code = service.delete_by_query(params, authenticated_ura)

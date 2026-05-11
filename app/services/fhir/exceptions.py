@@ -70,3 +70,13 @@ class UnauthorizedScope(FHIRException):
             severity="error",
             msg=f"{values} not authorized for requested action. required scope: {required_scope.value}",
         )
+
+
+class UnauthorizedManagingRequest(FHIRException):
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=401,
+            code="security",
+            severity="error",
+            msg="Unauthorized managing request, missing source_id in AuthenticationHeaders",
+        )
