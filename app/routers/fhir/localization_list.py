@@ -169,8 +169,7 @@ def create(
     if not valid_action:
         raise UnauthorizedAction(RequestedAction.MANAGING, ctx.role)
 
-    valid_managing_request = AuthContextService.is_managing_request(ctx)
-    if not valid_managing_request:
+    if ctx.claims.source_id is None:
         raise UnauthorizedManagingRequest()
 
     authorized_ura: UraNumber = ctx.claims.ura_number
@@ -423,8 +422,7 @@ def delete_for_query(
     if not valid_action:
         raise UnauthorizedAction(RequestedAction.MANAGING, ctx.role)
 
-    valid_managing_request = AuthContextService.is_managing_request(ctx)
-    if not valid_managing_request:
+    if ctx.claims.source_id is None:
         raise UnauthorizedManagingRequest()
 
     authenticated_ura = request.state.auth.ura_number

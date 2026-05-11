@@ -12,7 +12,3 @@ class AuthContextService:
 
             case RequestedAction.MANAGING:
                 return AuthorizationRole.SOURCE == role
-
-    @staticmethod
-    def is_managing_request(context: AuthContext) -> bool:
-        return context.claims.source_id is not None

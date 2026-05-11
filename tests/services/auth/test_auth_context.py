@@ -59,19 +59,3 @@ def test_validate_should_return_false_when_role_source_and_action_localizing(
     actual = AuthContextService.validate_action(auth_context_source, RequestedAction.LOCALIZING)
 
     assert actual is False
-
-
-def test_is_managing_request_should_return_true_when_source_exists(
-    auth_context_source: AuthContext,
-) -> None:
-    actual = AuthContextService.is_managing_request(auth_context_source)
-
-    assert actual is True
-
-
-def test_is_managing_request_should_return_fals_when_source_is_missing(
-    auth_context_consulting: AuthContext,
-) -> None:
-    actual = AuthContextService.is_managing_request(auth_context_consulting)
-
-    assert actual is False
