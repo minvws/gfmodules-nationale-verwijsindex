@@ -7,6 +7,7 @@ from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
+from app.services.exceptions import ConflictError
 from app.services.fhir.exceptions import FHIRException, NotFoundException
 
 logger = logging.getLogger(__name__)
@@ -44,12 +45,7 @@ class ReferralService:
                 ura_number=str(ura_number),
                 source=source,
             ):
-                raise FHIRException(
-                    status_code=409,
-                    code="conflict",
-                    severity="error",
-                    msg="Record already exists",
-                )
+                raise ConflictError()
 
             new_referral: ReferralEntity = referral_repository.add_one(
                 ReferralEntity(

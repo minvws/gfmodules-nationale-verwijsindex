@@ -11,7 +11,8 @@ from app.models.fhir.resources.localization_list.resource import LocalizationLis
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
-from app.services.fhir.exceptions import FHIRException
+from app.services.exceptions import ConflictError
+from app.services.fhir.exceptions import FHIRException, RecordExistsException
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 from app.utils.fhir import decode_url_safe_token
@@ -56,12 +57,15 @@ class LocalizationListService:
             )
 
         pseudoym = self._token_to_pseudonym(data.get_encoded_pseudonym())
+        try:
+            new_referral = self.referral_service.add_one(
+                ura_number=ura_number,
+                pseudonym=pseudoym,
+                source=device,
+            )
 
-        new_referral = self.referral_service.add_one(
-            ura_number=ura_number,
-            pseudonym=pseudoym,
-            source=device,
-        )
+        except ConflictError:
+            raise RecordExistsException()
 
         return LocalizationList.from_referral(new_referral)
 

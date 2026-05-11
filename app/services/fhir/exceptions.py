@@ -46,6 +46,16 @@ class NotFoundException(FHIRException):
         )
 
 
+class RecordExistsException(FHIRException):
+    def __init__(self):
+        super().__init__(
+            status_code=409,
+            severity="error",
+            code="conflict",
+            msg="Record already exists",
+        )
+
+
 class UnauthorizedAction(FHIRException):
     def __init__(self, action: RequestedAction, role: AuthorizationRole | None = None) -> None:
         error_msg = (
