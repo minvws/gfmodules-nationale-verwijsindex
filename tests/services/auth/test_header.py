@@ -3,8 +3,8 @@ import pytest
 from app.models.auth.data import AuthorizationRole
 from app.models.auth.headers import AuthHeaders
 from app.models.ura import UraNumber
-from app.services.auth.exceptions import InvalidHeaderPropertyValue
 from app.services.auth.header import AuthHeaderService
+from app.services.exceptions import InvalidHeaderPropertyError
 
 
 def test_validate_should_succeed(ura_number: UraNumber, auth_header_service: AuthHeaderService) -> None:
@@ -36,9 +36,7 @@ def test_validate_should_panic_with_invalid_audience(
         cert_type="oin",
     )
 
-    with pytest.raises(InvalidHeaderPropertyValue) as exec:
+    with pytest.raises(InvalidHeaderPropertyError) as exec:
         auth_header_service.validate(data)
 
-    assert f"Invalid header property audience with value {data.audience}" in str(exec.value.detail)
-
-    assert exec.value.status_code == 401
+    assert f"Invalid header property audience: unrecognized `{data.audience}`" in str(exec.value)

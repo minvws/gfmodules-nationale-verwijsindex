@@ -9,8 +9,8 @@ from app.models.fhir.resources.localization_list.resource import LocalizationLis
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.response import FHIRJSONResponse
 from app.models.ura import UraNumber
+from app.services.exceptions import InvalidModelError
 from app.services.fhir.bundle import BundleService
-from app.services.fhir.exceptions import FHIRException
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["poc - FHIR"], prefix="/fhir")
@@ -26,12 +26,7 @@ def register(
     results_bundle = Bundle[Any](entry=[])
     valid_bundle = localisation_list_service.validate_localization_bundle_structure(data)
     if not valid_bundle:
-        raise FHIRException(
-            status_code=400,
-            severity="error",
-            code="structural",
-            msg="Bundle.entry is invalid",
-        )
+        raise InvalidModelError("Bundle.entry is invalid")
     for i, entry in enumerate(data.entry):
         result = localisation_list_service.process_entry(authenticated_ura=cert_ura, entry=entry, index=i)
         results_bundle.entry.append(result)

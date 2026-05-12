@@ -2,9 +2,7 @@ import logging
 
 from app.config import ConfigOAuth
 from app.models.auth.headers import AuthHeaders
-from app.services.auth.exceptions import (
-    InvalidHeaderPropertyValue,
-)
+from app.services.exceptions import InvalidHeaderPropertyError
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +18,6 @@ class AuthHeaderService:
             logger.error(
                 f"Invalid audience value {audience} value should be {self.config.audience}. Check config values in case incoming value is correct"
             )
-            raise InvalidHeaderPropertyValue("audience", audience)
+            raise InvalidHeaderPropertyError("audience", audience)
 
         return auth_headers

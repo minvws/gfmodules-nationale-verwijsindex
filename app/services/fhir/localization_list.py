@@ -11,7 +11,11 @@ from app.models.fhir.resources.localization_list.resource import LocalizationLis
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
-from app.services.fhir.exceptions import FHIRException
+from app.services.exceptions import (
+    NotFoundError,
+    PseudonymDecodingError,
+    UnauthorizedUraError,
+)
 from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 from app.utils.fhir import decode_url_safe_token
@@ -33,27 +37,14 @@ class LocalizationListService:
             )
         except Exception as e:
             logger.error(f"error occurred while decoding pseudonym token: {e}")
-            raise FHIRException(
-                status_code=400,
-                severity="error",
-                code="invalid",
-                msg=f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}",
-            )
+            raise PseudonymDecodingError(f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}")
 
     def create(self, data: LocalizationList, authenticated_ura: UraNumber) -> LocalizationList:
-        try:
-            ura_number = data.get_ura()
-            device = data.get_device()
-        except ValueError as e:
-            raise FHIRException(status_code=400, severity="error", code="invalid", msg=str(e))
+        ura_number = data.get_ura()
+        device = data.get_device()
 
         if ura_number != authenticated_ura:
-            raise FHIRException(
-                status_code=403,
-                severity="error",
-                code="security",
-                msg="Registration is not linked to the authorized URA",
-            )
+            raise UnauthorizedUraError("Registration not linked to the authorized URA")
 
         pseudoym = self._token_to_pseudonym(data.get_encoded_pseudonym())
 
@@ -68,12 +59,7 @@ class LocalizationListService:
     def get(self, id: UUID, authenticated_ura: UraNumber) -> LocalizationList:
         referral = self.referral_service.get_by_id(id)
         if authenticated_ura != UraNumber(referral.ura_number):
-            raise FHIRException(
-                status_code=404,
-                severity="error",
-                code="not-found",
-                msg="Resource does not exist",
-            )
+            raise NotFoundError()
 
         return LocalizationList.from_referral(referral)
 
