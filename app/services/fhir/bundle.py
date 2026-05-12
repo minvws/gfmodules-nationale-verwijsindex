@@ -5,7 +5,12 @@ from app.models.fhir.bundle import Bundle, BundleEntry, EntryRequestDto, EntryRe
 from app.models.fhir.resources.localization_list.request import LocalizationListParams
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.ura import UraNumber
-from app.services.fhir.exceptions import FHIRException
+from app.services.exceptions import (
+    ConflictError,
+    NotFoundError,
+    PseudonymDecodingError,
+    UnauthorizedUraError,
+)
 from app.services.fhir.localization_list import LocalizationListService
 
 logger = logging.getLogger(__name__)
@@ -43,19 +48,19 @@ class BundleService:
                             resource=results,
                             response=EntryResponse.make_good_response("Resource has been retrieved successfully"),
                         )
-                    except FHIRException as e:
+                    except NotFoundError as e:
                         return BundleEntry(
                             response=EntryResponse.make_error_response(
-                                msg=f"Bundle.entry.{index}: {e.outcome}",
-                                status=str(e.status_code),
+                                msg=f"Bundle.entry.{index}: {str(e)}",
+                                status=str(404),
                             )
                         )
                 try:
                     params = LocalizationListParams.model_validate(resolved_url.params)
-                except ValueError:
+                except ValueError as e:
                     return BundleEntry(
                         response=EntryResponse.make_validation_response(
-                            f"Bundle.entry.{index}.request: invalid url parameter"
+                            f"Bundle.entry.{index}.request: invalid url parameter: {e}"
                         )
                     )
 
@@ -66,11 +71,11 @@ class BundleService:
                         response=EntryResponse.make_good_response(),
                     )
 
-                except FHIRException as e:
+                except PseudonymDecodingError as e:
                     return BundleEntry(
                         response=EntryResponse.make_error_response(
-                            f"Bundle.entry.{index}: {e.outcome}",
-                            status=str(e.status_code),
+                            msg=f"Bundle.entry.{index}: {str(e)}",
+                            status=str(400),
                         )
                     )
 
@@ -94,11 +99,11 @@ class BundleService:
                         resource=resource,
                         response=EntryResponse.make_good_response(msg="Resource has been created successfully"),
                     )
-                except FHIRException as e:
+                except (UnauthorizedUraError, ConflictError) as e:
                     return BundleEntry(
                         response=EntryResponse.make_error_response(
-                            msg=f"Bundle.entry.{index}: {str(e.outcome)}",
-                            status=str(e.status_code),
+                            msg=f"Bundle.entry.{index}: {str(e)}",
+                            status=str(403),
                         )
                     )
 
@@ -107,11 +112,11 @@ class BundleService:
                     try:
                         outcome, status_code = self.localizaton_list_service.delete(resolved_url.id, authenticated_ura)
                         return BundleEntry(response=EntryResponse(status=str(status_code), outcome=outcome))
-                    except FHIRException as e:
+                    except Exception as e:
                         return BundleEntry(
                             response=EntryResponse.make_error_response(
-                                msg=f"Bundle.entry.{index}: {e.outcome}",
-                                status=str(e.status_code),
+                                msg=f"Bundle.entry.{index}: {e}",
+                                status=str(500),
                             )
                         )
                 try:

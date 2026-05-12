@@ -2,12 +2,11 @@ from typing import List
 from uuid import UUID, uuid4
 
 import pytest
-from fastapi import HTTPException
 
 from app.db.models.referral import ReferralEntity
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
-from app.services.fhir.exceptions import FHIRException
+from app.services.exceptions import ConflictError, NotFoundError
 from app.services.referral_service import ReferralService
 
 
@@ -71,7 +70,7 @@ def test_add_referral_should_raise_exception_with_duplicates(
         source="SomeDevice",
         organization_type=org_type,
     )
-    with pytest.raises(HTTPException) as exec:
+    with pytest.raises(ConflictError) as exec:
         referral_service.add_one(
             pseudonym=patient,
             ura_number=ura_number,
@@ -79,7 +78,7 @@ def test_add_referral_should_raise_exception_with_duplicates(
             organization_type=org_type,
         )
 
-    assert exec.value.status_code == 409
+    assert "Record already exists" in str(exec.value)
 
 
 def test_delete_one_should_succeed(
@@ -101,10 +100,10 @@ def test_delete_one_should_succeed(
         ura_number=ura_number,
         source="SomeDevice",
     )
-    with pytest.raises(HTTPException) as exec:
+    with pytest.raises(NotFoundError) as exec:
         referral_service.get_by_id(data.id)
 
-    assert exec.value.status_code == 404
+    assert "Record not found" in str(exec.value)
 
 
 def test_delete_one_should_raise_exception_when_not_found(
@@ -112,14 +111,14 @@ def test_delete_one_should_raise_exception_when_not_found(
 ) -> None:
     patient = Pseudonym("ps-1")
 
-    with pytest.raises(HTTPException) as exec:
+    with pytest.raises(NotFoundError) as exec:
         referral_service.delete_one(
             pseudonym=patient,
             source="SomeDevice",
             ura_number=ura_number,
         )
 
-    assert exec.value.status_code == 404
+    assert "Record not found" in str(exec.value)
 
 
 def test_delete_by_id_should_succeed(referral_service: ReferralService, ura_number: UraNumber) -> None:
@@ -132,20 +131,20 @@ def test_delete_by_id_should_succeed(referral_service: ReferralService, ura_numb
     )
     assert isinstance(patient_reference.id, UUID)
     referral_service.delete_by_id(patient_reference.id)
-    with pytest.raises(FHIRException) as exec:
+    with pytest.raises(NotFoundError) as exec:
         referral_service.get_by_id(patient_reference.id)
 
-    assert exec.value.status_code == 404
+    assert "Record not found" in str(exec.value)
 
 
 def test_delet_by_id_should_raise_exception_when_no_match_found(
     referral_service: ReferralService,
 ) -> None:
     some_id = uuid4()
-    with pytest.raises(FHIRException) as exec:
+    with pytest.raises(NotFoundError) as exec:
         referral_service.delete_by_id(some_id)
 
-    assert exec.value.status_code == 404
+    assert "Record not found" in str(exec.value)
 
 
 def test_get_one_should_succeed(

@@ -2,18 +2,14 @@ import logging
 from typing import Any
 
 import uvicorn
-from fastapi import Depends, FastAPI, Request
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi import Depends, FastAPI
 
 from app import container
 from app.auth import get_auth_ctx
 from app.config import get_config
 from app.dependencies import get_prs_registration_service
-from app.models.fhir.resources.operation_outcome.resource import (
-    OperationOutcome,
-    OperationOutcomeDetail,
-    OperationOutcomeIssue,
+from app.errors.handlers import (
+    register_exceptions,
 )
 from app.routers.default import router as default_router
 from app.routers.fhir.base import router as fhir_base_router
@@ -96,58 +92,9 @@ def setup_fastapi() -> FastAPI:
     for router in routers:
         fastapi.include_router(router, dependencies=[Depends(get_auth_ctx)])
 
-    fastapi.add_exception_handler(Exception, default_fhir_exception_handler)
-    fastapi.add_exception_handler(
-        RequestValidationError,
-        request_validation_fhir_exception_handler,  # type: ignore
-    )
+    register_exceptions(fastapi)
 
     if config.stats.enabled:
         fastapi.add_middleware(StatsdMiddleware, module_name=config.stats.module_name or "default")
 
     return fastapi
-
-
-def default_fhir_exception_handler(_: Request, exc: Exception) -> JSONResponse:
-    """
-    Default handler to convert generic exceptions to FHIR exceptions
-    """
-    outcome = OperationOutcome(
-        issue=[
-            OperationOutcomeIssue(
-                severity="error",
-                code="exception",
-                details=OperationOutcomeDetail(text="An unexpected error occurred"),
-                expression=[type(exc).__name__],
-            )
-        ]
-    )
-    return JSONResponse(
-        status_code=500,
-        content=outcome.model_dump(by_alias=True, exclude_none=True),
-        headers={"Content-Type": "application/fhir+json"},
-    )
-
-
-def request_validation_fhir_exception_handler(
-    _: Request,
-    exc: RequestValidationError,
-) -> JSONResponse:
-    issues = []
-
-    for err in exc.errors():
-        issues.append(
-            OperationOutcomeIssue(
-                severity="error",
-                code="required" if err["type"] == "missing" else "invalid",
-                details=OperationOutcomeDetail(text=".".join(map(str, err["loc"])) + " " + str(err["msg"])),
-            ),
-        )
-
-    outcome = OperationOutcome(issue=issues)
-
-    return JSONResponse(
-        status_code=422,
-        content=outcome.model_dump(by_alias=True, exclude_none=True),
-        headers={"Content-Type": "application/fhir+json"},
-    )
