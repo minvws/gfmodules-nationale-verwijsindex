@@ -30,14 +30,12 @@ def test_exchange_returns_hashed_pseudonym(crypto_client: CryptoServiceApiClient
     assert result == Pseudonym(value="abc123")
     http_mock.do_request.assert_called_once_with(
         method="POST",
-        sub_route="exchange",
+        sub_route="decrypt_and_hash",
         params={"jwe": "some-jwe", "blind_factor": "some-blind-factor"},
     )
 
 
-def test_exchange_raises_on_connection_error(
-    crypto_client: CryptoServiceApiClient, http_mock: MagicMock
-) -> None:
+def test_exchange_raises_on_connection_error(crypto_client: CryptoServiceApiClient, http_mock: MagicMock) -> None:
     http_mock.do_request.side_effect = ConnectionError
 
     with pytest.raises(ConnectionError):
