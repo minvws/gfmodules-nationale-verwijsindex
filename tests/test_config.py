@@ -1,9 +1,9 @@
 from app.config import (
+    AuthorizationHeaders,
     Config,
     ConfigApp,
     ConfigCryptoServiceApi,
     ConfigDatabase,
-    ConfigOAuth,
     ConfigStats,
     ConfigTelemetry,
     ConfigUvicorn,
@@ -42,9 +42,7 @@ def get_test_config() -> Config:
             ssl_cert_file="/file.cert",
             ssl_key_file="/file.key",
         ),
-        oauth=ConfigOAuth(
-            issuer="http://example.com/",
-            audience="test-audience",
-            override_ura_number="12345678",
+        authorization_headers=AuthorizationHeaders(
+            expected_audience="test-audience",
         ),
     )

@@ -67,18 +67,5 @@ ssl_base_dir = secrets/ssl
 ssl_cert_file = server.cert
 ssl_key_file = server.key
 
-
-# Section for configuring the INCOMING OAuth connections (from external services to this service)
-[oauth]
-# If not enabled, we assume this URA number is what is calling our service
-override_ura_number = 11112222
-
-# Audience that an incoming OAuth should have
-audience = nvi.service
-# The issuer that issued the incoming OAuth tokens
-issuer = https://oauth:443
-# Any MTLS settings for connecting to the oauth server (to fetch JWKS keys)
-mtls_cert = secrets/epd-1.ldn.crt
-mtls_key =  secrets/epd-1.ldn.key
-verify_ca = secrets/ca.ldn.crt
-
+[authorization_headers]
+expected_audience = nvi.service

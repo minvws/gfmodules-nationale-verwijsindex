@@ -36,7 +36,7 @@ def container_config(binder: inject.Binder) -> None:
     referral_service = ReferralService(database=db)
     binder.bind(ReferralService, referral_service)
 
-    auth_header_service = AuthHeaderService(config=config.oauth)
+    auth_header_service = AuthHeaderService(expected_audience=config.authorization_headers.expected_audience)
     binder.bind(AuthHeaderService, auth_header_service)
 
     crypto_client = create_crypto_service_api_client(config.crypto_service_api)
