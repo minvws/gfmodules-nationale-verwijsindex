@@ -31,7 +31,7 @@ class LocalizationListService:
     def _token_to_pseudonym(self, token: str) -> Pseudonym:
         try:
             data = decode_url_safe_token(token)
-            return self._crypto_client.decrypt_and_hash(
+            return self._crypto_client.exchange(
                 data["evaluated_output"],
                 data["blind_factor"],
             )

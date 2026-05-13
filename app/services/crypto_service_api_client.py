@@ -20,7 +20,7 @@ class CryptoServiceApiClient:
             verify_ca=config.verify_ca,
         )
 
-    def decrypt_and_hash(self, jwe: str, blind_factor: str) -> Pseudonym:
+    def exchange(self, jwe: str, blind_factor: str) -> Pseudonym:
         try:
             response = self._http.do_request(
                 method="POST",
@@ -30,7 +30,7 @@ class CryptoServiceApiClient:
             response.raise_for_status()
             return Pseudonym(value=response.json()["hashed_pseudonym"])
         except (ConnectionError, Timeout) as e:
-            logger.exception(f"Error during decrypt_and_hash request: {e}")
+            logger.exception(f"Error during request: {e}")
             raise ConnectionError("Failed to connect to the Crypto Service API")
         except (JSONDecodeError, KeyError) as e:
             logger.exception(f"Invalid JSON response from Crypto Service API: {e}")

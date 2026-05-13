@@ -29,7 +29,7 @@ def localize(
     if not valid_action:
         raise UnauthorizedActionError(RequestedAction.LOCALIZING, ctx.role)
 
-    pseudonym = crypto_client.decrypt_and_hash(data.pseudonym, data.oprf_key)
+    pseudonym = crypto_client.exchange(data.pseudonym, data.oprf_key)
 
     results = referral_service.get_many(pseudonym=pseudonym)
 

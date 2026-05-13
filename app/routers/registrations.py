@@ -40,7 +40,7 @@ def get_registration(
     if not valid_action:
         raise UnauthorizedActionError(RequestedAction.MANAGING, ctx.role)
 
-    pseudonym = crypto_client.decrypt_and_hash(params.pseudonym, params.oprf_key)
+    pseudonym = crypto_client.exchange(params.pseudonym, params.oprf_key)
 
     results = referral_service.get_many(ura_number=ctx.claims.ura_number, pseudonym=pseudonym)
 
@@ -65,7 +65,7 @@ def add_registration(
     if not valid_action:
         raise UnauthorizedActionError(RequestedAction.MANAGING, ctx.role)
 
-    pseudonym = crypto_client.decrypt_and_hash(data.pseudonym, data.oprf_key)
+    pseudonym = crypto_client.exchange(data.pseudonym, data.oprf_key)
 
     new_referral = referral_service.add_one(
         pseudonym=pseudonym,
@@ -93,7 +93,7 @@ def delete_registration(
     if ctx.claims.source_id is None:
         raise InvalidModelError("source_id is required to complete transaction")
 
-    pseudonym = crypto_client.decrypt_and_hash(params.pseudonym, params.oprf_key)
+    pseudonym = crypto_client.exchange(params.pseudonym, params.oprf_key)
 
     referral_service.delete_many(
         ura_number=ctx.claims.ura_number,

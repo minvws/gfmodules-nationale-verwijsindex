@@ -7,7 +7,7 @@ class CryptoServiceApiClientMock(CryptoServiceApiClient):
         """Mock implementation of CryptoServiceApiClient for dev/testing purposes."""
         pass
 
-    def decrypt_and_hash(self, jwe: str, blind_factor: str) -> Pseudonym:
+    def exchange(self, jwe: str, blind_factor: str) -> Pseudonym:
         return Pseudonym(value=f"{jwe}:{blind_factor}")
 
     def is_healthy(self) -> bool:
