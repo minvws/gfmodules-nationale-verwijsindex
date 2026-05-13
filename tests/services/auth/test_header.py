@@ -12,7 +12,7 @@ def test_validate_should_succeed(ura_number: UraNumber, auth_header_service: Aut
         oin="oin123",
         source_id="source123",
         ura=ura_number.value,
-        audience=auth_header_service.config.audience,
+        audience=auth_header_service.expected_audience,
         authorized_role=AuthorizationRole.CONSULTING.value,
         scope=["nvi:read"],
         cert_type="oin",

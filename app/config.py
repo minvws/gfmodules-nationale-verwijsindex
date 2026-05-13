@@ -75,13 +75,8 @@ class ConfigStats(BaseModel):
     module_name: str | None
 
 
-class ConfigOAuth(BaseModel):
-    override_ura_number: str | None = Field(default=None)
-    issuer: str
-    audience: str
-    mtls_cert: str | None = Field(default=None)
-    mtls_key: str | None = Field(default=None)
-    verify_ca: str | bool = Field(default=True)
+class AuthorizationHeaders(BaseModel):
+    expected_audience: str
 
 
 class Config(BaseModel):
@@ -91,7 +86,7 @@ class Config(BaseModel):
     telemetry: ConfigTelemetry
     stats: ConfigStats
     uvicorn: ConfigUvicorn
-    oauth: ConfigOAuth
+    authorization_headers: AuthorizationHeaders
 
 
 def read_ini_file(path: str) -> Any:

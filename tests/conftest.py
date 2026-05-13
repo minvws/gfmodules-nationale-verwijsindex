@@ -77,7 +77,7 @@ def referral_service(database: Database) -> ReferralService:
 @pytest.fixture()
 def auth_header_service() -> AuthHeaderService:
     config = get_test_config()
-    return AuthHeaderService(config=config.oauth)
+    return AuthHeaderService(expected_audience=config.authorization_headers.expected_audience)
 
 
 @pytest.fixture(scope="session")
