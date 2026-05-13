@@ -1,12 +1,12 @@
 import logging
+from typing import Annotated
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
-from app import (
-    dependencies,
-)
+from app import dependencies
 from app.db.db import Database
+from app.services.crypto_service_api_client import CryptoServiceApiClient
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -31,7 +31,7 @@ def ok_or_error(value: bool) -> str:
                             "summary": "All services healthy",
                             "value": {
                                 "status": "ok",
-                                "components": {"database": "ok"},
+                                "components": {"database": "ok", "crypto_service_api": "ok"},
                             },
                         },
                     }
@@ -48,7 +48,7 @@ def ok_or_error(value: bool) -> str:
                             "summary": "Some services unhealthy",
                             "value": {
                                 "status": "error",
-                                "components": {"database": "error"},
+                                "components": {"database": "error", "crypto_service_api": "error"},
                             },
                         },
                     }
@@ -58,18 +58,19 @@ def ok_or_error(value: bool) -> str:
     },
     tags=["Health"],
 )
-def health(db: Database = Depends(dependencies.get_database)) -> JSONResponse:
-    logger.info("Checking database health")
+def health(
+    crypto_client: Annotated[CryptoServiceApiClient, Depends(dependencies.get_crypto_service_api_client)],
+    db: Annotated[Database, Depends(dependencies.get_database)],
+) -> JSONResponse:
+    logger.info("Checking application health")
 
     components = {
         "database": ok_or_error(db.is_healthy()),
+        "crypto_service_api": ok_or_error(crypto_client.is_healthy()),
     }
     healthy = ok_or_error(all(value == "ok" for value in components.values()))
     content = {"status": healthy, "components": components}
     if healthy == "ok":
         return JSONResponse(content=content)
     logger.warning(f"Some components unhealthy: {components}")
-    return JSONResponse(
-        status_code=503,
-        content=content,
-    )
+    return JSONResponse(status_code=503, content=content)

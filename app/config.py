@@ -36,12 +36,12 @@ class ConfigDatabase(BaseModel):
     pool_recycle: int = Field(default=3600, ge=0)
 
 
-class ConfigPseudonymApi(BaseModel):
+class ConfigCryptoServiceApi(BaseModel):
     enabled: bool = Field(default=True)
     endpoint: str
     timeout: int = Field(default=30, gt=0)
-    mtls_cert: str
-    mtls_key: str
+    mtls_cert: str | None = None
+    mtls_key: str | None = None
     verify_ca: str | bool = Field(default=True)
 
 
@@ -84,23 +84,14 @@ class ConfigOAuth(BaseModel):
     verify_ca: str | bool = Field(default=True)
 
 
-class ConfigClientOAuth(BaseModel):
-    enabled: bool = Field(default=False)
-    issuer: str | None = Field(default=None)
-    mtls_cert: str | None = Field(default=None)
-    mtls_key: str | None = Field(default=None)
-    verify_ca: str | bool = Field(default=True)
-
-
 class Config(BaseModel):
     app: ConfigApp
     database: ConfigDatabase
-    pseudonym_api: ConfigPseudonymApi
+    crypto_service_api: ConfigCryptoServiceApi
     telemetry: ConfigTelemetry
     stats: ConfigStats
     uvicorn: ConfigUvicorn
     oauth: ConfigOAuth
-    client_oauth: ConfigClientOAuth
 
 
 def read_ini_file(path: str) -> Any:

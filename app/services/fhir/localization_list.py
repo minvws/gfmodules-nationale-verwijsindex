@@ -11,12 +11,12 @@ from app.models.fhir.resources.localization_list.resource import LocalizationLis
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
+from app.services.crypto_service_api_client import CryptoServiceApiClient
 from app.services.exceptions import (
     NotFoundError,
     PseudonymError,
     UnauthorizedUraError,
 )
-from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 from app.utils.fhir import decode_url_safe_token
 
@@ -24,16 +24,16 @@ logger = logging.getLogger(__name__)
 
 
 class LocalizationListService:
-    def __init__(self, referral_service: ReferralService, pseudonym_service: PseudonymService) -> None:
+    def __init__(self, referral_service: ReferralService, crypto_client: CryptoServiceApiClient) -> None:
         self.referral_service = referral_service
-        self.pseudonym_service = pseudonym_service
+        self._crypto_client = crypto_client
 
     def _token_to_pseudonym(self, token: str) -> Pseudonym:
         try:
-            oprf_data = decode_url_safe_token(token)
-            return self.pseudonym_service.exchange(
-                oprf_jwe=oprf_data["evaluated_output"],
-                blind_factor=oprf_data["blind_factor"],
+            data = decode_url_safe_token(token)
+            return self._crypto_client.decrypt_and_hash(
+                data["evaluated_output"],
+                data["blind_factor"],
             )
         except Exception as e:
             logger.error(f"error occurred while decoding pseudonym token: {e}")
@@ -46,11 +46,11 @@ class LocalizationListService:
         if ura_number != authenticated_ura:
             raise UnauthorizedUraError("Registration not linked to the authorized URA")
 
-        pseudoym = self._token_to_pseudonym(data.get_encoded_pseudonym())
+        pseudonym = self._token_to_pseudonym(data.get_encoded_pseudonym())
 
         new_referral = self.referral_service.add_one(
             ura_number=ura_number,
-            pseudonym=pseudoym,
+            pseudonym=pseudonym,
             source=device,
         )
 

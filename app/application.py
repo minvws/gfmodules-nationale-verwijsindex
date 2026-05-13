@@ -7,7 +7,6 @@ from fastapi import Depends, FastAPI
 from app import container
 from app.auth import get_auth_ctx
 from app.config import get_config
-from app.dependencies import get_prs_registration_service
 from app.errors.handlers import (
     register_exceptions,
 )
@@ -48,10 +47,7 @@ def run() -> None:
 
 def create_fastapi_app() -> FastAPI:
     setup_logging()
-    fastapi = setup_fastapi()
-    register_at_prs()
-
-    return fastapi
+    return setup_fastapi()
 
 
 def setup_logging() -> None:
@@ -62,11 +58,6 @@ def setup_logging() -> None:
         level=logging.getLevelNamesMapping()[config.app.loglevel.upper()],
         datefmt="%m/%d/%Y %I:%M:%S %p",
     )
-
-
-def register_at_prs() -> None:
-    prs_registration_service = get_prs_registration_service()
-    prs_registration_service.register_nvi_at_prs()
 
 
 def setup_fastapi() -> FastAPI:
