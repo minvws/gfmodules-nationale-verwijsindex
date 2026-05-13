@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from requests.exceptions import ConnectionError, HTTPError, Timeout
 
-from app.services.prs.exception import PseudonymError
+from app.services.exceptions import PseudonymError
 from app.services.prs.prs_registration_service import PrsRegistrationService
 
 PATCHED_MODULE = "app.services.prs.prs_registration_service.HttpService.do_request"

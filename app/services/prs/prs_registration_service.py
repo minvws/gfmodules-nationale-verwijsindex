@@ -5,15 +5,18 @@ from requests.exceptions import ConnectionError, HTTPError, Timeout
 from app.config import ConfigPseudonymApi
 from app.models.ura import UraNumber
 from app.services.client_oauth import ClientOAuthService
+from app.services.exceptions import PseudonymError
 from app.services.http import HttpService
-from app.services.prs.exception import PseudonymError
 
 logger = logging.getLogger(__name__)
 
 
 class PrsRegistrationService:
     def __init__(
-        self, ura_number: UraNumber, config: ConfigPseudonymApi, client_oauth_service: ClientOAuthService
+        self,
+        ura_number: UraNumber,
+        config: ConfigPseudonymApi,
+        client_oauth_service: ClientOAuthService,
     ) -> None:
         self._oauth_service = client_oauth_service
         self._config = config

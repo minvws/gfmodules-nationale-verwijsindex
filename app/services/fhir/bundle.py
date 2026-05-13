@@ -8,7 +8,7 @@ from app.models.ura import UraNumber
 from app.services.exceptions import (
     ConflictError,
     NotFoundError,
-    PseudonymDecodingError,
+    PseudonymError,
     UnauthorizedUraError,
 )
 from app.services.fhir.localization_list import LocalizationListService
@@ -71,7 +71,7 @@ class BundleService:
                         response=EntryResponse.make_good_response(),
                     )
 
-                except PseudonymDecodingError as e:
+                except PseudonymError as e:
                     return BundleEntry(
                         response=EntryResponse.make_error_response(
                             msg=f"Bundle.entry.{index}: {str(e)}",
