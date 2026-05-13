@@ -16,6 +16,10 @@ class CreateRegistrationRequest(RegistrationQueryParams):
     pass
 
 
+class LocalizeRequest(RegistrationQueryParams):
+    pass
+
+
 class Registration(BaseModel):
     ura_number: str
     source_id: str
