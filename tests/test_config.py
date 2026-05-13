@@ -1,10 +1,9 @@
 from app.config import (
     Config,
     ConfigApp,
-    ConfigClientOAuth,
+    ConfigCryptoServiceApi,
     ConfigDatabase,
     ConfigOAuth,
-    ConfigPseudonymApi,
     ConfigStats,
     ConfigTelemetry,
     ConfigUvicorn,
@@ -21,11 +20,11 @@ def get_test_config() -> Config:
             dsn="sqlite:///:memory:",
             create_tables=True,
         ),
-        pseudonym_api=ConfigPseudonymApi(
+        crypto_service_api=ConfigCryptoServiceApi(
             endpoint="http://example.com",
             timeout=30,
-            mtls_cert="",
-            mtls_key="",
+            mtls_cert=None,
+            mtls_key=None,
             verify_ca=True,
         ),
         telemetry=ConfigTelemetry(
@@ -47,9 +46,5 @@ def get_test_config() -> Config:
             issuer="http://example.com/",
             audience="test-audience",
             override_ura_number="12345678",
-        ),
-        client_oauth=ConfigClientOAuth(
-            issuer="http://example.com/",
-            enabled=False,
         ),
     )

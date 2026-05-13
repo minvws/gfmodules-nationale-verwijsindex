@@ -16,14 +16,14 @@ pool_pre_ping=False
 # Recycle the connection after this time (in seconds)
 pool_recycle=1800
 
-[pseudonym_api]
-# If not enabled, mock services are injected if app is build with debug mode
+[crypto_service_api]
+# If not enabled a mock response will be used instead
 enabled=False
-endpoint=http://localhost:8504
+endpoint=http://localhost:8577
 timeout=10
-mtls_cert=secrets/ssl/pseudonym_api.cert
-mtls_key=secrets/ssl/pseudonym_api.key
-verify_ca=secrets/ssl/pseudonym_api_ca.cert
+mtls_cert=secrets/ssl/crypto_service_api.cert
+mtls_key=secrets/ssl/crypto_service_api.key
+verify_ca=secrets/ssl/crypto_service_api_ca.cert
 
 [telemetry]
 # Telemetry is enabled or not
@@ -82,14 +82,3 @@ mtls_cert = secrets/epd-1.ldn.crt
 mtls_key =  secrets/epd-1.ldn.key
 verify_ca = secrets/ca.ldn.crt
 
-# Section for configuring the OUTGOING OAuth connections (from this service to external services)
-[client_oauth]
-# If not enabled, we don't connect to OAuth and thus we never add a Bearer JWT token to the called service
-# If not enabled, mock services are injected if app is build with debug mode
-enabled = False
-# The OAuth server that we will connect to to fetch an access token
-issuer = https://localhost:8443/
-# Any MTLS settings for connecting to the oauth server (to fetch access tokens)
-mtls_cert = secrets/client-uzi.crt
-mtls_key =  secrets/client-uzi.key
-verify_ca =

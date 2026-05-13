@@ -31,7 +31,6 @@ RUN apt-get update && \
         curl \
         openssl \
         libssl3 \
-        libsodium23 \
         postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
@@ -50,7 +49,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         ca-certificates \
         pkg-config \
         libssl-dev \
-        libsodium-dev \
         build-essential \
         swig \
     && rm -rf /var/lib/apt/lists/*
@@ -59,12 +57,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --upgrade pip && \
     pip install poetry==${POETRY_VERSION}
-
-# Compile liboprf
-WORKDIR /liboprf
-RUN git clone --depth 1 --branch v0.9.3 https://github.com/stef/liboprf.git . && \
-    cd src && \
-    make
 
 # Install Python dependencies into a virtualenv
 WORKDIR ${PROJECT_DIR}
@@ -85,11 +77,6 @@ RUN --mount=type=cache,target=${POETRY_CACHE_DIR} \
 FROM base AS final
 
 ARG DEV
-
-# Copy compiled libraries
-COPY --from=builder /liboprf/src/noise_xk/lib*.so /usr/local/lib/
-COPY --from=builder /liboprf/src/lib*.so /usr/local/lib/
-RUN ldconfig
 
 # Set different virtualenv path for runtime to avoid issues when mounting source code
 ENV VIRTUAL_ENV="/opt/app/docker-venv"

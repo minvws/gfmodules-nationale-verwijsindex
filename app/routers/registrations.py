@@ -2,7 +2,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, Query, Request, Response
 
-from app.dependencies import get_pseudonym_service, get_referral_service
+from app.dependencies import get_crypto_service_api_client, get_referral_service
 from app.models.auth.context import AuthContext
 from app.models.auth.data import AuthorizationScope, RequestedAction
 from app.models.registrations import (
@@ -12,12 +12,12 @@ from app.models.registrations import (
     RegistrationQueryParams,
 )
 from app.services.auth.auth_context import AuthContextService
+from app.services.crypto_service_api_client import CryptoServiceApiClient
 from app.services.exceptions import (
     InvalidModelError,
     UnauthorizedActionError,
     UnauthorizedScopeError,
 )
-from app.services.prs.pseudonym_service import PseudonymService
 from app.services.referral_service import ReferralService
 
 router = APIRouter(tags=["Registrations"], prefix="/registrations")
@@ -30,7 +30,7 @@ def get_registration(
     params: Annotated[RegistrationQueryParams, Query()],
     request: Request,
     referral_service: Annotated[ReferralService, Depends(get_referral_service)],
-    pseudonym_service: Annotated[PseudonymService, Depends(get_pseudonym_service)],
+    crypto_client: Annotated[CryptoServiceApiClient, Depends(get_crypto_service_api_client)],
 ) -> Any:
     ctx: AuthContext = request.state.auth
     if AuthorizationScope.READ not in ctx.scope:
@@ -40,7 +40,7 @@ def get_registration(
     if not valid_action:
         raise UnauthorizedActionError(RequestedAction.MANAGING, ctx.role)
 
-    pseudonym = pseudonym_service.exchange(oprf_jwe=params.pseudonym, blind_factor=params.oprf_key)
+    pseudonym = crypto_client.exchange(params.pseudonym, params.oprf_key)
 
     results = referral_service.get_many(ura_number=ctx.claims.ura_number, pseudonym=pseudonym)
 
@@ -52,7 +52,7 @@ def add_registration(
     data: Annotated[CreateRegistrationRequest, Body()],
     request: Request,
     referral_service: Annotated[ReferralService, Depends(get_referral_service)],
-    pseudonym_service: Annotated[PseudonymService, Depends(get_pseudonym_service)],
+    crypto_client: Annotated[CryptoServiceApiClient, Depends(get_crypto_service_api_client)],
 ) -> Any:
     ctx: AuthContext = request.state.auth
     if AuthorizationScope.CREATE not in ctx.scope:
@@ -65,7 +65,7 @@ def add_registration(
     if not valid_action:
         raise UnauthorizedActionError(RequestedAction.MANAGING, ctx.role)
 
-    pseudonym = pseudonym_service.exchange(oprf_jwe=data.pseudonym, blind_factor=data.oprf_key)
+    pseudonym = crypto_client.exchange(data.pseudonym, data.oprf_key)
 
     new_referral = referral_service.add_one(
         pseudonym=pseudonym,
@@ -80,7 +80,7 @@ def delete_registration(
     params: Annotated[RegistrationQueryParams, Query()],
     request: Request,
     referral_service: Annotated[ReferralService, Depends(get_referral_service)],
-    pseudonym_service: Annotated[PseudonymService, Depends(get_pseudonym_service)],
+    crypto_client: Annotated[CryptoServiceApiClient, Depends(get_crypto_service_api_client)],
 ) -> Any:
     ctx: AuthContext = request.state.auth
     if AuthorizationScope.DELETE not in ctx.scope:
@@ -93,7 +93,7 @@ def delete_registration(
     if ctx.claims.source_id is None:
         raise InvalidModelError("source_id is required to complete transaction")
 
-    pseudonym = pseudonym_service.exchange(oprf_jwe=params.pseudonym, blind_factor=params.oprf_key)
+    pseudonym = crypto_client.exchange(params.pseudonym, params.oprf_key)
 
     referral_service.delete_many(
         ura_number=ctx.claims.ura_number,

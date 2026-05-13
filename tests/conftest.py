@@ -13,9 +13,7 @@ from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
 from app.models.ura import UraNumber
 from app.services.auth.header import AuthHeaderService
-from app.services.client_oauth import ClientOAuthService
 from app.services.http import HttpService
-from app.services.prs.prs_registration_service import PrsRegistrationService
 from app.services.referral_service import ReferralService
 from app.utils.certificates.utils import (
     load_certificate,
@@ -31,12 +29,12 @@ TEST_CERTIFICATE_DIR: Final[str] = "tests/secrets/"
 @pytest.fixture()
 def database() -> Generator[Database, Any, None]:
     config_database = ConfigDatabase(dsn="sqlite:///:memory:", retry_backoff=[])
+    db = Database(config_database=config_database)
+    db.generate_tables()
     try:
-        db = Database(config_database=config_database)
-        db.generate_tables()
         yield db
-    except Exception as e:
-        raise e
+    finally:
+        db.engine.dispose()
 
 
 @pytest.fixture()
@@ -48,11 +46,11 @@ def referral_repository(database: Database) -> ReferralRepository:
 def http_service() -> HttpService:
     config = get_test_config()
     return HttpService(
-        endpoint=config.pseudonym_api.endpoint,
-        timeout=config.pseudonym_api.timeout,
-        mtls_cert=config.pseudonym_api.mtls_cert,
-        mtls_key=config.pseudonym_api.mtls_key,
-        verify_ca=config.pseudonym_api.verify_ca,
+        endpoint=config.crypto_service_api.endpoint,
+        timeout=config.crypto_service_api.timeout,
+        mtls_cert=config.crypto_service_api.mtls_cert,
+        mtls_key=config.crypto_service_api.mtls_key,
+        verify_ca=config.crypto_service_api.verify_ca,
     )
 
 
@@ -68,17 +66,6 @@ def mock_referral_entity() -> ReferralEntity:
         pseudonym="some-pseudonym",
         source="Some-Device",
         organization_type="Hospital",
-    )
-
-
-@pytest.fixture()
-def prs_registration_service(ura_number: UraNumber) -> PrsRegistrationService:
-    config = get_test_config()
-    client_oauth_service = ClientOAuthService(config.client_oauth)
-    return PrsRegistrationService(
-        config=config.pseudonym_api,
-        ura_number=ura_number,
-        client_oauth_service=client_oauth_service,
     )
 
 
