@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 
 from app.application import setup_fastapi
 from app.auth import get_auth_ctx
-from app.config import ConfigDatabase
+from app.config import ConfigDatabase, set_config
 from app.db.db import Database
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.dependencies import get_crypto_service_api_client, get_referral_service
@@ -12,6 +12,7 @@ from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.data import AuthorizationRole, AuthorizationScope
 from app.models.ura import UraNumber
 from app.services.referral_service import ReferralService
+from tests.test_config import get_test_config
 
 TEST_URA = "00000001"
 TEST_SOURCE_ID = "SRC-001"
@@ -74,6 +75,7 @@ def make_test_client(
     crypto_client: CryptoServiceApiClientMock,
     auth_context: AuthContext,
 ) -> TestClient:
+    set_config(get_test_config())
     app = setup_fastapi()
 
     app.dependency_overrides[get_referral_service] = lambda: referral_service
