@@ -7,10 +7,20 @@ from fastapi.params import Query
 from app.dependencies import get_crypto_service_api_client, get_referral_service
 from app.models.auth.context import AuthContext
 from app.models.auth.data import AuthorizationScope, RequestedAction
-from app.models.v1.registration import CreateRegistrationRequest, Registration, RegistrationList, RegistrationQueryParams
+from app.models.v1.registration import (
+    CreateRegistrationRequest,
+    Registration,
+    RegistrationList,
+    RegistrationQueryParams,
+)
 from app.services.auth.auth_context import AuthContextService
 from app.services.crypto_service_api_client import CryptoServiceApiClient
-from app.services.exceptions import ConflictError, UnauthorizedActionError, UnauthorizedManagingRequestError, UnauthorizedScopeError
+from app.services.exceptions import (
+    ConflictError,
+    UnauthorizedActionError,
+    UnauthorizedManagingRequestError,
+    UnauthorizedScopeError,
+)
 from app.services.referral_service import ReferralService
 
 logger = logging.getLogger(__name__)

@@ -53,8 +53,12 @@ class TestLocalize:
         referral_service: ReferralService,
         crypto_client: CryptoServiceApiClientMock,
     ) -> None:
-        client_a = make_test_client(referral_service, crypto_client, make_auth_context(ura="00000001", source_id="src-a"))
-        client_b = make_test_client(referral_service, crypto_client, make_auth_context(ura="00000002", source_id="src-b"))
+        client_a = make_test_client(
+            referral_service, crypto_client, make_auth_context(ura="00000001", source_id="src-a")
+        )
+        client_b = make_test_client(
+            referral_service, crypto_client, make_auth_context(ura="00000002", source_id="src-b")
+        )
 
         client_a.post("/v1/registrations", json={"pseudonym": "pseu", "oprf_key": "k"})
         client_b.post("/v1/registrations", json={"pseudonym": "pseu", "oprf_key": "k"})
@@ -69,8 +73,12 @@ class TestLocalize:
         referral_service: ReferralService,
         crypto_client: CryptoServiceApiClientMock,
     ) -> None:
-        client_a = make_test_client(referral_service, crypto_client, make_auth_context(ura="00000001", source_id="src-a"))
-        client_b = make_test_client(referral_service, crypto_client, make_auth_context(ura="00000002", source_id="src-b"))
+        client_a = make_test_client(
+            referral_service, crypto_client, make_auth_context(ura="00000001", source_id="src-a")
+        )
+        client_b = make_test_client(
+            referral_service, crypto_client, make_auth_context(ura="00000002", source_id="src-b")
+        )
 
         client_a.post("/v1/registrations", json={"pseudonym": "pseu", "oprf_key": "k", "care_context": "Hospital"})
         client_b.post("/v1/registrations", json={"pseudonym": "pseu", "oprf_key": "k", "care_context": "Clinic"})
@@ -87,7 +95,7 @@ class TestLocalize:
     def test_requires_localize_scope(
         self, referral_service: ReferralService, crypto_client: CryptoServiceApiClientMock
     ) -> None:
-        ctx = make_localize_auth_context()
+        _ = make_localize_auth_context()
         # Override scope to something else
         from app.models.auth.context import AuthContext, AuthenticationClaims
         from app.models.ura import UraNumber
