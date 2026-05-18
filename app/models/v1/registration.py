@@ -1,6 +1,7 @@
 from datetime import datetime
+from typing import Annotated
 
-from fastapi.params import Query
+from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -11,9 +12,9 @@ class CreateRegistrationRequest(BaseModel):
 
 
 class RegistrationQueryParams(BaseModel):
-    pseudonym: str | None = Query(default=None)
-    oprf_key: str | None = Query(default=None)
-    care_context: str | None = Query(default=None)
+    pseudonym: Annotated[str | None, Query()] = None
+    oprf_key: Annotated[str | None, Query()] = None
+    care_context: Annotated[str | None, Query()] = None
 
     def has_pseudonym(self) -> bool:
         return self.pseudonym is not None and self.oprf_key is not None
