@@ -39,6 +39,7 @@ pytest-mock = "^3.15.0"
 ruff = "0.15.1"
 codespell = "^2.4.1"
 pip-audit = "^2.10.0"
+httpx = "^0.28.1"
 
 [tool.poetry.group.debug.dependencies]
 debugpy = "^1.8.20"
