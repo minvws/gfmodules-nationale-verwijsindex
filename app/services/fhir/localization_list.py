@@ -18,7 +18,7 @@ from app.services.exceptions import (
     UnauthorizedUraError,
 )
 from app.services.referral_service import ReferralService
-from app.utils.fhir import decode_url_safe_token
+from app.utils.url import decode_url_safe_token
 
 logger = logging.getLogger(__name__)
 

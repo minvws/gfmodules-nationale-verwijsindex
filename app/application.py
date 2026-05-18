@@ -16,6 +16,8 @@ from app.routers.fhir.localization_list import router as fhir_list_router
 from app.routers.health import router as health_router
 from app.routers.localize import router as localization_router
 from app.routers.registrations import router as registrations_router
+from app.routers.v1.localize import router as v1_localize_router
+from app.routers.v1.registrations import router as v1_registrations_router
 from app.stats import StatsdMiddleware
 
 
@@ -82,6 +84,8 @@ def setup_fastapi() -> FastAPI:
         fhir_base_router,
         registrations_router,
         localization_router,
+        v1_localize_router,
+        v1_registrations_router,
     ]
 
     for router in public_routers:
