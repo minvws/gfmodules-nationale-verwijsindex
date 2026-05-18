@@ -32,16 +32,7 @@ class TestCreateRegistration:
         body = response.json()
         assert body["ura"] == TEST_URA
         assert body["source_id"] == TEST_SOURCE_ID
-        assert body["care_context"] is None
         assert "created_at" in body
-
-    def test_creates_registration_with_care_context(self, source_client: TestClient) -> None:
-        response = source_client.post(
-            "/v1/registrations",
-            json={"pseudonym": "pseu", "oprf_key": "key1", "care_context": "Hospital"},
-        )
-        assert response.status_code == 201
-        assert response.json()["care_context"] == "Hospital"
 
     def test_conflict_on_duplicate(self, source_client: TestClient) -> None:
         source_client.post("/v1/registrations", json={"pseudonym": "pseu", "oprf_key": "key1"})
@@ -102,16 +93,6 @@ class TestGetRegistrations:
         response = source_client.get("/v1/registrations", params={"pseudonym": "p1", "oprf_key": "k"})
         assert response.status_code == 200
         assert response.json()["total"] == 1
-
-    def test_filters_by_care_context(self, source_client: TestClient) -> None:
-        source_client.post("/v1/registrations", json={"pseudonym": "p1", "oprf_key": "k", "care_context": "Hospital"})
-        source_client.post("/v1/registrations", json={"pseudonym": "p2", "oprf_key": "k", "care_context": "Clinic"})
-
-        response = source_client.get("/v1/registrations", params={"care_context": "Hospital"})
-        assert response.status_code == 200
-        body = response.json()
-        assert body["total"] == 1
-        assert body["registrations"][0]["care_context"] == "Hospital"
 
     def test_does_not_return_other_ura_registrations(
         self, referral_service: ReferralService, crypto_client: CryptoServiceApiClientMock

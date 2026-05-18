@@ -32,7 +32,4 @@ def localize(
     pseudonym = crypto_client.exchange(body.pseudonym, body.oprf_key)
     referrals = referral_service.get_many(pseudonym=pseudonym)
 
-    if body.care_context is not None:
-        referrals = [r for r in referrals if r.organization_type == body.care_context]
-
     return LocalizeResponse(results=[Source(ura=r.ura_number, source_id=r.source) for r in referrals])

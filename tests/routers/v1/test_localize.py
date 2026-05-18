@@ -67,31 +67,6 @@ class TestLocalize:
         assert response.status_code == 200
         assert len(response.json()["results"]) == 2
 
-    def test_filters_by_care_context(
-        self,
-        localize_client: TestClient,
-        referral_service: ReferralService,
-        crypto_client: CryptoServiceApiClientMock,
-    ) -> None:
-        client_a = make_test_client(
-            referral_service, crypto_client, make_auth_context(ura="00000001", source_id="src-a")
-        )
-        client_b = make_test_client(
-            referral_service, crypto_client, make_auth_context(ura="00000002", source_id="src-b")
-        )
-
-        client_a.post("/v1/registrations", json={"pseudonym": "pseu", "oprf_key": "k", "care_context": "Hospital"})
-        client_b.post("/v1/registrations", json={"pseudonym": "pseu", "oprf_key": "k", "care_context": "Clinic"})
-
-        response = localize_client.post(
-            "/v1/localize",
-            json={"pseudonym": "pseu", "oprf_key": "k", "care_context": "Hospital"},
-        )
-        assert response.status_code == 200
-        results = response.json()["results"]
-        assert len(results) == 1
-        assert results[0]["source_id"] == "src-a"
-
     def test_requires_localize_scope(
         self, referral_service: ReferralService, crypto_client: CryptoServiceApiClientMock
     ) -> None:

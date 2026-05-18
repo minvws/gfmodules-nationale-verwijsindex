@@ -4,7 +4,6 @@ from pydantic import BaseModel
 class LocalizeRequest(BaseModel):
     pseudonym: str
     oprf_key: str
-    care_context: str | None = None
 
 
 class Source(BaseModel):

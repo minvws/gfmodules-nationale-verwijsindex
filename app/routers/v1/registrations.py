@@ -46,9 +46,6 @@ def get_registrations(
 
     referrals = referral_service.get_many(ura_number=ctx.claims.ura_number, pseudonym=pseudonym)
 
-    if params.care_context is not None:
-        referrals = [r for r in referrals if r.organization_type == params.care_context]
-
     registrations = [Registration.model_validate(r) for r in referrals]
     return RegistrationList(registrations=registrations, total=len(registrations))
 
@@ -75,7 +72,6 @@ def create_registration(
             pseudonym=pseudonym,
             ura_number=ctx.claims.ura_number,
             source=ctx.claims.source_id,  # type: ignore[arg-type]
-            organization_type=body.care_context,
         )
     except ConflictError:
         raise HTTPException(status_code=409, detail="Registration already exists")
