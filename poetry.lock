@@ -1775,25 +1775,6 @@ typing-extensions = ">=4.6"
 test = ["anyio (>=4.0)", "mypy (>=1.14)", "pproxy (>=2.7)", "pytest (>=6.2.5)", "pytest-cov (>=3.0)", "pytest-randomly (>=3.5)"]
 
 [[package]]
-name = "puzi"
-version = "0.1.0"
-description = "Python 3 UZI card reader lib"
-optional = false
-python-versions = ">=3.6"
-groups = ["main"]
-files = []
-develop = false
-
-[package.dependencies]
-cryptography = ">=3.1"
-
-[package.source]
-type = "git"
-url = "https://github.com/minvws/puzi-python"
-reference = "HEAD"
-resolved_reference = "bd9858d557f8892a252c7e6f277616828d6197d5"
-
-[[package]]
 name = "py-serializable"
 version = "2.1.0"
 description = "Library for serializing and deserializing Python Objects to and from JSON and XML."
@@ -2615,4 +2596,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "1a89a1d2c4ad7ab2f77c427e9298feaa5036b4763e4878f6b44cacacf3d516b6"
+content-hash = "83c649a65ff353ebed2af20e969b7c6c97bd3d6771078783e5c1cf35fdab48e9"
