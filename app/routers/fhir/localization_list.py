@@ -353,7 +353,7 @@ def query(
     if not valid_action:
         raise UnauthorizedActionError(RequestedAction.LOCALIZING, ctx.role)
 
-    authorized_ura = request.state.auth.ura_number
+    authorized_ura = ctx.claims.ura_number
     return service.query(params, authorized_ura)
 
 
