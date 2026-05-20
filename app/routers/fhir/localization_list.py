@@ -353,7 +353,7 @@ def query(
     if not valid_action:
         raise UnauthorizedActionError(RequestedAction.LOCALIZING, ctx.role)
 
-    authorized_ura = request.state.auth.ura_number
+    authorized_ura = ctx.claims.ura_number
     return service.query(params, authorized_ura)
 
 
@@ -386,7 +386,7 @@ def delete(
     if not valid_action:
         raise UnauthorizedActionError(RequestedAction.MANAGING, ctx.role)
 
-    authorized_ura: UraNumber = request.state.auth.ura_number
+    authorized_ura = ctx.claims.ura_number
     outcome, status_code = service.delete(id, authorized_ura)
     return FHIRJSONResponse(
         status_code=status_code,
@@ -427,7 +427,7 @@ def delete_for_query(
     if not valid_managing_request:
         raise UnauthorizedManagingRequestError()
 
-    authenticated_ura = request.state.auth.ura_number
+    authenticated_ura = ctx.claims.ura_number
     outcome, status_code = service.delete_by_query(params, authenticated_ura)
 
     return FHIRJSONResponse(
