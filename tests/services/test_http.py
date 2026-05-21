@@ -38,6 +38,8 @@ def test_do_request_raise_excetion_with_connection_error(response: MagicMock, ht
 
 @patch(PATCHED_MODULE)
 def test_do_request_raise_excetion_with_general_http_error(response: MagicMock, http_service: HttpService) -> None:
-    response.side_effect = HTTPError
+    mock_response = MagicMock()
+    mock_response.raise_for_status.side_effect = HTTPError
+    response.return_value = mock_response
     with pytest.raises(HTTPError):
         http_service.do_request("GET")

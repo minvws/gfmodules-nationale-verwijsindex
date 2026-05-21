@@ -54,10 +54,16 @@ class HttpService:
                 **data_args,  # type: ignore
             )
 
+            response.raise_for_status()
+
             return response
-        except (ConnectionError, Timeout) as e:
-            logger.error(f"Request failed: {e}")
-            raise e
+        except (ConnectionError, Timeout):
+            logger.exception("Request failed")
+            raise
         except HTTPError as e:
-            logger.error(f"HTTP error occurred: {e}")
-            raise e
+            status_code = e.response.status_code if e.response is not None else None
+            if status_code is not None and 400 <= status_code < 500:
+                logger.warning("Received client error HTTP status: %s (%s)", status_code, e)
+            else:
+                logger.exception("HTTP error occurred")
+            raise

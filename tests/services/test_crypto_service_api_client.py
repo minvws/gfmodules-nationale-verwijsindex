@@ -2,7 +2,7 @@ from json import JSONDecodeError
 from unittest.mock import MagicMock
 
 import pytest
-from requests.exceptions import ConnectionError, Timeout
+from requests.exceptions import ConnectionError, HTTPError, Timeout
 
 from app.models.pseudonym import Pseudonym
 from app.services.crypto_service_api_client import CryptoServiceApiClient
@@ -54,7 +54,7 @@ def test_exchange_raises_on_invalid_json(crypto_client: CryptoServiceApiClient, 
     response.json.side_effect = JSONDecodeError("err", "", 0)
     http_mock.do_request.return_value = response
 
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError):
         crypto_client.exchange("jwe", "bf")
 
 
@@ -63,16 +63,14 @@ def test_exchange_raises_on_missing_key(crypto_client: CryptoServiceApiClient, h
     response.json.return_value = {"unexpected_key": "value"}
     http_mock.do_request.return_value = response
 
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError):
         crypto_client.exchange("jwe", "bf")
 
 
 def test_exchange_raises_on_http_error(crypto_client: CryptoServiceApiClient, http_mock: MagicMock) -> None:
-    response = MagicMock()
-    response.raise_for_status.side_effect = Exception("500")
-    http_mock.do_request.return_value = response
+    http_mock.do_request.side_effect = HTTPError("500")
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         crypto_client.exchange("jwe", "bf")
 
 
@@ -86,9 +84,7 @@ def test_is_healthy_returns_true_on_200(crypto_client: CryptoServiceApiClient, h
 
 
 def test_is_healthy_returns_false_on_non_200(crypto_client: CryptoServiceApiClient, http_mock: MagicMock) -> None:
-    response = MagicMock()
-    response.status_code = 503
-    http_mock.do_request.return_value = response
+    http_mock.do_request.side_effect = HTTPError("503")
 
     assert crypto_client.is_healthy() is False
 
