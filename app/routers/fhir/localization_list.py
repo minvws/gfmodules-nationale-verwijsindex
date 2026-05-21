@@ -110,52 +110,54 @@ def create(
         LocalizationList,
         Body(
             media_type="application/fhir+json",
-            example={
-                "resourceType": "List",
-                "extension": [
-                    {
-                        "valueReference": {
-                            "identifier": {
-                                "system": URA_SYSTEM,
-                                "value": "11111111",
-                            }
-                        },
-                        "url": URA_SYSTEM_EXTENSION,
-                    }
-                ],
-                "subject": {
-                    "identifier": {
-                        "system": PSEUDONYM_SYSTEM,
-                        "value": "eyJldmFsdWF0ZWRfb3V0cHV0IjoiSldFX0ZST01fUFJTIiwiYmxpbmRfZmFjdG9yIjoiQ0xJRU5UX0dFTl9CTElORF9GQUNUT1IifQ",
-                    }
-                },
-                "source": {
-                    "identifier": {
-                        "system": DEVICE_SYSTEM,
-                        "value": "EHR-SYS-2024-001",
+            examples=[
+                {
+                    "resourceType": "List",
+                    "extension": [
+                        {
+                            "valueReference": {
+                                "identifier": {
+                                    "system": URA_SYSTEM,
+                                    "value": "11111111",
+                                }
+                            },
+                            "url": URA_SYSTEM_EXTENSION,
+                        }
+                    ],
+                    "subject": {
+                        "identifier": {
+                            "system": PSEUDONYM_SYSTEM,
+                            "value": "eyJldmFsdWF0ZWRfb3V0cHV0IjoiSldFX0ZST01fUFJTIiwiYmxpbmRfZmFjdG9yIjoiQ0xJRU5UX0dFTl9CTElORF9GQUNUT1IifQ",
+                        }
                     },
-                    "type": "Device",
-                },
-                "status": "current",
-                "mode": "working",
-                "emptyReason": {
-                    "coding": [
-                        {
-                            "code": "withheld",
-                            "system": EMPTY_REASON_SYSTEM,
-                        }
-                    ]
-                },
-                "code": {
-                    "coding": [
-                        {
-                            "code": "MEDAFSPRAAK",
-                            "system": DATA_DOMAIN_SYSTEM,
-                            "display": "Medicatieafspraak",
-                        }
-                    ]
-                },
-            },
+                    "source": {
+                        "identifier": {
+                            "system": DEVICE_SYSTEM,
+                            "value": "EHR-SYS-2024-001",
+                        },
+                        "type": "Device",
+                    },
+                    "status": "current",
+                    "mode": "working",
+                    "emptyReason": {
+                        "coding": [
+                            {
+                                "code": "withheld",
+                                "system": EMPTY_REASON_SYSTEM,
+                            }
+                        ]
+                    },
+                    "code": {
+                        "coding": [
+                            {
+                                "code": "MEDAFSPRAAK",
+                                "system": DATA_DOMAIN_SYSTEM,
+                                "display": "Medicatieafspraak",
+                            }
+                        ]
+                    },
+                }
+            ],
         ),
     ],
     request: Request,
