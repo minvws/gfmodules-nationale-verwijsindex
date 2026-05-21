@@ -1,0 +1,64 @@
+publiccodeYmlVersion: "0.5"
+name: Nationale Verwijs Index
+url: https://github.com/minvws/gfmodules-nationale-verwijsindex
+platforms:
+  - web
+categories:
+  - application-development
+developmentStatus: development
+softwareType: standalone/backend
+intendedAudience:
+  countries:
+    - NL
+  scope:
+    - government
+    - healthcare
+
+description:
+  nl:
+    shortDescription: >-
+      Implementatie van de Nationale Verwijs Index voor het opslaan en
+      beheren van verwijzingen naar zorgdata.
+    longDescription: |
+      De Nationale Verwijs Index (NVI) is onderdeel van het 'Generieke
+      Functies, lokalisatie en addressering' project van het Ministerie van
+      Volksgezondheid, Welzijn en Sport. De applicatie beheert verwijzingen
+      naar gezondheidsdata en legt een unieke koppeling vast tussen een
+      gepseudonimiseerde patiënt, een zorgverlener (geïdentificeerd via
+      URA-nummer) en een specifieke zorgcontext. De service biedt een
+      FastAPI-interface voor het registreren en opzoeken van verwijzingen.
+    features:
+      - Opslaan en beheren van zorgverwijzingen
+      - Koppeling van pseudoniem, URA-nummer en zorgcontext
+      - FastAPI-interface voor registratie en opzoeking
+  en:
+    shortDescription: >-
+      Implementation of the Nationale Verwijs Index for storing and managing
+      referrals to healthcare data.
+    longDescription: |
+      The Nationale Verwijs Index (NVI) is part of the 'Generieke Functies,
+      lokalisatie en addressering' project of the Ministry of Health, Welfare
+      and Sport. The application manages referrals to health data and
+      maintains a unique link between a pseudonymized patient, a healthcare
+      provider (identified by URA number), and a specific care context. The
+      service provides a FastAPI interface for registering and querying
+      referrals.
+    features:
+      - Storage and management of healthcare referrals
+      - Linking pseudonym, URA number, and care context
+      - FastAPI interface for registration and lookup
+
+legal:
+  license: EUPL-1.2
+  mainCopyrightOwner: Ministerie van Volksgezondheid, Welzijn en Sport
+
+maintenance:
+  type: internal
+  contacts:
+    - name: irealisatie.nl
+      email: helpdesk@irealisatie.nl
+
+localisation:
+  localisationReady: false
+  availableLanguages:
+    - nl
