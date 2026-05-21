@@ -24,13 +24,12 @@ description:
       Functies, lokalisatie en addressering' project van het Ministerie van
       Volksgezondheid, Welzijn en Sport. De applicatie beheert verwijzingen
       naar gezondheidsdata en legt een unieke koppeling vast tussen een
-      gepseudonimiseerde patiënt, een zorgverlener (geïdentificeerd via
-      URA-nummer) en een specifieke zorgcontext. De service biedt een
-      FastAPI-interface voor het registreren en opzoeken van verwijzingen.
+      gepseudonimiseerde patiënt, een zorgverlener en een specifieke zorgcontext. De service biedt een
+      FHIR en REST interface voor het registreren en opzoeken van verwijzingen.
     features:
       - Opslaan en beheren van zorgverwijzingen
-      - Koppeling van pseudoniem, URA-nummer en zorgcontext
-      - FastAPI-interface voor registratie en opzoeking
+      - Koppeling van pseudoniem, zorgverlener en zorgcontext
+      - FHIR-interface voor registratie en opzoeking
   en:
     shortDescription: >-
       Implementation of the Nationale Verwijs Index for storing and managing
@@ -40,13 +39,13 @@ description:
       lokalisatie en addressering' project of the Ministry of Health, Welfare
       and Sport. The application manages referrals to health data and
       maintains a unique link between a pseudonymized patient, a healthcare
-      provider (identified by URA number), and a specific care context. The
-      service provides a FastAPI interface for registering and querying
+      provider, and a specific care context. The
+      service provides a FHIR and REST interface for registering and querying
       referrals.
     features:
       - Storage and management of healthcare referrals
-      - Linking pseudonym, URA number, and care context
-      - FastAPI interface for registration and lookup
+      - Linking pseudonym, health care provider, and care context
+      - FHIR interface for registration and lookup
 
 legal:
   license: EUPL-1.2
