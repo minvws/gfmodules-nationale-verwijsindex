@@ -1,5 +1,5 @@
 publiccodeYmlVersion: "0.5"
-name: Nationale Verwijs Index
+name: Generieke Functies Nationale Verwijs Index
 url: https://github.com/minvws/gfmodules-nationale-verwijsindex
 platforms:
   - web
