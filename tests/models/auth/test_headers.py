@@ -40,7 +40,7 @@ def header_data(ura_number: UraNumber) -> Dict[str, Any]:
     return {
         "x-gf-oin": "oin123",
         "x-gf-source-id": "source123",
-        "x-gf-ura": ura_number.value,
+        "x-gf-sub": ura_number.value,
         "x-gf-audience": "audience",
         "x-gf-authorized-role": AuthorizationRole.CONSULTING.value,
         "x-gf-scope": "nvi:read",
@@ -127,14 +127,14 @@ def test_from_request_should_panic_with_missing_prop(
     header_data: Dict[str, Any],
 ) -> None:
     data = header_data.copy()
-    data.pop("x-gf-ura")
+    data.pop("x-gf-sub")
     mock_request = Mock(spec=Request)
     mock_request.headers = data
 
     with pytest.raises(ValueError) as exec:
         AuthHeaders.from_request(mock_request)
 
-    assert "x-gf-ura is required for AuthHeaders" in str(exec.value)
+    assert "x-gf-sub is required for AuthHeaders" in str(exec.value)
 
 
 def test_from_header_should_panic_with_invalid_scope(
