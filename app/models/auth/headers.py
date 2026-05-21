@@ -12,7 +12,7 @@ class AuthHeaders(BaseModel):
 
     oin: Annotated[str | None, Field(alias="x-gf-oin", default=None)]
     source_id: Annotated[str | None, Field(alias="x-gf-source-id", default=None)]
-    ura: Annotated[str, Field(alias="x-gf-ura")]
+    ura: Annotated[str, Field(alias="x-gf-sub")]
     audience: Annotated[str, Field(alias="x-gf-audience")]
     authorized_role: Annotated[str, Field(alias="x-gf-authorized-role")]
     scope: Annotated[List[str], Field(alias="x-gf-scope")]
