@@ -36,7 +36,7 @@ from app.services.exceptions import (
 from app.services.fhir.localization_list import LocalizationListService
 
 logger = logging.getLogger(__name__)
-router = APIRouter(tags=["poc - FHIR"], prefix="/fhir/List")
+router = APIRouter(tags=["FHIR"], prefix="/fhir/List")
 
 
 @router.post(
