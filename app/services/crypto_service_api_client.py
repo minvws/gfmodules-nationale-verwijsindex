@@ -25,7 +25,7 @@ class CryptoServiceApiClient:
             response = self._http.do_request(
                 method="POST",
                 sub_route="decrypt_and_hash",
-                params={"jwe": jwe, "blind_factor": blind_factor},
+                data={"jwe": jwe, "blind_factor": blind_factor},
             )
             response.raise_for_status()
             return Pseudonym(value=response.json()["hashed_pseudonym"])

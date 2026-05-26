@@ -31,7 +31,7 @@ def test_exchange_returns_hashed_pseudonym(crypto_client: CryptoServiceApiClient
     http_mock.do_request.assert_called_once_with(
         method="POST",
         sub_route="decrypt_and_hash",
-        params={"jwe": "some-jwe", "blind_factor": "some-blind-factor"},
+        data={"jwe": "some-jwe", "blind_factor": "some-blind-factor"},
     )
 
 
