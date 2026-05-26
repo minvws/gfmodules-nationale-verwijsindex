@@ -13,8 +13,7 @@ exclude = ["app/debug"]
 [tool.poetry.dependencies]
 python = "^3.11"
 uvicorn = "0.40.0"
-fastapi = "^0.129"
-mypy = "^1.19.1"
+fastapi = "^0.136.3"
 pydantic-settings = "^2.13.0"
 inject = "^5.3.0"
 sqlalchemy = "^2.0.46"
@@ -37,6 +36,7 @@ ruff = "0.15.1"
 codespell = "^2.4.1"
 pip-audit = "^2.10.0"
 httpx = "^0.28.1"
+mypy = "^2.1.0"
 
 [tool.poetry.group.debug.dependencies]
 debugpy = "^1.8.20"
