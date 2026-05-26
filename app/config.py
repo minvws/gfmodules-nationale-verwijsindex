@@ -141,8 +141,8 @@ def get_config(path: str | None = None) -> Config:
             ini_data["database"]["retry_backoff"] = [float(i) for i in ini_data["database"]["retry_backoff"].split(",")]
 
         _CONFIG = Config.model_validate(ini_data)
-    except ValidationError as e:
-        logger.error(f"Configuration validation error: {e}")
-        raise e
+    except ValidationError:
+        logger.exception("Configuration validation error")
+        raise
 
     return _CONFIG

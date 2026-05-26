@@ -35,8 +35,8 @@ class LocalizationListService:
                 data["evaluated_output"],
                 data["blind_factor"],
             )
-        except Exception as e:
-            logger.error(f"error occurred while decoding pseudonym token: {e}")
+        except Exception:
+            logger.exception("Error occurred while decoding pseudonym token")
             raise PseudonymError(f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}")
 
     def create(self, data: LocalizationList, authenticated_ura: UraNumber) -> LocalizationList:
