@@ -153,12 +153,12 @@ class DbSession:
                 self.session.rollback()
             except OperationalError as e:
                 logger.warning("Retrying operation due to OperationalError: %s", e)
-            except DatabaseError as e:
-                logger.warning("Retrying operation due to DatabaseError: %s", e)
-                raise e
-            except Exception as e:
-                logger.warning("Generic Exception during operation: %s", e)
-                raise e
+            except DatabaseError:
+                logger.exception("Database error during operation")
+                raise
+            except Exception:
+                logger.exception("Unexpected error during operation")
+                raise
 
             if len(backoff) == 0:
                 logger.error("Operation failed after all retries")
