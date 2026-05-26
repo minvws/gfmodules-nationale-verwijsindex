@@ -1,0 +1,68 @@
+publiccodeYmlVersion: "0.5"
+name: Generieke Functies Nationale Verwijs Index
+url: https://github.com/minvws/gfmodules-nationale-verwijsindex
+platforms:
+  - web
+categories:
+  - application-development
+developmentStatus: development
+softwareType: standalone/backend
+intendedAudience:
+  countries:
+    - NL
+  scope:
+    - government
+    - healthcare
+
+description:
+  nl:
+    shortDescription: >-
+      Implementatie van de Nationale Verwijs Index voor het opslaan en
+      beheren van verwijzingen naar zorgdata.
+    longDescription: |
+      De Nationale Verwijs Index (NVI) is onderdeel van het 'Generieke
+      Functies, lokalisatie en addressering' project van het Ministerie van
+      Volksgezondheid, Welzijn en Sport. De applicatie beheert verwijzingen
+      naar gezondheidsdata en legt een unieke koppeling vast tussen een
+      gepseudonimiseerde patiënt, een zorgverlener en een specifieke zorgcontext. De service biedt een
+      FHIR en REST interface voor het registreren en opzoeken van verwijzingen.
+    features:
+      - Opslaan en beheren van zorgverwijzingen
+      - Koppeling van pseudoniem, zorgverlener en zorgcontext
+      - FHIR-interface voor registratie en opzoeking
+  en:
+    shortDescription: >-
+      Implementation of the Nationale Verwijs Index for storing and managing
+      referrals to healthcare data.
+    longDescription: |
+      The Nationale Verwijs Index (NVI) is part of the 'Generieke Functies,
+      lokalisatie en addressering' project of the Ministry of Health, Welfare
+      and Sport. The application manages referrals to health data and
+      maintains a unique link between a pseudonymized patient, a healthcare
+      provider, and a specific care context. The
+      service provides a FHIR and REST interface for registering and querying
+      referrals.
+    features:
+      - Storage and management of healthcare referrals
+      - Linking pseudonym, health care provider, and care context
+      - FHIR interface for registration and lookup
+
+legal:
+  license: EUPL-1.2
+  mainCopyrightOwner: Ministerie van Volksgezondheid, Welzijn en Sport
+
+maintenance:
+  type: internal
+  contacts:
+    - name: iRealisatie - Team Generieke Functies
+      email: maintainer@irealisatie.nl
+      affiliation: Ministerie van Volksgezondheid, Welzijn en Sport
+
+organisation:
+  uri: https://www.rijksoverheid.nl/ministeries/ministerie-van-volksgezondheid-welzijn-en-sport
+  name: Ministerie van Volksgezondheid, Welzijn en Sport
+
+localisation:
+  localisationReady: false
+  availableLanguages:
+    - en
