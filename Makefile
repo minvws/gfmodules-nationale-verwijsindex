@@ -36,7 +36,7 @@ type-check: ## Check for typing errors
 	$(RUN_PREFIX) mypy app tests
 
 safety-check: ## Check for security vulnerabilities
-	$(RUN_PREFIX) pip-audit --ignore-vuln="MAL-2026-4750"
+	$(RUN_PREFIX) pip-audit
 
 spelling-check: ## Check spelling mistakes
 	$(RUN_PREFIX) codespell . --skip="./app/data.py" --skip="./publiccode.yml"
