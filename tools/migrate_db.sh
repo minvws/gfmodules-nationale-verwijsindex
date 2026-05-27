@@ -59,9 +59,9 @@ fi
 pending_migrations=()
 
 for file in $SQLDIR/*.sql; do
-  basename = $(basename $file)
+  basename="$(basename $file)"
   if [ "$MIGRATION_TABLE_EXISTS" = "f" ]; then
-    echo -e "${YELLOW}▶️ Found pending migration: $basename${NC}"
+    echo -e "${YELLOW}▶️ Found pending migration: $basename ${NC}"
     pending_migrations+=("$file")
   else
     FILE_CHECKSUM=$(sha256sum "$file" | awk '{print $1}')
