@@ -3,5 +3,3 @@ CREATE TABLE ura_number_allowlist (
       description VARCHAR(255),
       PRIMARY KEY (ura_number)
 );
-
-ALTER TABLE ura_number_allowlist OWNER TO localisation;
