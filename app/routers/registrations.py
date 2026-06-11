@@ -27,10 +27,10 @@ router = APIRouter(tags=["Registrations"], prefix="/registrations")
     "",
 )
 def get_registration(
-    params: Annotated[RegistrationQueryParams, Query()],
     request: Request,
     referral_service: Annotated[ReferralService, Depends(get_referral_service)],
     crypto_client: Annotated[CryptoServiceApiClient, Depends(get_crypto_service_api_client)],
+    params: Annotated[RegistrationQueryParams, Query()],
 ) -> Any:
     ctx: AuthContext = request.state.auth
     if AuthorizationScope.READ not in ctx.scope:
