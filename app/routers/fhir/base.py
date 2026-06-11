@@ -4,11 +4,11 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Request
 
 from app.dependencies import get_bundle_service, get_capability_statement
+from app.models.auth.context import AuthContext
 from app.models.fhir.bundle import Bundle
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.response import FHIRJSONResponse
-from app.models.ura import UraNumber
 from app.services.exceptions import InvalidModelError
 from app.services.fhir.bundle import BundleService
 
@@ -22,7 +22,8 @@ def register(
     request: Request,
     localisation_list_service: BundleService = Depends(get_bundle_service),
 ) -> Any:
-    cert_ura: UraNumber = request.state.auth.ura_number
+    ctx: AuthContext = request.state.auth
+    cert_ura = ctx.claims.ura_number
     results_bundle = Bundle[Any](entry=[])
     valid_bundle = localisation_list_service.validate_localization_bundle_structure(data)
     if not valid_bundle:
