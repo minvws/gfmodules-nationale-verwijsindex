@@ -1,4 +1,4 @@
-from typing import Annotated, Any, Dict, List, Self
+from typing import Annotated, Any, Dict, Self
 
 from fastapi import Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -15,7 +15,7 @@ class AuthHeaders(BaseModel):
     ura: Annotated[str, Field(alias="x-gf-sub")]
     audience: Annotated[str, Field(alias="x-gf-audience")]
     authorized_role: Annotated[str, Field(alias="x-gf-authorized-role")]
-    scope: Annotated[List[str], Field(alias="x-gf-scope")]
+    scope: Annotated[str, Field(alias="x-gf-scope")]
     cert_type: Annotated[str, Field(alias="x-gf-cert-type")]
 
     @field_validator("ura", mode="before")
@@ -38,20 +38,18 @@ class AuthHeaders(BaseModel):
             raise ValueError(f"Invalid AuthorizationRoles : {data}") from e
 
     @field_validator("scope", mode="before")
-    def validate_scope(cls, data: Any) -> List[str]:
-        if not isinstance(data, list):
+    @classmethod
+    def validate_scope(cls, data: Any) -> str:
+        if not isinstance(data, str):
             raise ValueError(f"Invalid scope type in AuthorizationRoles: {data}")
 
-        results = []
-        for entry in data:
+        for entry in data.split():
             try:
-                scope = AuthorizationScope(entry)
+                _valid = AuthorizationScope(entry)
             except ValueError as e:
                 raise ValueError(f"Invalid scope {entry}: {e}")
 
-            results.append(scope.value)
-
-        return results
+        return data
 
     @classmethod
     def from_request(cls, req: Request) -> Self:
@@ -64,11 +62,6 @@ class AuthHeaders(BaseModel):
 
             if header_name not in optional_fields and value is None:
                 raise ValueError(f"{header_name} is required for {cls.__name__}")
-
-            if header_name == "x-gf-scope" and value is not None:
-                split_value = value.split(",")
-                data[name] = split_value
-                continue
 
             data[name] = value
 

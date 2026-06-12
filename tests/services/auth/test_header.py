@@ -14,7 +14,7 @@ def test_validate_should_succeed(ura_number: UraNumber, auth_header_service: Aut
         ura=ura_number.value,
         audience=auth_header_service.expected_audience,
         authorized_role=AuthorizationRole.CONSULTING.value,
-        scope=["nvi:read"],
+        scope="nvi:read",
         cert_type="oin",
     )
 
@@ -32,7 +32,7 @@ def test_validate_should_panic_with_invalid_audience(
         ura=ura_number.value,
         audience="some-invalid-audience",
         authorized_role=AuthorizationRole.CONSULTING.value,
-        scope=["nvi:read"],
+        scope="nvi:read",
         cert_type="oin",
     )
 

@@ -39,10 +39,10 @@ safety-check: ## Check for security vulnerabilities
 	$(RUN_PREFIX) pip-audit
 
 spelling-check: ## Check spelling mistakes
-	$(RUN_PREFIX) codespell . --skip="./app/data.py" --skip="./publiccode.yml"
+	$(RUN_PREFIX) codespell . --skip="./app/data.py" --skip="./publiccode.yml" --skip="./tests"
 
 spelling-fix: ## Fix spelling mistakes
-	$(RUN_PREFIX) codespell . --write-changes --interactive=3  --skip="./app/data.py" --skip="./publiccode.yml"
+	$(RUN_PREFIX) codespell . --write-changes --interactive=3  --skip="./app/data.py" --skip="./publiccode.yml" --skip="./tests"
 
 test: ## Runs automated tests
 	$(RUN_PREFIX) pytest --cov --cov-report=term --cov-report=xml

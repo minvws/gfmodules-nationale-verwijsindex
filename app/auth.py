@@ -43,7 +43,7 @@ def get_auth_ctx(
     )
     ctx = AuthContext(
         claims=claims,
-        scope=[AuthorizationScope(s) for s in validated_auth_headers.scope],
+        scope=[AuthorizationScope(s) for s in validated_auth_headers.scope.split()],
         role=AuthorizationRole(validated_auth_headers.authorized_role),
         audience=validated_auth_headers.audience,
     )
