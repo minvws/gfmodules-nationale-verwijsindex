@@ -17,7 +17,7 @@ def auth_headers_dict(ura_number: UraNumber) -> Dict[str, Any]:
         "ura": ura_number.value,
         "audience": "audience",
         "authorized_role": AuthorizationRole.CONSULTING.value,
-        "scope": ["nvi:read"],
+        "scope": "nvi:read",
         "cert_type": "oin",
     }
 
@@ -30,7 +30,7 @@ def auth_headers(ura_number: UraNumber) -> AuthHeaders:
         ura=ura_number.value,
         audience="audience",
         authorized_role=AuthorizationRole.CONSULTING.value,
-        scope=["nvi:read"],
+        scope="nvi:read",
         cert_type="oin",
     )
 
@@ -82,7 +82,6 @@ def test_deserialize_should_succeed(auth_headers_dict: Dict[str, Any], auth_head
 
 def test_deserialize_with_alias_should_succeed(auth_headers: AuthHeaders, header_data: Dict[str, Any]) -> None:
     data = header_data.copy()
-    data["x-gf-scope"] = [data["x-gf-scope"]]
 
     actual = AuthHeaders(**data)
 

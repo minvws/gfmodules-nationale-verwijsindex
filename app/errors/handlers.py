@@ -144,7 +144,7 @@ def handle_request_validation_exception(req: Request, exc: RequestValidationErro
             headers={"Content-Type": "application/fhir+json"},
         )
 
-    return JSONResponse(status_code=status_code, content=exc)
+    return JSONResponse(status_code=status_code, content=exc.errors())
 
 
 def default_exception_handler(req: Request, exc: Exception) -> JSONResponse:
