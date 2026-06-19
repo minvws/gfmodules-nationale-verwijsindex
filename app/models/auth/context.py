@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from app.models.auth.data import AuthorizationRole, AuthorizationScope
+from app.models.auth.data import AuthorizationScope
 from app.models.ura import UraNumber
 
 
@@ -24,5 +24,3 @@ class AuthContext:
     scope: List[AuthorizationScope]
     # audience intended for
     audience: str
-    # authrozied role
-    role: AuthorizationRole | None = None
