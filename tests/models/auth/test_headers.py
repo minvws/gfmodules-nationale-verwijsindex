@@ -4,7 +4,6 @@ from unittest.mock import Mock
 import pytest
 from fastapi import Request
 
-from app.models.auth.data import AuthorizationRole
 from app.models.auth.headers import AuthHeaders
 from app.models.ura import UraNumber
 
@@ -16,7 +15,6 @@ def auth_headers_dict(ura_number: UraNumber) -> Dict[str, Any]:
         "source_id": "source123",
         "ura": ura_number.value,
         "audience": "audience",
-        "authorized_role": AuthorizationRole.CONSULTING.value,
         "scope": "nvi:read",
         "cert_type": "oin",
     }
@@ -29,7 +27,6 @@ def auth_headers(ura_number: UraNumber) -> AuthHeaders:
         source_id="source123",
         ura=ura_number.value,
         audience="audience",
-        authorized_role=AuthorizationRole.CONSULTING.value,
         scope="nvi:read",
         cert_type="oin",
     )
@@ -42,7 +39,6 @@ def header_data(ura_number: UraNumber) -> Dict[str, Any]:
         "x-gf-source-id": "source123",
         "x-gf-sub": ura_number.value,
         "x-gf-audience": "audience",
-        "x-gf-authorized-role": AuthorizationRole.CONSULTING.value,
         "x-gf-scope": "nvi:read",
         "x-gf-cert-type": "oin",
     }
@@ -60,18 +56,6 @@ def test_serialize_with_alias_should_succeed(auth_headers: AuthHeaders, header_d
     actual = auth_headers.model_dump(by_alias=True)
 
     assert actual == actual
-
-
-def test_serialize_should_panic_with_invalid_rule(
-    auth_headers_dict: Dict[str, Any],
-) -> None:
-    data = auth_headers_dict.copy()
-    data["authorized_role"] = "invalid-role"
-
-    with pytest.raises(ValueError) as exec:
-        AuthHeaders(**data)
-
-    assert "Invalid AuthorizationRoles" in str(exec.value)
 
 
 def test_deserialize_should_succeed(auth_headers_dict: Dict[str, Any], auth_headers: AuthHeaders) -> None:
@@ -98,18 +82,6 @@ def test_deserialize_should_panic_with_invalid_ura(
         AuthHeaders(**data)
 
     assert "Invalid URA Number in header" in str(exec.value)
-
-
-def test_deserialize_should_panic_with_invalid_role(
-    auth_headers_dict: Dict[str, Any],
-) -> None:
-    data = auth_headers_dict.copy()
-    data["authorized_role"] = "invalid-role"
-
-    with pytest.raises(ValueError) as exec:
-        AuthHeaders(**data)
-
-    assert "Invalid AuthorizationRoles" in str(exec.value)
 
 
 def test_from_request_should_succeed(header_data: Dict[str, Any], auth_headers: AuthHeaders) -> None:

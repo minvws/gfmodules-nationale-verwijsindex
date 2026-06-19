@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
-from app.models.auth.data import AuthorizationRole, AuthorizationScope
+from app.models.auth.data import AuthorizationScope
 from app.services.referral_service import ReferralService
 from tests.routers.conftest import (
     TEST_SOURCE_ID,
@@ -35,23 +35,19 @@ class TestCreateRegistration:
         assert "created_at" in body
 
     def test_requires_create_scope(
-        self, referral_service: ReferralService, crypto_client: CryptoServiceApiClientMock
+        self,
+        referral_service: ReferralService,
+        crypto_client: CryptoServiceApiClientMock,
     ) -> None:
         ctx = make_auth_context(scopes=[AuthorizationScope.READ])
         client = make_test_client(referral_service, crypto_client, ctx)
         response = client.post("/registrations", json={"pseudonym": "pseu", "oprf_key": "key1"})
         assert response.status_code == 403
 
-    def test_requires_source_role(
-        self, referral_service: ReferralService, crypto_client: CryptoServiceApiClientMock
-    ) -> None:
-        ctx = make_auth_context(role=AuthorizationRole.CONSULTING, scopes=[AuthorizationScope.CREATE])
-        client = make_test_client(referral_service, crypto_client, ctx)
-        response = client.post("/registrations", json={"pseudonym": "pseu", "oprf_key": "key1"})
-        assert response.status_code == 403
-
     def test_requires_source_id_in_claims(
-        self, referral_service: ReferralService, crypto_client: CryptoServiceApiClientMock
+        self,
+        referral_service: ReferralService,
+        crypto_client: CryptoServiceApiClientMock,
     ) -> None:
         ctx = make_auth_context(source_id=None, scopes=[AuthorizationScope.CREATE])
         client = make_test_client(referral_service, crypto_client, ctx)
@@ -89,7 +85,9 @@ class TestGetRegistrations:
         assert response.json()["total"] == 1
 
     def test_does_not_return_other_ura_registrations(
-        self, referral_service: ReferralService, crypto_client: CryptoServiceApiClientMock
+        self,
+        referral_service: ReferralService,
+        crypto_client: CryptoServiceApiClientMock,
     ) -> None:
         ctx_a = make_auth_context(ura="00000001", source_id="src-a")
         ctx_b = make_auth_context(ura="00000002", source_id="src-b")
@@ -102,16 +100,11 @@ class TestGetRegistrations:
         assert response.json()["total"] == 0
 
     def test_requires_read_scope(
-        self, referral_service: ReferralService, crypto_client: CryptoServiceApiClientMock
+        self,
+        referral_service: ReferralService,
+        crypto_client: CryptoServiceApiClientMock,
     ) -> None:
         ctx = make_auth_context(scopes=[AuthorizationScope.CREATE])
-        client = make_test_client(referral_service, crypto_client, ctx)
-        assert client.get("/registrations", params={"pseudonym": "p", "oprf_key": "k"}).status_code == 403
-
-    def test_requires_source_role(
-        self, referral_service: ReferralService, crypto_client: CryptoServiceApiClientMock
-    ) -> None:
-        ctx = make_auth_context(role=AuthorizationRole.CONSULTING, scopes=[AuthorizationScope.READ])
         client = make_test_client(referral_service, crypto_client, ctx)
         assert client.get("/registrations", params={"pseudonym": "p", "oprf_key": "k"}).status_code == 403
 
@@ -140,7 +133,9 @@ class TestDeleteRegistrations:
         assert source_client.get("/registrations", params={"pseudonym": "p2", "oprf_key": "k"}).json()["total"] == 1
 
     def test_does_not_delete_other_ura_registrations(
-        self, referral_service: ReferralService, crypto_client: CryptoServiceApiClientMock
+        self,
+        referral_service: ReferralService,
+        crypto_client: CryptoServiceApiClientMock,
     ) -> None:
         ctx_a = make_auth_context(ura="00000001", source_id="src-a")
         ctx_b = make_auth_context(ura="00000002", source_id="src-b")
@@ -153,21 +148,18 @@ class TestDeleteRegistrations:
         assert client_a.get("/registrations", params={"pseudonym": "pseu", "oprf_key": "k"}).json()["total"] == 1
 
     def test_requires_delete_scope(
-        self, referral_service: ReferralService, crypto_client: CryptoServiceApiClientMock
+        self,
+        referral_service: ReferralService,
+        crypto_client: CryptoServiceApiClientMock,
     ) -> None:
         ctx = make_auth_context(scopes=[AuthorizationScope.READ])
         client = make_test_client(referral_service, crypto_client, ctx)
         assert client.delete("/registrations", params={"pseudonym": "p", "oprf_key": "k"}).status_code == 403
 
-    def test_requires_source_role(
-        self, referral_service: ReferralService, crypto_client: CryptoServiceApiClientMock
-    ) -> None:
-        ctx = make_auth_context(role=AuthorizationRole.CONSULTING, scopes=[AuthorizationScope.DELETE])
-        client = make_test_client(referral_service, crypto_client, ctx)
-        assert client.delete("/registrations", params={"pseudonym": "p", "oprf_key": "k"}).status_code == 403
-
     def test_requires_source_id_in_claims(
-        self, referral_service: ReferralService, crypto_client: CryptoServiceApiClientMock
+        self,
+        referral_service: ReferralService,
+        crypto_client: CryptoServiceApiClientMock,
     ) -> None:
         ctx = make_auth_context(source_id=None, scopes=[AuthorizationScope.DELETE])
         client = make_test_client(referral_service, crypto_client, ctx)

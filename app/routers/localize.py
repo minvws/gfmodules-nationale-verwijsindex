@@ -4,11 +4,10 @@ from fastapi import APIRouter, Body, Depends, Request
 
 from app.dependencies import get_crypto_service_api_client, get_referral_service
 from app.models.auth.context import AuthContext
-from app.models.auth.data import AuthorizationScope, RequestedAction
+from app.models.auth.data import AuthorizationScope
 from app.models.registrations import LocalizeRequest, Registration
-from app.services.auth.auth_context import AuthContextService
 from app.services.crypto_service_api_client import CryptoServiceApiClient
-from app.services.exceptions import UnauthorizedActionError, UnauthorizedScopeError
+from app.services.exceptions import UnauthorizedScopeError
 from app.services.referral_service import ReferralService
 
 router = APIRouter(tags=["Localization"], prefix="/localize")
@@ -24,10 +23,6 @@ def localize(
     ctx: AuthContext = request.state.auth
     if AuthorizationScope.LOCALIZE not in ctx.scope:
         raise UnauthorizedScopeError(ctx.scope, AuthorizationScope.LOCALIZE)
-
-    valid_action = AuthContextService.validate_action(ctx, RequestedAction.LOCALIZING)
-    if not valid_action:
-        raise UnauthorizedActionError(RequestedAction.LOCALIZING, ctx.role)
 
     pseudonym = crypto_client.exchange(data.pseudonym, data.oprf_key)
 

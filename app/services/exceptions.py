@@ -1,6 +1,6 @@
 from typing import List
 
-from app.models.auth.data import AuthorizationRole, AuthorizationScope, RequestedAction
+from app.models.auth.data import AuthorizationScope
 
 
 class NotFoundError(Exception):
@@ -15,16 +15,6 @@ class ConflictError(Exception):
 
 class UnauthorizedError(Exception):
     pass
-
-
-class UnauthorizedActionError(UnauthorizedError):
-    def __init__(self, action: RequestedAction, role: AuthorizationRole | None = None) -> None:
-        error_msg = (
-            f"role {role.value} is not authorized for {action.value}"
-            if role
-            else f"role missing from AuthorizationHeader, {action.value} requires role"
-        )
-        super().__init__(error_msg)
 
 
 class UnauthorizedScopeError(UnauthorizedError):

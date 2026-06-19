@@ -10,7 +10,7 @@ from app.dependencies import (
     get_localization_list_service,
 )
 from app.models.auth.context import AuthContext
-from app.models.auth.data import AuthorizationScope, RequestedAction
+from app.models.auth.data import AuthorizationScope
 from app.models.fhir.resources.data import (
     DATA_DOMAIN_SYSTEM,
     DEVICE_SYSTEM,
@@ -29,7 +29,6 @@ from app.models.response import DeleteResponse, FHIRJSONResponse
 from app.models.ura import UraNumber
 from app.services.auth.auth_context import AuthContextService
 from app.services.exceptions import (
-    UnauthorizedActionError,
     UnauthorizedManagingRequestError,
     UnauthorizedScopeError,
 )
@@ -167,10 +166,6 @@ def create(
     if AuthorizationScope.CREATE not in ctx.scope:
         raise UnauthorizedScopeError(scopes=ctx.scope, required_scope=AuthorizationScope.CREATE)
 
-    valid_action = AuthContextService.validate_action(ctx, RequestedAction.MANAGING)
-    if not valid_action:
-        raise UnauthorizedActionError(RequestedAction.MANAGING, ctx.role)
-
     valid_managing_request = AuthContextService.is_managing_request(ctx)
     if not valid_managing_request:
         raise UnauthorizedManagingRequestError()
@@ -254,10 +249,6 @@ def get(
     ctx: AuthContext = request.state.auth
     if AuthorizationScope.READ not in ctx.scope:
         raise UnauthorizedScopeError(scopes=ctx.scope, required_scope=AuthorizationScope.READ)
-
-    valid_action = AuthContextService.validate_action(ctx, RequestedAction.MANAGING)
-    if not valid_action:
-        raise UnauthorizedActionError(RequestedAction.MANAGING, ctx.role)
 
     authorized_ura = ctx.claims.ura_number
     return service.get(id, authorized_ura)
@@ -351,10 +342,6 @@ def query(
     if AuthorizationScope.LOCALIZE not in ctx.scope:
         raise UnauthorizedScopeError(scopes=ctx.scope, required_scope=AuthorizationScope.LOCALIZE)
 
-    valid_action = AuthContextService.validate_action(ctx, RequestedAction.LOCALIZING)
-    if not valid_action:
-        raise UnauthorizedActionError(RequestedAction.LOCALIZING, ctx.role)
-
     authorized_ura = ctx.claims.ura_number
     return service.query(params, authorized_ura)
 
@@ -383,10 +370,6 @@ def delete(
     ctx: AuthContext = request.state.auth
     if AuthorizationScope.DELETE not in ctx.scope:
         raise UnauthorizedScopeError(scopes=ctx.scope, required_scope=AuthorizationScope.DELETE)
-
-    valid_action = AuthContextService.validate_action(ctx, RequestedAction.MANAGING)
-    if not valid_action:
-        raise UnauthorizedActionError(RequestedAction.MANAGING, ctx.role)
 
     authorized_ura = ctx.claims.ura_number
     outcome, status_code = service.delete(id, authorized_ura)
@@ -420,10 +403,6 @@ def delete_for_query(
     ctx: AuthContext = request.state.auth
     if AuthorizationScope.DELETE not in ctx.scope:
         raise UnauthorizedScopeError(scopes=ctx.scope, required_scope=AuthorizationScope.DELETE)
-
-    valid_action = AuthContextService.validate_action(ctx, RequestedAction.MANAGING)
-    if not valid_action:
-        raise UnauthorizedActionError(RequestedAction.MANAGING, ctx.role)
 
     valid_managing_request = AuthContextService.is_managing_request(ctx)
     if not valid_managing_request:

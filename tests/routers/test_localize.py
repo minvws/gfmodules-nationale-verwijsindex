@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.models.auth.context import AuthContext, AuthenticationClaims
-from app.models.auth.data import AuthorizationRole, AuthorizationScope
+from app.models.auth.data import AuthorizationScope
 from app.models.ura import UraNumber
 from app.services.referral_service import ReferralService
 from tests.routers.conftest import (
@@ -56,10 +56,14 @@ class TestLocalize:
         crypto_client: CryptoServiceApiClientMock,
     ) -> None:
         client_a = make_test_client(
-            referral_service, crypto_client, make_auth_context(ura="00000001", source_id="src-a")
+            referral_service,
+            crypto_client,
+            make_auth_context(ura="00000001", source_id="src-a"),
         )
         client_b = make_test_client(
-            referral_service, crypto_client, make_auth_context(ura="00000002", source_id="src-b")
+            referral_service,
+            crypto_client,
+            make_auth_context(ura="00000002", source_id="src-b"),
         )
 
         client_a.post("/registrations", json={"pseudonym": "pseu", "oprf_key": "k"})
@@ -70,22 +74,15 @@ class TestLocalize:
         assert len(response.json()) == 2
 
     def test_requires_localize_scope(
-        self, referral_service: ReferralService, crypto_client: CryptoServiceApiClientMock
+        self,
+        referral_service: ReferralService,
+        crypto_client: CryptoServiceApiClientMock,
     ) -> None:
         ctx_wrong_scope = AuthContext(
             claims=AuthenticationClaims(ura_number=UraNumber(TEST_URA), oin=TEST_OIN, source_id=None),
             scope=[AuthorizationScope.READ],
             audience="nvi.service",
-            role=AuthorizationRole.CONSULTING,
         )
         client = make_test_client(referral_service, crypto_client, ctx_wrong_scope)
-        response = client.post("/localize", json={"pseudonym": "pseu", "oprf_key": "k"})
-        assert response.status_code == 403
-
-    def test_requires_consulting_role(
-        self, referral_service: ReferralService, crypto_client: CryptoServiceApiClientMock
-    ) -> None:
-        ctx = make_auth_context(scopes=[AuthorizationScope.LOCALIZE], role=AuthorizationRole.SOURCE)
-        client = make_test_client(referral_service, crypto_client, ctx)
         response = client.post("/localize", json={"pseudonym": "pseu", "oprf_key": "k"})
         assert response.status_code == 403
