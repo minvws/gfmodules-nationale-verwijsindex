@@ -1,3 +1,4 @@
+import logging
 from typing import no_type_check
 
 from fastapi import FastAPI, Request, Response
@@ -5,6 +6,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.errors.fhir import FHIRError
+from app.logging.events import Log, NVIEvent
+from app.models.fhir.resources.localization_list.request import SUBJECT_IDENTIFIER_PARAM
 from app.models.fhir.resources.operation_outcome.resource import (
     OperationOutcome,
     OperationOutcomeDetail,
@@ -18,6 +21,50 @@ from app.services.exceptions import (
     PseudonymError,
     UnauthorizedError,
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _failure_event_for(request: Request, status_code: int) -> NVIEvent | None:
+    path = request.url.path
+    method = request.method
+    if method == "POST" and (path.endswith("/registrations") or path.endswith("/fhir/List")):
+        return Log.REFERRAL_REGISTRATION_FAILED
+    localize_failed_rest = method == "POST" and path.endswith("/localize")
+    localize_failed_fhir = (
+        method == "GET" and path.endswith("/fhir/List") and request.query_params.get(SUBJECT_IDENTIFIER_PARAM)
+    )
+    if localize_failed_rest or localize_failed_fhir:
+        if status_code < 500:
+            return Log.LOCALIZATION_FAILED
+        else:
+            return Log.LOCALIZATION_ERROR
+    return None
+
+
+def _summarize_reason(exc: Exception) -> str:
+    if isinstance(exc, RequestValidationError):
+        reasons = [
+            f"{'.'.join(str(loc) for loc in err.get('loc', ()))}: {err.get('msg', '')}".strip(" :")
+            for err in exc.errors()
+        ]
+        return "; ".join(r for r in reasons if r) or "validation error"
+    return str(exc)
+
+
+def log_request_failure(request: Request, status_code: int, exc: Exception) -> None:
+    event = _failure_event_for(request, status_code)
+    if event is None:
+        return
+    auth = getattr(request.state, "auth", None)
+    Log.event(
+        logger,
+        event,
+        "Referral registration failed" if event is Log.REFERRAL_REGISTRATION_FAILED else "Localization failed",
+        ura_number=str(auth.claims.ura_number) if auth is not None else None,
+        http_status=status_code,
+        error_reason=_summarize_reason(exc),
+    )
 
 
 def handle_not_found_error(request: Request, exception: NotFoundError) -> JSONResponse:
@@ -82,6 +129,7 @@ def hanlde_invalid_model_errors(request: Request, exception: InvalidModelError) 
 def handle_pseudonym_decoding_error(request: Request, exception: PseudonymError) -> Response:
     path = request.url.path
     status_code = 400
+    log_request_failure(request, status_code, exception)
     if "fhir" in path:
         fhir_error = FHIRError(severity="error", code="invalid", msg=str(exception))
         return JSONResponse(
@@ -96,6 +144,7 @@ def handle_pseudonym_decoding_error(request: Request, exception: PseudonymError)
 def handle_value_error(request: Request, exception: ValueError) -> JSONResponse:
     path = request.url.path
     status_code = 400
+    log_request_failure(request, status_code, exception)
     if "fhir" in path:
         fhir_error = FHIRError(severity="error", code="invalid", msg=str(exception))
         return JSONResponse(
@@ -124,6 +173,7 @@ def handle_invalid_header_property_error(req: Request, exc: InvalidHeaderPropert
 def handle_request_validation_exception(req: Request, exc: RequestValidationError) -> JSONResponse:
     path = req.url.path
     status_code = 422
+    log_request_failure(req, status_code, exc)
     if "fhir" in path:
         issues = []
 
@@ -150,6 +200,7 @@ def handle_request_validation_exception(req: Request, exc: RequestValidationErro
 def default_exception_handler(req: Request, exc: Exception) -> JSONResponse:
     path = req.url.path
     status_code = 500
+    log_request_failure(req, status_code, exc)
     if "fhir" in path:
         fhir_error = FHIRError(
             severity="error",

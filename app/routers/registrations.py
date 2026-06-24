@@ -1,8 +1,10 @@
+import logging
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, Query, Request, Response
 
 from app.dependencies import get_crypto_service_api_client, get_referral_service
+from app.logging.events import Log
 from app.models.auth.context import AuthContext
 from app.models.auth.data import AuthorizationScope
 from app.models.registrations import (
@@ -18,6 +20,7 @@ from app.services.exceptions import (
 )
 from app.services.referral_service import ReferralService
 
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Registrations"], prefix="/registrations")
 
 
@@ -37,6 +40,14 @@ def get_registration(
     pseudonym = crypto_client.exchange(params.pseudonym, params.oprf_key)
 
     results = referral_service.get_many(ura_number=ctx.claims.ura_number, pseudonym=pseudonym)
+
+    Log.event(
+        logger,
+        Log.REFERRALS_QUERIED,
+        "Referrals queried",
+        ura_number=str(ctx.claims.ura_number),
+        result_count=len(results),
+    )
 
     return RegistrationList.from_entities(results)
 
@@ -81,10 +92,20 @@ def delete_registration(
 
     pseudonym = crypto_client.exchange(params.pseudonym, params.oprf_key)
 
-    referral_service.delete_many(
+    deleted_count = referral_service.delete_many(
         ura_number=ctx.claims.ura_number,
         pseudonym=pseudonym,
         source=ctx.claims.source_id,
     )
+
+    if deleted_count > 0:
+        Log.event(
+            logger,
+            Log.ALL_PATIENT_REFERRALS_DELETED,
+            "All patient referrals deleted",
+            ura_number=str(ctx.claims.ura_number),
+            pseudonym_hash=str(pseudonym),
+            deleted_count=deleted_count,
+        )
 
     return Response(status_code=204)

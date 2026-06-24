@@ -4,6 +4,7 @@ from app.config import (
     ConfigApp,
     ConfigCryptoServiceApi,
     ConfigDatabase,
+    ConfigLogging,
     ConfigStats,
     ConfigTelemetry,
     ConfigUvicorn,
@@ -15,6 +16,14 @@ def get_test_config() -> Config:
     return Config(
         app=ConfigApp(
             loglevel=LogLevel.error,
+        ),
+        logging=ConfigLogging(
+            app_path=None,
+            siem_path=None,
+            public_inspect_path=None,
+            debug_path=None,
+            include_traces=True,
+            debug_logs_in_console=True,
         ),
         database=ConfigDatabase(
             dsn="sqlite:///:memory:",

@@ -1,6 +1,7 @@
 import logging
 from typing import Any
 
+from app.logging.events import Log
 from app.models.fhir.bundle import Bundle, BundleEntry, EntryRequestDto, EntryResponse
 from app.models.fhir.resources.localization_list.request import LocalizationListParams
 from app.models.fhir.resources.localization_list.resource import LocalizationList
@@ -72,6 +73,14 @@ class BundleService:
                     )
 
                 except PseudonymError as e:
+                    Log.event(
+                        logger,
+                        Log.LOCALIZATION_FAILED,
+                        "Localization failed",
+                        ura_number=str(authenticated_ura),
+                        http_status=400,
+                        error_reason=str(e),
+                    )
                     return BundleEntry(
                         response=EntryResponse.make_error_response(
                             msg=f"Bundle.entry.{index}: {str(e)}",
@@ -81,6 +90,14 @@ class BundleService:
 
             case "POST":
                 if entry.resource is None:
+                    Log.event(
+                        logger,
+                        Log.REFERRAL_REGISTRATION_FAILED,
+                        "Referral registration failed",
+                        ura_number=str(authenticated_ura),
+                        http_status=422,
+                        error_reason=f"Bundle.entry.{index}: resource cannot be empty",
+                    )
                     return BundleEntry(
                         response=EntryResponse.make_validation_response(
                             msg=f"Bundle.entry.{index}: resource cannot be empty"
@@ -89,6 +106,14 @@ class BundleService:
 
                 resource = entry.resource
                 if not isinstance(resource, LocalizationList):
+                    Log.event(
+                        logger,
+                        Log.REFERRAL_REGISTRATION_FAILED,
+                        "Referral registration failed",
+                        ura_number=str(authenticated_ura),
+                        http_status=422,
+                        error_reason=f"Bundle.entry.{index}: invalid List resource",
+                    )
                     return BundleEntry(
                         response=EntryResponse.make_validation_response(f"Bundle.entry.{index}: invalid List resource")
                     )
@@ -98,6 +123,21 @@ class BundleService:
                     return BundleEntry(
                         resource=resource,
                         response=EntryResponse.make_good_response(msg="Resource has been created successfully"),
+                    )
+                except PseudonymError as e:
+                    Log.event(
+                        logger,
+                        Log.REFERRAL_REGISTRATION_FAILED,
+                        "Referral registration failed",
+                        ura_number=str(authenticated_ura),
+                        http_status=400,
+                        error_reason=str(e),
+                    )
+                    return BundleEntry(
+                        response=EntryResponse.make_error_response(
+                            msg=f"Bundle.entry.{index}: {str(e)}",
+                            status=str(400),
+                        )
                     )
                 except (UnauthorizedUraError, ConflictError) as e:
                     return BundleEntry(
