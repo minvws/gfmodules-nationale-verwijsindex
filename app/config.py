@@ -22,6 +22,15 @@ class LogLevel(str, Enum):
     critical = "critical"
 
 
+class ConfigLogging(BaseModel):
+    app_path: str | None = Field(default=None)
+    siem_path: str | None = Field(default=None)
+    public_inspect_path: str | None = Field(default=None)
+    debug_path: str | None = Field(default=None)
+    include_traces: bool = Field(default=True)
+    debug_logs_in_console: bool = Field(default=False)
+
+
 class ConfigApp(BaseModel):
     loglevel: LogLevel = Field(default=LogLevel.info)
 
@@ -81,6 +90,7 @@ class AuthorizationHeaders(BaseModel):
 
 class Config(BaseModel):
     app: ConfigApp
+    logging: ConfigLogging
     database: ConfigDatabase
     crypto_service_api: ConfigCryptoServiceApi
     telemetry: ConfigTelemetry

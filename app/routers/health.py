@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 
 from app import dependencies
 from app.db.db import Database
+from app.logging.events import Log
 from app.services.crypto_service_api_client import CryptoServiceApiClient
 
 logger = logging.getLogger(__name__)
@@ -72,5 +73,10 @@ def health(
     content = {"status": healthy, "components": components}
     if healthy == "ok":
         return JSONResponse(content=content)
-    logger.warning(f"Some components unhealthy: {components}")
+    Log.event(
+        logger,
+        Log.HEALTH_UNHEALTHY,
+        "One or more components are unhealthy",
+        components=components,
+    )
     return JSONResponse(status_code=503, content=content)

@@ -5,6 +5,7 @@ from uuid import UUID
 from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
+from app.logging.events import Log
 from app.models.pseudonym import Pseudonym
 from app.models.ura import UraNumber
 from app.services.exceptions import ConflictError, NotFoundError
@@ -44,6 +45,12 @@ class ReferralService:
                 ura_number=str(ura_number),
                 source=source,
             ):
+                Log.event(
+                    logger,
+                    Log.IDEMPOTENT_REGISTRATION,
+                    "Idempotent referral registration",
+                    ura_number=str(ura_number),
+                )
                 raise ConflictError()
 
             new_referral: ReferralEntity = referral_repository.add_one(
@@ -53,6 +60,14 @@ class ReferralService:
                     source=source,
                     organization_type=organization_type,
                 )
+            )
+
+            Log.event(
+                logger,
+                Log.REGISTERED_REFERRAL,
+                "Referral registered",
+                ura_number=str(ura_number),
+                pseudonym_hash=str(pseudonym),
             )
             return new_referral
 
