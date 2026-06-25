@@ -43,8 +43,9 @@ def test_log_event_attaches_field_streams_for_routed_events(caplog: pytest.LogCa
 
     record = caplog.records[-1]
     field_streams = record.field_streams  # type: ignore[attr-defined]
-    assert field_streams[LoggingStreams.SIEM] == ("ura_number",)
-    assert "pseudonym_hash" in field_streams[LoggingStreams.APP]
+    assert field_streams[LoggingStreams.PUBLIC_INSPECT] == ("organization", "ura_number", "pseudonym_hash")
+    assert field_streams[LoggingStreams.APP] == ("ura_number",)
+    assert LoggingStreams.SIEM not in field_streams
 
 
 def test_log_event_omits_field_streams_for_plain_events(caplog: pytest.LogCaptureFixture) -> None:

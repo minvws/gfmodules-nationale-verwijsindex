@@ -51,6 +51,7 @@ def test_add_one_should_succeed(
         pseudonym=Pseudonym("ps-1"),
         ura_number=ura_number,
         source="SomeDevice",
+        organization_name="Test Org",
         organization_type="ziekenhuis",
     )
     assert isinstance(expected.id, UUID)
@@ -68,6 +69,7 @@ def test_add_referral_should_raise_exception_with_duplicates(
         pseudonym=patient,
         ura_number=ura_number,
         source="SomeDevice",
+        organization_name="Test Org",
         organization_type=org_type,
     )
     with pytest.raises(ConflictError) as exec:
@@ -75,6 +77,7 @@ def test_add_referral_should_raise_exception_with_duplicates(
             pseudonym=patient,
             ura_number=ura_number,
             source="SomeDevice",
+            organization_name="Test Org",
             organization_type=org_type,
         )
 
@@ -90,6 +93,7 @@ def test_delete_one_should_succeed(
         pseudonym=patient,
         ura_number=ura_number,
         source="SomeDevice",
+        organization_name="Test Org",
         organization_type="huisarts",
     )
     assert isinstance(data.id, UUID)
@@ -127,6 +131,7 @@ def test_delete_by_id_should_succeed(referral_service: ReferralService, ura_numb
         pseudonym=patient,
         ura_number=ura_number,
         source="SomeDevice",
+        organization_name="Test Org",
         organization_type="ziekenhuis",
     )
     assert isinstance(patient_reference.id, UUID)
@@ -157,6 +162,7 @@ def test_get_one_should_succeed(
         pseudonym=pseudonym,
         ura_number=ura_number,
         source="SomeDevice",
+        organization_name="Test Org",
         organization_type="ziekenhuis",
     )
 

@@ -11,6 +11,7 @@ def auth_context_consulting(ura_number: UraNumber) -> AuthContext:
     return AuthContext(
         claims=AuthenticationClaims(
             ura_number=ura_number,
+            organization_name="Some Organization",
             oin="some-oin",
         ),
         audience="some-audience",
@@ -21,7 +22,12 @@ def auth_context_consulting(ura_number: UraNumber) -> AuthContext:
 @pytest.fixture()
 def auth_context_source(ura_number: UraNumber) -> AuthContext:
     return AuthContext(
-        claims=AuthenticationClaims(ura_number=ura_number, oin="some-oin", source_id="some-source-id"),
+        claims=AuthenticationClaims(
+            ura_number=ura_number,
+            organization_name="Some Organization",
+            oin="some-oin",
+            source_id="some-source-id",
+        ),
         audience="some-audience",
         scope=[AuthorizationScope.READ],
     )

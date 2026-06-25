@@ -17,6 +17,7 @@ from tests.test_config import get_test_config
 TEST_URA = "00000001"
 TEST_SOURCE_ID = "SRC-001"
 TEST_OIN = "00000000000000000001"
+TEST_ORG_NAME = "Test Organization"
 
 
 def make_auth_context(
@@ -33,6 +34,7 @@ def make_auth_context(
     return AuthContext(
         claims=AuthenticationClaims(
             ura_number=UraNumber(ura),
+            organization_name=TEST_ORG_NAME,
             source_id=source_id,
             oin=TEST_OIN,
         ),
@@ -45,6 +47,7 @@ def make_localize_auth_context(ura: str = TEST_URA) -> AuthContext:
     return AuthContext(
         claims=AuthenticationClaims(
             ura_number=UraNumber(ura),
+            organization_name=TEST_ORG_NAME,
             source_id=None,
             oin=TEST_OIN,
         ),

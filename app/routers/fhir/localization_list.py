@@ -171,7 +171,7 @@ def create(
         raise UnauthorizedManagingRequestError()
 
     authorized_ura: UraNumber = ctx.claims.ura_number
-    return service.create(data, authorized_ura)
+    return service.create(data, authorized_ura, organization_name=ctx.claims.organization_name)
 
 
 @router.get(
@@ -251,7 +251,7 @@ def get(
         raise UnauthorizedScopeError(scopes=ctx.scope, required_scope=AuthorizationScope.READ)
 
     authorized_ura = ctx.claims.ura_number
-    return service.get(id, authorized_ura)
+    return service.get(id, authorized_ura, organization_name=ctx.claims.organization_name)
 
 
 @router.get(
@@ -343,7 +343,7 @@ def query(
         raise UnauthorizedScopeError(scopes=ctx.scope, required_scope=AuthorizationScope.LOCALIZE)
 
     authorized_ura = ctx.claims.ura_number
-    return service.query(params, authorized_ura)
+    return service.query(params, authorized_ura, organization_name=ctx.claims.organization_name)
 
 
 @router.delete(
@@ -372,7 +372,7 @@ def delete(
         raise UnauthorizedScopeError(scopes=ctx.scope, required_scope=AuthorizationScope.DELETE)
 
     authorized_ura = ctx.claims.ura_number
-    outcome, status_code = service.delete(id, authorized_ura)
+    outcome, status_code = service.delete(id, authorized_ura, organization_name=ctx.claims.organization_name)
     return FHIRJSONResponse(
         status_code=status_code,
         content=jsonable_encoder(outcome.model_dump(exclude_none=True)),
@@ -409,7 +409,9 @@ def delete_for_query(
         raise UnauthorizedManagingRequestError()
 
     authenticated_ura = ctx.claims.ura_number
-    outcome, status_code = service.delete_by_query(params, authenticated_ura)
+    outcome, status_code = service.delete_by_query(
+        params, authenticated_ura, organization_name=ctx.claims.organization_name
+    )
 
     return FHIRJSONResponse(
         status_code=status_code,

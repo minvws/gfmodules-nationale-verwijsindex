@@ -32,6 +32,7 @@ class ReferralService:
         pseudonym: Pseudonym,
         ura_number: UraNumber,
         source: str,
+        organization_name: str,
         organization_type: str | None = None,
     ) -> ReferralEntity:
         """
@@ -66,6 +67,7 @@ class ReferralService:
                 logger,
                 Log.REGISTERED_REFERRAL,
                 "Referral registered",
+                organization=organization_name,
                 ura_number=str(ura_number),
                 pseudonym_hash=str(pseudonym),
             )

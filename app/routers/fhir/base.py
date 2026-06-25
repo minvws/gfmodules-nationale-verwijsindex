@@ -29,7 +29,12 @@ def register(
     if not valid_bundle:
         raise InvalidModelError("Bundle.entry is invalid")
     for i, entry in enumerate(data.entry):
-        result = localisation_list_service.process_entry(authenticated_ura=cert_ura, entry=entry, index=i)
+        result = localisation_list_service.process_entry(
+            authenticated_ura=cert_ura,
+            organization_name=ctx.claims.organization_name,
+            entry=entry,
+            index=i,
+        )
         results_bundle.entry.append(result)
     return results_bundle
 

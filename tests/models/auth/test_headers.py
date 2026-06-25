@@ -17,6 +17,7 @@ def auth_headers_dict(ura_number: UraNumber) -> Dict[str, Any]:
         "audience": "audience",
         "scope": "nvi:read",
         "cert_type": "oin",
+        "organization_name": "Test Organization",
     }
 
 
@@ -29,6 +30,7 @@ def auth_headers(ura_number: UraNumber) -> AuthHeaders:
         audience="audience",
         scope="nvi:read",
         cert_type="oin",
+        organization_name="Test Organization",
     )
 
 
@@ -41,6 +43,7 @@ def header_data(ura_number: UraNumber) -> Dict[str, Any]:
         "x-gf-audience": "audience",
         "x-gf-scope": "nvi:read",
         "x-gf-cert-type": "oin",
+        "x-gf-organization-name": "Test Organization",
     }
 
 

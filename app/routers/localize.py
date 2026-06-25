@@ -37,6 +37,7 @@ def localize(
             logger,
             Log.LOCALIZATION_SUCCESS,
             "Localization succeeded",
+            organization=ctx.claims.organization_name,
             ura_number=ura_number,
             pseudonym_hash=str(pseudonym),
             result_count=len(results),

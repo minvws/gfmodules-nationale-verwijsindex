@@ -24,7 +24,9 @@ class BundleService:
     ) -> None:
         self.localizaton_list_service = localisation_list_service
 
-    def process_entry(self, authenticated_ura: UraNumber, entry: BundleEntry[Any], index: int) -> BundleEntry[Any]:
+    def process_entry(
+        self, authenticated_ura: UraNumber, organization_name: str, entry: BundleEntry[Any], index: int
+    ) -> BundleEntry[Any]:
         if entry.request is None:
             return BundleEntry(
                 response=EntryResponse.make_validation_response(f"Bundle.entry.{index}.request is required")
@@ -44,7 +46,9 @@ class BundleService:
             case "GET":
                 if resolved_url.id:
                     try:
-                        results = self.localizaton_list_service.get(resolved_url.id, authenticated_ura)
+                        results = self.localizaton_list_service.get(
+                            resolved_url.id, authenticated_ura, organization_name=organization_name
+                        )
                         return BundleEntry(
                             resource=results,
                             response=EntryResponse.make_good_response("Resource has been retrieved successfully"),
@@ -66,7 +70,9 @@ class BundleService:
                     )
 
                 try:
-                    query_results = self.localizaton_list_service.query(params, authenticated_ura)
+                    query_results = self.localizaton_list_service.query(
+                        params, authenticated_ura, organization_name=organization_name
+                    )
                     return BundleEntry(
                         resource=query_results,
                         response=EntryResponse.make_good_response(),
@@ -119,7 +125,9 @@ class BundleService:
                     )
 
                 try:
-                    results = self.localizaton_list_service.create(resource, authenticated_ura)
+                    results = self.localizaton_list_service.create(
+                        resource, authenticated_ura, organization_name=organization_name
+                    )
                     return BundleEntry(
                         resource=resource,
                         response=EntryResponse.make_good_response(msg="Resource has been created successfully"),
@@ -150,7 +158,9 @@ class BundleService:
             case "DELETE":
                 if resolved_url.id:
                     try:
-                        outcome, status_code = self.localizaton_list_service.delete(resolved_url.id, authenticated_ura)
+                        outcome, status_code = self.localizaton_list_service.delete(
+                            resolved_url.id, authenticated_ura, organization_name=organization_name
+                        )
                         return BundleEntry(response=EntryResponse(status=str(status_code), outcome=outcome))
                     except Exception as e:
                         return BundleEntry(
@@ -167,7 +177,9 @@ class BundleService:
                             f"Bundle.entry.{index}.request: invalid url parameter"
                         )
                     )
-                outcome, status_code = self.localizaton_list_service.delete_by_query(params, authenticated_ura)
+                outcome, status_code = self.localizaton_list_service.delete_by_query(
+                    params, authenticated_ura, organization_name=organization_name
+                )
 
                 return BundleEntry(response=EntryResponse(status=str(status_code), outcome=outcome))
 
