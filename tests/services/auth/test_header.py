@@ -14,6 +14,7 @@ def test_validate_should_succeed(ura_number: UraNumber, auth_header_service: Aut
         audience=auth_header_service.expected_audience,
         scope="nvi:read",
         cert_type="oin",
+        organization_name="Test Organization",
     )
 
     actual = auth_header_service.validate(expected)
@@ -31,6 +32,7 @@ def test_validate_should_panic_with_invalid_audience(
         audience="some-invalid-audience",
         scope="nvi:read",
         cert_type="oin",
+        organization_name="Test Organization",
     )
 
     with pytest.raises(InvalidHeaderPropertyError) as exec:

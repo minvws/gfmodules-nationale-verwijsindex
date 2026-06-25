@@ -66,7 +66,12 @@ class LogConfigBuilder:
                 },
                 # Stream-bound formatters apply the per-event field allow-list so each
                 # syslog stream only receives the data the spec assigns to it.
-                # APP == "stroom 2", SIEM == "stroom 3".
+                # PUBLIC_INSPECT == "stroom 1", APP == "stroom 2", SIEM == "stroom 3".
+                "json_public": {
+                    "()": JsonFormatter,
+                    "include_traces": False,
+                    "stream": LoggingStreams.PUBLIC_INSPECT,
+                },
                 "json_app": {
                     "()": JsonFormatter,
                     "include_traces": False,
@@ -135,7 +140,7 @@ class LogConfigBuilder:
 
         if self.logging_config.public_inspect_path:
             conf["handlers"]["public_inspect"] = self._syslog_handler(
-                self.logging_config.public_inspect_path, filters=["public_inspect_filter"]
+                self.logging_config.public_inspect_path, formatter="json_public", filters=["public_inspect_filter"]
             )
             app_logger_handlers.append("public_inspect")
 

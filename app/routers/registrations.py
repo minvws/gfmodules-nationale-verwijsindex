@@ -72,6 +72,7 @@ def add_registration(
         pseudonym=pseudonym,
         ura_number=ctx.claims.ura_number,
         source=ctx.claims.source_id,
+        organization_name=ctx.claims.organization_name,
     )
     return Registration.from_entity(new_referral)
 
@@ -103,6 +104,7 @@ def delete_registration(
             logger,
             Log.ALL_PATIENT_REFERRALS_DELETED,
             "All patient referrals deleted",
+            organization=ctx.claims.organization_name,
             ura_number=str(ctx.claims.ura_number),
             pseudonym_hash=str(pseudonym),
             deleted_count=deleted_count,

@@ -40,7 +40,7 @@ class LocalizationListService:
             logger.exception("Error occurred while decoding pseudonym token")
             raise PseudonymError(f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}")
 
-    def create(self, data: LocalizationList, authenticated_ura: UraNumber) -> LocalizationList:
+    def create(self, data: LocalizationList, authenticated_ura: UraNumber, organization_name: str) -> LocalizationList:
         ura_number = data.get_ura()
         device = data.get_device()
 
@@ -60,16 +60,18 @@ class LocalizationListService:
             ura_number=ura_number,
             pseudonym=pseudonym,
             source=device,
+            organization_name=organization_name,
         )
 
         return LocalizationList.from_referral(new_referral)
 
-    def get(self, id: UUID, authenticated_ura: UraNumber) -> LocalizationList:
+    def get(self, id: UUID, authenticated_ura: UraNumber, organization_name: str) -> LocalizationList:
         referral = self.referral_service.get_by_id(id)
         Log.event(
             logger,
             Log.REFERRAL_SEARCHED_ON_ID,
             "Referral searched on id",
+            organization=organization_name,
             ura_number=referral.ura_number,
             pseudonym_hash=referral.pseudonym,
         )
@@ -85,7 +87,9 @@ class LocalizationListService:
 
         return LocalizationList.from_referral(referral)
 
-    def query(self, params: LocalizationListParams, authenticated_ura: UraNumber) -> Bundle[LocalizationList]:
+    def query(
+        self, params: LocalizationListParams, authenticated_ura: UraNumber, organization_name: str
+    ) -> Bundle[LocalizationList]:
         ura_number: UraNumber | None = None
 
         is_localize = params.is_localize_params()
@@ -106,6 +110,7 @@ class LocalizationListService:
                     logger,
                     Log.LOCALIZATION_SUCCESS,
                     "Localization succeeded",
+                    organization=organization_name,
                     ura_number=str(authenticated_ura),
                     pseudonym_hash=str(pseudonym) if pseudonym else None,
                     result_count=len(referrals),
@@ -135,7 +140,7 @@ class LocalizationListService:
 
         return bundle
 
-    def delete(self, id: UUID, authenticated_ura: UraNumber) -> Tuple[OperationOutcome, int]:
+    def delete(self, id: UUID, authenticated_ura: UraNumber, organization_name: str) -> Tuple[OperationOutcome, int]:
         target = self.referral_service.get_by_id(id)
         affected_rows = self.referral_service.delete_many(ura_number=authenticated_ura, id=id)
         if affected_rows > 0:
@@ -143,6 +148,7 @@ class LocalizationListService:
                 logger,
                 Log.REFERRAL_DELETED,
                 "Referral deleted",
+                organization=organization_name,
                 ura_number=str(authenticated_ura),
                 pseudonym_hash=target.pseudonym if target else None,
             )
@@ -157,7 +163,7 @@ class LocalizationListService:
             )
 
     def delete_by_query(
-        self, params: LocalizationListParams, authenticated_ura: UraNumber
+        self, params: LocalizationListParams, authenticated_ura: UraNumber, organization_name: str
     ) -> Tuple[OperationOutcome, int]:
         ura_number = authenticated_ura
 
@@ -175,6 +181,7 @@ class LocalizationListService:
                     logger,
                     Log.ALL_PATIENT_REFERRALS_DELETED,
                     "All patient referrals deleted",
+                    organization=organization_name,
                     ura_number=str(ura_number),
                     pseudonym_hash=str(pseudonym),
                     deleted_count=deleted_count,
@@ -184,6 +191,7 @@ class LocalizationListService:
                     logger,
                     Log.ALL_URA_REFERRALS_DELETED,
                     "All URA referrals deleted",
+                    organization=organization_name,
                     ura_number=str(ura_number),
                     deleted_count=deleted_count,
                 )

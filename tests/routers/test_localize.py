@@ -8,6 +8,7 @@ from app.models.ura import UraNumber
 from app.services.referral_service import ReferralService
 from tests.routers.conftest import (
     TEST_OIN,
+    TEST_ORG_NAME,
     TEST_URA,
     make_auth_context,
     make_localize_auth_context,
@@ -79,7 +80,12 @@ class TestLocalize:
         crypto_client: CryptoServiceApiClientMock,
     ) -> None:
         ctx_wrong_scope = AuthContext(
-            claims=AuthenticationClaims(ura_number=UraNumber(TEST_URA), oin=TEST_OIN, source_id=None),
+            claims=AuthenticationClaims(
+                ura_number=UraNumber(TEST_URA),
+                organization_name=TEST_ORG_NAME,
+                oin=TEST_OIN,
+                source_id=None,
+            ),
             scope=[AuthorizationScope.READ],
             audience="nvi.service",
         )

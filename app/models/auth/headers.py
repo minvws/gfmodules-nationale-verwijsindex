@@ -16,6 +16,7 @@ class AuthHeaders(BaseModel):
     audience: Annotated[str, Field(alias="x-gf-audience")]
     scope: Annotated[str, Field(alias="x-gf-scope")]
     cert_type: Annotated[str, Field(alias="x-gf-cert-type")]
+    organization_name: Annotated[str, Field(alias="x-gf-organization-name")]
 
     @field_validator("ura", mode="before")
     @classmethod

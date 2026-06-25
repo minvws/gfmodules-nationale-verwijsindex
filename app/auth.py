@@ -40,6 +40,7 @@ def get_auth_ctx(
         ura_number=UraNumber(validated_auth_headers.ura),
         source_id=validated_auth_headers.source_id,
         oin=validated_auth_headers.oin,
+        organization_name=validated_auth_headers.organization_name,
     )
     ctx = AuthContext(
         claims=claims,
