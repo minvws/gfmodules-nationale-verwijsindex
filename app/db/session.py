@@ -1,15 +1,58 @@
 import logging
 import random
+import re
 from time import sleep
 from typing import Any, Callable, List, ParamSpec, Tuple, Type, TypeVar
 
 from sqlalchemy import Delete, Engine, Insert, Result
-from sqlalchemy.exc import DatabaseError, OperationalError, PendingRollbackError
+from sqlalchemy.exc import DatabaseError, DataError, OperationalError, PendingRollbackError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.selectable import TypedReturnsRows
 
 from app.db.models.base import Base
 from app.db.repository import respository_base
+from app.logging.events import Log
+
+_VARCHAR_LIMIT_RE = re.compile(r"character varying\((\d+)\)")
+
+
+def _value_length_from_params(params: Any) -> int | None:
+    """
+    Infer the longest payload length from SQL params for logging.
+    """
+    if params is None:
+        return None
+
+    if isinstance(params, dict):
+        values = params.values()
+    elif isinstance(params, (list, tuple, set)):
+        values = params  # type: ignore
+    else:
+        values = (params,)  # type: ignore
+
+    lengths = [len(value) for value in values if isinstance(value, (str, bytes, bytearray))]
+    return max(lengths) if lengths else None
+
+
+def _schema_error_fields(exc: DataError) -> dict[str, Any]:
+    """
+    Extract schema diagnostics from a DataError.
+    """
+    fields: dict[str, Any] = {
+        "exception_type": type(exc).__name__,
+        "value_length": _value_length_from_params(getattr(exc, "params", None)),
+    }
+    diag = getattr(getattr(exc, "orig", None), "diag", None)
+    if diag is not None:
+        if getattr(diag, "table_name", None):
+            fields["table"] = diag.table_name
+        if getattr(diag, "column_name", None):
+            fields["column"] = diag.column_name
+    match = _VARCHAR_LIMIT_RE.search(str(getattr(exc, "orig", exc)))
+    if match:
+        fields["column_limit"] = int(match.group(1))
+    return fields
+
 
 """
 This module contains the DbSession class, which is a context manager that provides a session to interact with
@@ -144,6 +187,7 @@ class DbSession:
         Retry a function call in case of database errors
         """
         backoff = self._retry_backoff
+        attempt = 0
 
         while True:
             try:
@@ -152,7 +196,24 @@ class DbSession:
                 logger.warning("Retrying operation due to PendingRollbackError: %s", e)
                 self.session.rollback()
             except OperationalError as e:
-                logger.warning("Retrying operation due to OperationalError: %s", e)
+                attempt += 1
+                Log.event(
+                    logger,
+                    Log.DB_CONNECTION_FAILED,
+                    "Database connection failed; retrying operation",
+                    error_type=type(e).__name__,
+                    retry_attempt=attempt,
+                    backoff_seconds=backoff[0] if backoff else 0,
+                )
+            except DataError as e:
+                Log.event(
+                    logger,
+                    Log.DB_SCHEMA_ERROR,
+                    "Database schema error during operation",
+                    exc_info=e,
+                    **_schema_error_fields(e),
+                )
+                raise
             except DatabaseError:
                 logger.exception("Database error during operation")
                 raise

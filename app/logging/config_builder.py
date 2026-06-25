@@ -129,8 +129,6 @@ class LogConfigBuilder:
                 self.logging_config.app_path, formatter="json_app", filters=["app_filter"]
             )
             app_logger_handlers.append("app_syslog")
-            uvicorn_handlers.append("app_syslog")
-            uvicorn_error_handlers.append("app_syslog")
 
         if self.logging_config.siem_path:
             conf["handlers"]["siem"] = self._syslog_handler(

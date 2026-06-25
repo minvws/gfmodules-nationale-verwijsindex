@@ -322,7 +322,8 @@ def test_delete_should_raise_exception_when_connection_to_db_is_down(
 ) -> None:
     db = Database(
         config_database=ConfigDatabase(
-            dsn="postgresql+psycopg://postgres:connection@does_not_exists:12345/imaginary-db"
+            dsn="postgresql+psycopg://postgres:connection@does_not_exists:12345/imaginary-db",
+            retry_backoff=[0.1, 0.2, 0.4],
         )
     )
     referral_repository.db_session = db.get_db_session()
