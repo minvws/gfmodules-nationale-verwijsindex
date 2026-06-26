@@ -52,6 +52,6 @@ def get_test_config() -> Config:
             ssl_key_file="/file.key",
         ),
         authorization_headers=ConfigAuthorizationHeaders(
-            expected_audience="test-audience",
+            expected_audiences=["test-audience"],
         ),
     )

@@ -83,4 +83,6 @@ ssl_cert_file = server.cert
 ssl_key_file = server.key
 
 [authorization_headers]
-expected_audience = nvi.service
+# space separated list of expected audiences, one should be present in the authorization authorization header
+# usually the value is the domain of the running application
+expected_audiences = https://localhost:8501

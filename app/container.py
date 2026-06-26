@@ -36,7 +36,7 @@ def container_config(binder: inject.Binder) -> None:
     referral_service = ReferralService(database=db)
     binder.bind(ReferralService, referral_service)
 
-    auth_header_service = AuthHeaderService(expected_audience=config.authorization_headers.expected_audience)
+    auth_header_service = AuthHeaderService(expected_audiences=config.authorization_headers.expected_audiences)
     binder.bind(AuthHeaderService, auth_header_service)
 
     crypto_client = create_crypto_service_api_client(config.crypto_service_api)
@@ -51,7 +51,9 @@ def container_config(binder: inject.Binder) -> None:
     binder.bind(ConfigCryptoServiceApi, config.crypto_service_api)
 
 
-def create_crypto_service_api_client(config: ConfigCryptoServiceApi) -> CryptoServiceApiClient:
+def create_crypto_service_api_client(
+    config: ConfigCryptoServiceApi,
+) -> CryptoServiceApiClient:
     if config.enabled:
         return CryptoServiceApiClient(config)
     return CryptoServiceApiClientMock()
