@@ -2,9 +2,9 @@ import configparser
 import logging
 import os
 from enum import Enum
-from typing import Any
+from typing import Any, List
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,18 @@ class ConfigStats(BaseModel):
 
 
 class ConfigAuthorizationHeaders(BaseModel):
-    expected_audience: str
+    expected_audiences: List[str]
+
+    @field_validator("expected_audiences", mode="before")
+    @classmethod
+    def validate_aud(cls, data: Any) -> List[str]:
+        if isinstance(data, str):
+            return data.split()
+
+        if isinstance(data, list):
+            return data
+
+        raise ValueError("Invalid input on `expected_audience`, please check config")
 
 
 class Config(BaseModel):
