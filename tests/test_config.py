@@ -1,7 +1,7 @@
 from app.config import (
-    AuthorizationHeaders,
     Config,
     ConfigApp,
+    ConfigAuthorizationHeaders,
     ConfigCryptoServiceApi,
     ConfigDatabase,
     ConfigLogging,
@@ -51,7 +51,7 @@ def get_test_config() -> Config:
             ssl_cert_file="/file.cert",
             ssl_key_file="/file.key",
         ),
-        authorization_headers=AuthorizationHeaders(
+        authorization_headers=ConfigAuthorizationHeaders(
             expected_audience="test-audience",
         ),
     )

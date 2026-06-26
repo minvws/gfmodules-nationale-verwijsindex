@@ -84,7 +84,7 @@ class ConfigStats(BaseModel):
     module_name: str | None
 
 
-class AuthorizationHeaders(BaseModel):
+class ConfigAuthorizationHeaders(BaseModel):
     expected_audience: str
 
 
@@ -96,7 +96,7 @@ class Config(BaseModel):
     telemetry: ConfigTelemetry
     stats: ConfigStats
     uvicorn: ConfigUvicorn
-    authorization_headers: AuthorizationHeaders
+    authorization_headers: ConfigAuthorizationHeaders
 
 
 def read_ini_file(path: str) -> Any:
