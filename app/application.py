@@ -82,7 +82,7 @@ def create_fastapi_app() -> FastAPI:
             Log.SYS_UNHANDLED_EXCEPTION,
             "Unhandled exception during application startup",
             exc_info=exc,
-            error_type=type(exc).__name__,
+            exception_type=type(exc).__name__,
         )
         raise
 
@@ -131,9 +131,9 @@ def _install_excepthook() -> None:
             logger,
             Log.SYS_APP_CRASHED,
             "Application crashed: uncaught exception",
+            shutdown_reason=_shutdown_reason,
+            last_exception_type=exc_type.__name__,
             exc_info=(exc_type, exc_value, exc_tb),
-            error_type=exc_type.__name__,
-            version=_read_version(),
         )
 
     sys.excepthook = _hook
@@ -177,7 +177,6 @@ async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
                 Log.SYS_APP_STOPPED,
                 "Application stopped",
                 shutdown_reason=_shutdown_reason,
-                version=_read_version(),
             )
 
 
@@ -199,7 +198,7 @@ def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONRespon
         Log.SYS_UNHANDLED_EXCEPTION,
         "Unhandled exception",
         exc_info=exc,
-        error_type=type(exc).__name__,
+        exception_type=type(exc).__name__,
         endpoint=request.url.path,
         method=request.method,
     )

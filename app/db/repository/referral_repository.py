@@ -124,7 +124,7 @@ class ReferralRepository(RepositoryBase):
             if source:
                 stmt = stmt.where(ReferralEntity.source == source)
 
-            self.db_session.session.execute(stmt)
+            self.db_session.delete_stmt(stmt)
             self.db_session.commit()
         except SQLAlchemyError as exc:
             self.db_session.rollback()
@@ -145,5 +145,5 @@ class ReferralRepository(RepositoryBase):
 
         stmt = select(exists().where(and_(*conditions)))
 
-        results = self.db_session.session.execute(stmt).scalar()
+        results = self.db_session.execute(stmt).scalar()
         return results or False

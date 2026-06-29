@@ -38,7 +38,7 @@ def test_unhandled_exception_handler_logs_and_returns_500(
         Log.SYS_UNHANDLED_EXCEPTION,
         "Unhandled exception",
         exc_info=exc,
-        error_type="RuntimeError",
+        exception_type="RuntimeError",
         endpoint="/boom",
         method="GET",
     )
@@ -60,7 +60,6 @@ def test_lifespan_logs_shutdown_reason_on_exit(use_config: Config, mocker: Mocke
         Log.SYS_APP_STOPPED,
         "Application stopped",
         shutdown_reason="graceful",
-        version="9.9.9",
     )
 
 
@@ -101,8 +100,8 @@ def test_excepthook_logs_sys_app_crashed_for_uncaught_exception(
     assert args[0] is application.logger
     assert args[1] is Log.SYS_APP_CRASHED
     assert args[2] == "Application crashed: uncaught exception"
-    assert kwargs["error_type"] == "RuntimeError"
-    assert kwargs["version"] == "9.9.9"
+    assert kwargs["shutdown_reason"] == "crash"
+    assert kwargs["last_exception_type"] == "RuntimeError"
     assert kwargs["exc_info"] is not None
 
 
@@ -122,7 +121,7 @@ def test_create_fastapi_app_logs_sys_unhandled_exception_on_startup_failure(
         Log.SYS_UNHANDLED_EXCEPTION,
         "Unhandled exception during application startup",
         exc_info=exc,
-        error_type="RuntimeError",
+        exception_type="RuntimeError",
     )
 
 
@@ -155,7 +154,6 @@ def test_signal_handler_sets_shutdown_reason_and_lifespan_logs_signal(
         Log.SYS_APP_STOPPED,
         "Application stopped",
         shutdown_reason="signal:SIGTERM",
-        version="9.9.9",
     )
 
 

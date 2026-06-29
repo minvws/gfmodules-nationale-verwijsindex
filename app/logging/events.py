@@ -16,18 +16,53 @@ class NVIEvent:
     level: int
     streams: tuple[LoggingStreams, ...]
     # Per-stream allow-list of field names. PUB == "stroom 1", APP == "stroom 2", SIEM == "stroom 3".
-    # When empty, no per-field routing is applied and every field is sent to all
-    # streams in ``streams`` (used by the System / Health events).
+    # When empty, no per-field routing is applied and every field is sent to all streams in streams
     fields: Mapping[LoggingStreams, tuple[str, ...]] = field(default_factory=dict)
 
 
 class Log:
     # System / Health (NVI-SYS / NVI-HEALTH)
-    SYS_APP_STARTED = NVIEvent("100601", logging.INFO, (_APP,))
-    SYS_APP_STOPPED = NVIEvent("100602", logging.INFO, (_APP, _SIEM))
-    SYS_APP_CRASHED = NVIEvent("100602", logging.CRITICAL, (_APP, _SIEM))
-    SYS_UNHANDLED_EXCEPTION = NVIEvent("100604", logging.ERROR, (_APP,))
-    HEALTH_UNHEALTHY = NVIEvent("100600", logging.ERROR, (_APP, _SIEM))
+    HEALTH_UNHEALTHY = NVIEvent(  # NVI-HEALTH-001
+        "100600",
+        logging.ERROR,
+        (_APP, _SIEM),
+        {_APP: ("component", "status", "error_detail"), _SIEM: ("component", "status")},
+    )
+    SYS_APP_STARTED = NVIEvent(  # NVI-SYS-001
+        "100601", logging.INFO, (_APP,), {_APP: ("version", "config_path", "crypto_service_api_enabled")}
+    )
+    SYS_APP_STOPPED = NVIEvent(  # NVI-SYS-002
+        "100602",
+        logging.INFO,
+        (_APP, _SIEM),
+        {_APP: ("shutdown_reason", "last_exception_type"), _SIEM: ("shutdown_reason",)},  # graceful/signal
+    )
+    SYS_APP_CRASHED = NVIEvent(  # NVI-SYS-002
+        "100602",
+        logging.CRITICAL,
+        (_APP, _SIEM),
+        {_APP: ("shutdown_reason", "last_exception_type"), _SIEM: ("shutdown_reason",)},  # crash
+    )
+    DB_CONNECTION_FAILED = NVIEvent(  # NVI-SYS-003
+        "100603",
+        logging.ERROR,
+        (_APP, _SIEM),
+        {_APP: ("error_type", "retry_attempt", "backoff_seconds"), _SIEM: ("error_type",)},
+    )
+    SYS_UNHANDLED_EXCEPTION = NVIEvent(  # NVI-SYS-004
+        "100604",
+        logging.ERROR,
+        (_APP, _SIEM),
+        {_APP: ("exception_type", "endpoint", "method"), _SIEM: ("exception_type", "endpoint", "method")},
+    )
+    DB_SCHEMA_ERROR = NVIEvent(  # NVI-SYS-005
+        "100605",
+        logging.ERROR,
+        (_APP,),
+        {
+            _APP: ("exception_type", "table", "column", "value_length", "column_limit"),
+        },
+    )
 
     ACCESS_REQUEST = NVIEvent(  # NVI-AUTH-101
         "094500",

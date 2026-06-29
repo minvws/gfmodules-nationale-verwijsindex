@@ -73,10 +73,13 @@ def health(
     content = {"status": healthy, "components": components}
     if healthy == "ok":
         return JSONResponse(content=content)
+    unhealthy = [name for name, status in components.items() if status != "ok"]
     Log.event(
         logger,
         Log.HEALTH_UNHEALTHY,
-        "One or more components are unhealthy",
-        components=components,
+        "Health check unhealthy",
+        component=",".join(unhealthy),
+        status="error",
+        error_detail=f"unhealthy components: {', '.join(unhealthy)}",
     )
     return JSONResponse(status_code=503, content=content)
