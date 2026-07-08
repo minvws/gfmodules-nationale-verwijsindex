@@ -6,7 +6,7 @@ from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
 from app.logging.events import Log
-from app.models.pseudonym import Pseudonym
+from app.models.pseudonym import EncryptedPseudonym
 from app.models.ura import UraNumber
 from app.services.exceptions import ConflictError, NotFoundError
 
@@ -29,7 +29,7 @@ class ReferralService:
 
     def add_one(
         self,
-        pseudonym: Pseudonym,
+        encrypted_pseudonym: EncryptedPseudonym,
         ura_number: UraNumber,
         source: str,
         organization_name: str,
@@ -42,7 +42,7 @@ class ReferralService:
             referral_repository = session.get_repository(ReferralRepository)
 
             if referral_repository.exists(
-                pseudonym=str(pseudonym),
+                pseudonym=encrypted_pseudonym.value,
                 ura_number=str(ura_number),
                 source=source,
             ):
@@ -56,7 +56,7 @@ class ReferralService:
 
             new_referral: ReferralEntity = referral_repository.add_one(
                 ReferralEntity(
-                    pseudonym=str(pseudonym),
+                    pseudonym=encrypted_pseudonym.value,
                     ura_number=str(ura_number),
                     source=source,
                     organization_type=organization_type,
@@ -69,20 +69,20 @@ class ReferralService:
                 "Referral registered",
                 organization=organization_name,
                 ura_number=str(ura_number),
-                pseudonym_hash=str(pseudonym),
+                pseudonym_hash=str(encrypted_pseudonym),
             )
             return new_referral
 
     def get_one(
         self,
-        pseudonym: Pseudonym,
+        encrypted_pseudonym: EncryptedPseudonym,
         ura_number: UraNumber,
         source: str,
     ) -> ReferralEntity | None:
         with self.database.get_db_session() as session:
             repo = session.get_repository(ReferralRepository)
             referral = repo.find_one(
-                pseudonym=str(pseudonym),
+                pseudonym=encrypted_pseudonym.value,
                 ura_number=str(ura_number),
                 source=source,
             )
@@ -92,14 +92,14 @@ class ReferralService:
     def get_many(
         self,
         ura_number: UraNumber | None = None,
-        pseudonym: Pseudonym | None = None,
+        encrypted_pseudonym: EncryptedPseudonym | None = None,
         source: str | None = None,
     ) -> Sequence[ReferralEntity]:
         with self.database.get_db_session() as session:
             repo = session.get_repository(ReferralRepository)
             referrals = repo.find_many(
                 ura_number=str(ura_number) if ura_number else None,
-                pseudonym=str(pseudonym) if pseudonym else None,
+                pseudonym=encrypted_pseudonym.value if encrypted_pseudonym else None,
                 source=source,
             )
 
@@ -108,7 +108,7 @@ class ReferralService:
     def delete_many(
         self,
         ura_number: UraNumber,
-        pseudonym: Pseudonym | None = None,
+        encrypted_pseudonym: EncryptedPseudonym | None = None,
         source: str | None = None,
         id: str | UUID | None = None,
     ) -> int:
@@ -116,7 +116,7 @@ class ReferralService:
             repo = session.get_repository(ReferralRepository)
             affected_rows = repo.delete_many(
                 ura_number=str(ura_number),
-                pseudonym=str(pseudonym) if pseudonym else None,
+                pseudonym=encrypted_pseudonym.value if encrypted_pseudonym else None,
                 source=source,
                 id=id,
             )
@@ -127,7 +127,7 @@ class ReferralService:
 
     def delete_one(
         self,
-        pseudonym: Pseudonym,
+        encrypted_pseudonym: EncryptedPseudonym,
         ura_number: UraNumber,
         source: str,
     ) -> None:
@@ -137,7 +137,7 @@ class ReferralService:
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)
             referral = referral_repository.find_one(
-                pseudonym=str(pseudonym),
+                pseudonym=encrypted_pseudonym.value,
                 ura_number=str(ura_number),
                 source=source,
             )

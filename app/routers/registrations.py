@@ -39,7 +39,7 @@ def get_registration(
 
     pseudonym = crypto_client.exchange(params.pseudonym, params.oprf_key)
 
-    results = referral_service.get_many(ura_number=ctx.claims.ura_number, pseudonym=pseudonym)
+    results = referral_service.get_many(ura_number=ctx.claims.ura_number, encrypted_pseudonym=pseudonym)
 
     Log.event(
         logger,
@@ -69,7 +69,7 @@ def add_registration(
     pseudonym = crypto_client.exchange(data.pseudonym, data.oprf_key)
 
     new_referral = referral_service.add_one(
-        pseudonym=pseudonym,
+        encrypted_pseudonym=pseudonym,
         ura_number=ctx.claims.ura_number,
         source=ctx.claims.source_id,
         organization_name=ctx.claims.organization_name,
@@ -95,7 +95,7 @@ def delete_registration(
 
     deleted_count = referral_service.delete_many(
         ura_number=ctx.claims.ura_number,
-        pseudonym=pseudonym,
+        encrypted_pseudonym=pseudonym,
         source=ctx.claims.source_id,
     )
 

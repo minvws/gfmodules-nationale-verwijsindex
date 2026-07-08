@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 import pytest
 
 from app.db.models.referral import ReferralEntity
-from app.models.pseudonym import Pseudonym
+from app.models.pseudonym import EncryptedPseudonym
 from app.models.ura import UraNumber
 from app.services.exceptions import ConflictError, NotFoundError
 from app.services.referral_service import ReferralService
@@ -48,7 +48,7 @@ def test_add_one_should_succeed(
     ura_number: UraNumber,
 ) -> None:
     expected = referral_service.add_one(
-        pseudonym=Pseudonym("ps-1"),
+        encrypted_pseudonym=EncryptedPseudonym("ps-1", "123"),
         ura_number=ura_number,
         source="SomeDevice",
         organization_name="Test Org",
@@ -63,10 +63,10 @@ def test_add_one_should_succeed(
 def test_add_referral_should_raise_exception_with_duplicates(
     referral_service: ReferralService, ura_number: UraNumber
 ) -> None:
-    patient = Pseudonym("ps-1")
+    patient = EncryptedPseudonym("ps-1", "123")
     org_type = "ziekenhuis"
     referral_service.add_one(
-        pseudonym=patient,
+        encrypted_pseudonym=patient,
         ura_number=ura_number,
         source="SomeDevice",
         organization_name="Test Org",
@@ -74,7 +74,7 @@ def test_add_referral_should_raise_exception_with_duplicates(
     )
     with pytest.raises(ConflictError) as exec:
         referral_service.add_one(
-            pseudonym=patient,
+            encrypted_pseudonym=patient,
             ura_number=ura_number,
             source="SomeDevice",
             organization_name="Test Org",
@@ -88,9 +88,9 @@ def test_delete_one_should_succeed(
     referral_service: ReferralService,
     ura_number: UraNumber,
 ) -> None:
-    patient = Pseudonym("ps-1")
+    patient = EncryptedPseudonym("ps-1", "123")
     data = referral_service.add_one(
-        pseudonym=patient,
+        encrypted_pseudonym=patient,
         ura_number=ura_number,
         source="SomeDevice",
         organization_name="Test Org",
@@ -100,7 +100,7 @@ def test_delete_one_should_succeed(
     nvi_reference = referral_service.get_by_id(data.id)
     assert_eq(data, nvi_reference)
     referral_service.delete_one(
-        pseudonym=patient,
+        encrypted_pseudonym=patient,
         ura_number=ura_number,
         source="SomeDevice",
     )
@@ -113,11 +113,11 @@ def test_delete_one_should_succeed(
 def test_delete_one_should_raise_exception_when_not_found(
     referral_service: ReferralService, ura_number: UraNumber
 ) -> None:
-    patient = Pseudonym("ps-1")
+    patient = EncryptedPseudonym("ps-1", "123")
 
     with pytest.raises(NotFoundError) as exec:
         referral_service.delete_one(
-            pseudonym=patient,
+            encrypted_pseudonym=patient,
             source="SomeDevice",
             ura_number=ura_number,
         )
@@ -126,9 +126,9 @@ def test_delete_one_should_raise_exception_when_not_found(
 
 
 def test_delete_by_id_should_succeed(referral_service: ReferralService, ura_number: UraNumber) -> None:
-    patient = Pseudonym("ps-1")
+    patient = EncryptedPseudonym("ps-1", "123")
     patient_reference = referral_service.add_one(
-        pseudonym=patient,
+        encrypted_pseudonym=patient,
         ura_number=ura_number,
         source="SomeDevice",
         organization_name="Test Org",
@@ -156,10 +156,10 @@ def test_get_one_should_succeed(
     referral_service: ReferralService,
     ura_number: UraNumber,
 ) -> None:
-    pseudonym = Pseudonym("ps-1")
+    pseudonym = EncryptedPseudonym("ps-1", "123")
 
     expected = referral_service.add_one(
-        pseudonym=pseudonym,
+        encrypted_pseudonym=pseudonym,
         ura_number=ura_number,
         source="SomeDevice",
         organization_name="Test Org",
@@ -167,7 +167,7 @@ def test_get_one_should_succeed(
     )
 
     actual = referral_service.get_one(
-        pseudonym=pseudonym,
+        encrypted_pseudonym=pseudonym,
         ura_number=ura_number,
         source="SomeDevice",
     )
@@ -177,9 +177,9 @@ def test_get_one_should_succeed(
 
 
 def test_get_one_should_return_none_when_not_found(referral_service: ReferralService, ura_number: UraNumber) -> None:
-    pseudonym = Pseudonym("ps-1")
+    pseudonym = EncryptedPseudonym("ps-1", "123")
     actual = referral_service.get_one(
-        pseudonym=pseudonym,
+        encrypted_pseudonym=pseudonym,
         ura_number=ura_number,
         source="SomeDevice",
     )
