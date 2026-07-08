@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 from requests.exceptions import ConnectionError, HTTPError, Timeout
 
-from app.models.pseudonym import Pseudonym
+from app.models.pseudonym import EncryptedPseudonym
 from app.services.crypto_service_api_client import CryptoServiceApiClient
 
 
@@ -22,15 +22,15 @@ def crypto_client(http_mock: MagicMock) -> CryptoServiceApiClient:
 
 def test_exchange_returns_hashed_pseudonym(crypto_client: CryptoServiceApiClient, http_mock: MagicMock) -> None:
     response = MagicMock()
-    response.json.return_value = {"hashed_pseudonym": "abc123"}
+    response.json.return_value = {"encrypted_pseudonym": "abc", "iv": "123"}
     http_mock.do_request.return_value = response
 
     result = crypto_client.exchange("some-jwe", "some-blind-factor")
 
-    assert result == Pseudonym(value="abc123")
+    assert result == EncryptedPseudonym("abc", "123")
     http_mock.do_request.assert_called_once_with(
         method="POST",
-        sub_route="decrypt_and_hash",
+        sub_route="process",
         data={"jwe": "some-jwe", "blind_factor": "some-blind-factor"},
     )
 

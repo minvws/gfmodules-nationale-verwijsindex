@@ -10,7 +10,7 @@ from app.models.fhir.resources.localization_list.request import (
 )
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
-from app.models.pseudonym import Pseudonym
+from app.models.pseudonym import EncryptedPseudonym
 from app.models.ura import UraNumber
 from app.services.crypto_service_api_client import CryptoServiceApiClient
 from app.services.exceptions import (
@@ -29,7 +29,7 @@ class LocalizationListService:
         self.referral_service = referral_service
         self._crypto_client = crypto_client
 
-    def _token_to_pseudonym(self, token: str) -> Pseudonym:
+    def _token_to_pseudonym(self, token: str) -> EncryptedPseudonym:
         try:
             data = decode_url_safe_token(token)
             return self._crypto_client.exchange(
@@ -40,7 +40,12 @@ class LocalizationListService:
             logger.exception("Error occurred while decoding pseudonym token")
             raise PseudonymError(f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}")
 
-    def create(self, data: LocalizationList, authenticated_ura: UraNumber, organization_name: str) -> LocalizationList:
+    def create(
+        self,
+        data: LocalizationList,
+        authenticated_ura: UraNumber,
+        organization_name: str,
+    ) -> LocalizationList:
         ura_number = data.get_ura()
         device = data.get_device()
 
@@ -58,7 +63,7 @@ class LocalizationListService:
 
         new_referral = self.referral_service.add_one(
             ura_number=ura_number,
-            pseudonym=pseudonym,
+            encrypted_pseudonym=pseudonym,
             source=device,
             organization_name=organization_name,
         )
@@ -88,7 +93,10 @@ class LocalizationListService:
         return LocalizationList.from_referral(referral)
 
     def query(
-        self, params: LocalizationListParams, authenticated_ura: UraNumber, organization_name: str
+        self,
+        params: LocalizationListParams,
+        authenticated_ura: UraNumber,
+        organization_name: str,
     ) -> Bundle[LocalizationList]:
         ura_number: UraNumber | None = None
 
@@ -99,7 +107,7 @@ class LocalizationListService:
         pseudonym = self._token_to_pseudonym(params.subject) if params.subject else None
 
         referrals = self.referral_service.get_many(
-            pseudonym=pseudonym,
+            encrypted_pseudonym=pseudonym,
             source=params.source,
             ura_number=ura_number,
         )
@@ -163,14 +171,17 @@ class LocalizationListService:
             )
 
     def delete_by_query(
-        self, params: LocalizationListParams, authenticated_ura: UraNumber, organization_name: str
+        self,
+        params: LocalizationListParams,
+        authenticated_ura: UraNumber,
+        organization_name: str,
     ) -> Tuple[OperationOutcome, int]:
         ura_number = authenticated_ura
 
         pseudonym = self._token_to_pseudonym(params.subject) if params.subject else None
 
         deleted_count = self.referral_service.delete_many(
-            pseudonym=pseudonym,
+            encrypted_pseudonym=pseudonym,
             source=params.source,
             ura_number=ura_number,
         )

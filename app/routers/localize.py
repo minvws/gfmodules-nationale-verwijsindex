@@ -29,7 +29,7 @@ def localize(
 
     pseudonym = crypto_client.exchange(data.pseudonym, data.oprf_key)
 
-    results = referral_service.get_many(pseudonym=pseudonym)
+    results = referral_service.get_many(encrypted_pseudonym=pseudonym)
 
     ura_number = str(ctx.claims.ura_number)
     if results:
