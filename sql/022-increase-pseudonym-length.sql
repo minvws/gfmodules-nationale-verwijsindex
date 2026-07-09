@@ -1,0 +1,1 @@
+ALTER TABLE referrals ALTER COLUMN pseudonym TYPE VARCHAR(100); 
