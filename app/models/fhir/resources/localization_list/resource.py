@@ -37,13 +37,13 @@ class LocalizationList(DomainResource):
     subject: Reference | None = None
     source: Reference
     code: CodeableConcept | None = CodeableConcept(
-                coding=[
-                    Coding(
-                        system=DATA_DOMAIN_SYSTEM,
-                        code="not-used",
-                    )
-                ]
-            ) 
+        coding=[
+            Coding(
+                system=DATA_DOMAIN_SYSTEM,
+                code="not-used",
+            )
+        ]
+    )
     empty_reason: CodeableConcept
 
     @classmethod
