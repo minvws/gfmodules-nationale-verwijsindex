@@ -36,7 +36,14 @@ class LocalizationList(DomainResource):
     mode: Literal["working", "snapshot", "changes"]
     subject: Reference | None = None
     source: Reference
-    code: CodeableConcept
+    code: CodeableConcept | None = CodeableConcept(
+        coding=[
+            Coding(
+                system=DATA_DOMAIN_SYSTEM,
+                code="not-used",
+            )
+        ]
+    )
     empty_reason: CodeableConcept
 
     @classmethod
