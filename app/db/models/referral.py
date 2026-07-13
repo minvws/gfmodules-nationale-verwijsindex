@@ -1,12 +1,15 @@
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy import TIMESTAMP, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import TIMESTAMP, ForeignKey, String, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import Uuid
 
 from app.db.models.base import Base
+
+if TYPE_CHECKING:
+    from app.db.models.key_info import KeyInfoEntity
 
 
 class ReferralEntity(Base):
@@ -25,4 +28,7 @@ class ReferralEntity(Base):
     pseudonym: Mapped[str] = mapped_column("pseudonym", String)
     source: Mapped[str] = mapped_column("source", String)
     organization_type: Mapped[Optional[str]] = mapped_column("organization_type", String)
+    key_id: Mapped[Optional[UUID]] = mapped_column("key_id", ForeignKey("keys_info.id"))
     created_at: Mapped[datetime] = mapped_column("created_at", TIMESTAMP, default=datetime.now)
+
+    key_info: Mapped["KeyInfoEntity"] = relationship(back_populates="referrals")

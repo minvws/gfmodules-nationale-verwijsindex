@@ -10,6 +10,7 @@ from app.db.repository.referral_repository import ReferralRepository
 from app.models.ura import UraNumber
 from app.services.auth.header import AuthHeaderService
 from app.services.http import HttpService
+from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 from tests.test_config import get_test_config
 
@@ -60,6 +61,11 @@ def mock_referral_entity() -> ReferralEntity:
 @pytest.fixture()
 def referral_service(database: Database) -> ReferralService:
     return ReferralService(database=database)
+
+
+@pytest.fixture()
+def key_info_service(database: Database) -> KeyInfoService:
+    return KeyInfoService(database)
 
 
 @pytest.fixture()
