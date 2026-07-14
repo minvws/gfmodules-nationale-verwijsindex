@@ -13,6 +13,7 @@ from app.services.auth.header import AuthHeaderService
 from app.services.crypto_service_api_client import CryptoServiceApiClient
 from app.services.fhir.bundle import BundleService
 from app.services.fhir.localization_list import LocalizationListService
+from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 from app.utils.load_capability_statement import (
     CapabilityStatement,
@@ -35,6 +36,9 @@ def container_config(binder: inject.Binder) -> None:
 
     referral_service = ReferralService(database=db)
     binder.bind(ReferralService, referral_service)
+
+    key_info_service = KeyInfoService(database=db)
+    binder.bind(KeyInfoService, key_info_service)
 
     auth_header_service = AuthHeaderService(expected_audiences=config.authorization_headers.expected_audiences)
     binder.bind(AuthHeaderService, auth_header_service)

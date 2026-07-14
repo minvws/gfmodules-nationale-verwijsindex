@@ -8,6 +8,7 @@ from app.services.auth.header import AuthHeaderService
 from app.services.crypto_service_api_client import CryptoServiceApiClient
 from app.services.fhir.bundle import BundleService
 from app.services.fhir.localization_list import LocalizationListService
+from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 from app.utils.load_capability_statement import CapabilityStatement
 
@@ -22,6 +23,10 @@ def get_database() -> Database:
 
 def get_referral_service() -> ReferralService:
     return inject.instance(ReferralService)
+
+
+def get_key_info_service() -> KeyInfoService:
+    return inject.instance(KeyInfoService)
 
 
 def get_crypto_service_api_client() -> CryptoServiceApiClient:

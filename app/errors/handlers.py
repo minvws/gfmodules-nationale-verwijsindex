@@ -15,6 +15,7 @@ from app.models.fhir.resources.operation_outcome.resource import (
 )
 from app.services.exceptions import (
     ConflictError,
+    ForbiddedError,
     InvalidHeaderPropertyError,
     InvalidModelError,
     NotFoundError,
@@ -60,7 +61,7 @@ def log_request_failure(request: Request, status_code: int, exc: Exception) -> N
     Log.event(
         logger,
         event,
-        "Referral registration failed" if event is Log.REFERRAL_REGISTRATION_FAILED else "Localization failed",
+        ("Referral registration failed" if event is Log.REFERRAL_REGISTRATION_FAILED else "Localization failed"),
         ura_number=str(auth.claims.ura_number) if auth is not None else None,
         http_status=status_code,
         error_reason=_summarize_reason(exc),
@@ -103,6 +104,20 @@ def handle_unauthorized_error(req: Request, exc: UnauthorizedError) -> JSONRespo
     status_code = 403
     if "fhir" in path:
         fhir_error = FHIRError(severity="error", code="security", msg=str(exc))
+        return JSONResponse(
+            status_code=status_code,
+            content=fhir_error.outcome.model_dump(exclude_none=True),
+            headers=fhir_error.headers,
+        )
+
+    return JSONResponse(status_code=status_code, content=str(exc))
+
+
+def handle_forbidden_error(req: Request, exc: ForbiddedError) -> JSONResponse:
+    path = req.url.path
+    status_code = 403
+    if "fhir" in path:
+        fhir_error = FHIRError(severity="error", code="forbidden", msg=str(exc))
         return JSONResponse(
             status_code=status_code,
             content=fhir_error.outcome.model_dump(exclude_none=True),
