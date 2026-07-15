@@ -46,7 +46,11 @@ def container_config(binder: inject.Binder) -> None:
     crypto_client = create_crypto_service_api_client(config.crypto_service_api)
     binder.bind(CryptoServiceApiClient, crypto_client)
 
-    localization_list_service = LocalizationListService(referral_service, crypto_client)
+    localization_list_service = LocalizationListService(
+        referral_service=referral_service,
+        key_info_service=key_info_service,
+        crypto_client=crypto_client,
+    )
     binder.bind(LocalizationListService, localization_list_service)
 
     bundle_service = BundleService(localization_list_service)

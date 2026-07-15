@@ -28,7 +28,7 @@ class ReferralEntity(Base):
     pseudonym: Mapped[str] = mapped_column("pseudonym", String)
     source: Mapped[str] = mapped_column("source", String)
     organization_type: Mapped[Optional[str]] = mapped_column("organization_type", String)
-    key_id: Mapped[Optional[UUID]] = mapped_column("key_id", ForeignKey("keys_info.id"))
+    key_id: Mapped[UUID] = mapped_column("key_id", Uuid, ForeignKey("keys_info.id"))
     created_at: Mapped[datetime] = mapped_column("created_at", TIMESTAMP, default=datetime.now)
 
     key_info: Mapped["KeyInfoEntity"] = relationship(back_populates="referrals")

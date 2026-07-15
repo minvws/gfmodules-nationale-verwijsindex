@@ -5,6 +5,7 @@ import pytest
 
 from app.config import ConfigDatabase
 from app.db.db import Database
+from app.db.models.key_info import KeyInfoEntity
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
 from app.models.ura import UraNumber
@@ -15,7 +16,7 @@ from app.services.referral_service import ReferralService
 from tests.test_config import get_test_config
 
 
-@pytest.fixture()
+@pytest.fixture(autouse=True)
 def database() -> Generator[Database, Any, None]:
     config_database = ConfigDatabase(dsn="sqlite:///:memory:", retry_backoff=[])
     db = Database(config_database=config_database)
@@ -46,6 +47,11 @@ def http_service() -> HttpService:
 @pytest.fixture(scope="session")
 def ura_number() -> UraNumber:
     return UraNumber("00000123")
+
+
+@pytest.fixture
+def mock_key_info() -> KeyInfoEntity:
+    return KeyInfoEntity(label="label-1", mechanism="AES_CBC", active=True)
 
 
 @pytest.fixture()

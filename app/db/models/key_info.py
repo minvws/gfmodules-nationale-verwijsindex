@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import (
     TIMESTAMP,
+    Boolean,
     SQLColumnExpression,
     String,
     exists,
@@ -25,6 +26,7 @@ class KeyInfoEntity(Base):
     id: Mapped[UUID] = mapped_column("id", Uuid, primary_key=True, default=uuid4)
     label: Mapped[str] = mapped_column("label", String, unique=True)
     mechanism: Mapped[str] = mapped_column("mechanism", String)
+    active: Mapped[bool] = mapped_column("active", Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column("created_at", TIMESTAMP, default=datetime.now)
     deleted_at: Mapped[Optional[datetime]] = mapped_column(
         "deleted_at",

@@ -21,10 +21,13 @@ class Database:
                 self.engine = create_engine(
                     config_database.dsn,
                     connect_args={
-                        "check_same_thread": False
+                        "check_same_thread": False,
+                        "uri": True,
                     },  # This + static pool is needed for sqlite in-memory tables
                     poolclass=StaticPool,
                 )
+                with self.engine.connect() as conn:
+                    conn.execute(text("PRAGMA foreign_keys=ON"))
             else:
                 self.engine = create_engine(
                     config_database.dsn,

@@ -8,11 +8,6 @@ from app.services.exceptions import ConflictError, ForbiddedError, NotFoundError
 from app.services.key_info import KeyInfoService
 
 
-@pytest.fixture
-def mock_key_info() -> KeyInfoEntity:
-    return KeyInfoEntity(label="label-1", mechanism="AES_CBC")
-
-
 def test_add_one_should_succeed(key_info_service: KeyInfoService, mock_key_info: KeyInfoEntity) -> None:
     actual = key_info_service.add_one(label=mock_key_info.label, mechanism=mock_key_info.mechanism)
     for c in actual.__table__.columns:
