@@ -18,10 +18,8 @@ def get_test_config() -> Config:
             loglevel=LogLevel.error,
         ),
         logging=ConfigLogging(
-            app_path=None,
-            siem_path=None,
-            public_inspect_path=None,
-            debug_path=None,
+            syslog_path=None,
+            application_id="nationale-verwijsindex",
             include_traces=True,
             debug_logs_in_console=True,
         ),

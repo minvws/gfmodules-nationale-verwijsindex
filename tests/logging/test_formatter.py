@@ -173,3 +173,22 @@ def test_routing_applies_to_plaintext(context_vars: None) -> None:
     out = PlainTextFormatter(stream=LoggingStreams.SIEM).format(_routed_record())
     assert "cert_issuer_dn=CN=Issuer" in out
     assert "cert_subject_dn" not in out
+
+
+def test_json_formatter_stamps_stream_id_and_application_id() -> None:
+    # On the shared syslog channel the log server tells streams and
+    # applications apart by the stream_id/application_id stamped per record.
+    out = json.loads(
+        JsonFormatter(
+            stream_id="app",
+            application_id="nationale-verwijsindex",
+        ).format(_record())
+    )
+    assert out["stream_id"] == "app"
+    assert out["application_id"] == "nationale-verwijsindex"
+
+
+def test_json_formatter_omits_stream_id_and_application_id_when_unset() -> None:
+    out = json.loads(JsonFormatter().format(_record()))
+    assert "stream_id" not in out
+    assert "application_id" not in out
