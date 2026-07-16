@@ -7,6 +7,7 @@ from app.config import ConfigDatabase
 from app.db.db import Database
 from app.db.models.key_info import KeyInfoEntity
 from app.db.models.referral import ReferralEntity
+from app.db.repository.key_info_repository import KeyInfoRepository
 from app.db.repository.referral_repository import ReferralRepository
 from app.models.ura import UraNumber
 from app.services.auth.header import AuthHeaderService
@@ -30,6 +31,11 @@ def database() -> Generator[Database, Any, None]:
 @pytest.fixture()
 def referral_repository(database: Database) -> ReferralRepository:
     return ReferralRepository(db_session=database.get_db_session())
+
+
+@pytest.fixture()
+def key_info_repository(database: Database) -> KeyInfoRepository:
+    return KeyInfoRepository(db_session=database.get_db_session())
 
 
 @pytest.fixture()
