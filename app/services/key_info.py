@@ -1,10 +1,18 @@
+import logging
 from datetime import datetime
 from typing import List
 
 from app.db.db import Database
 from app.db.models.key_info import KeyInfoEntity
 from app.db.repository.key_info_repository import KeyInfoRepository
-from app.services.exceptions import ConflictError, ForbiddedError, NotFoundError
+from app.services.exceptions import (
+    ConflictError,
+    ForbiddedError,
+    InvalidKeyInfoError,
+    NotFoundError,
+)
+
+logger = logging.Logger(__name__)
 
 
 class KeyInfoService:
@@ -20,6 +28,21 @@ class KeyInfoService:
                 raise NotFoundError
 
             return key_info
+
+    def get_active_key(self) -> KeyInfoEntity:
+        with self.database.get_db_session() as session:
+            repo = session.get_repository(KeyInfoRepository)
+            active_key_info = repo.find_active()
+            if len(active_key_info) != 1:
+                logger.debug("Only one active KeyInfo is allowed, check database to fix issue")
+                raise InvalidKeyInfoError()
+
+            return active_key_info[0]
+
+    def get_one_or_none(self, label: str) -> KeyInfoEntity | None:
+        with self.database.get_db_session() as session:
+            repo = session.get_repository(KeyInfoRepository)
+            return repo.find_one(label)
 
     def get_many(self, mechanism: str | None = None) -> List[KeyInfoEntity]:
         with self.database.get_db_session() as session:

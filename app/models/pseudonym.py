@@ -1,5 +1,12 @@
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Self
+
+from pydantic import BaseModel
+
+
+class PseudonymResponse(BaseModel):
+    encrypted_pseudonym: str
+    iv: str
 
 
 @dataclass
@@ -27,3 +34,7 @@ class EncryptedPseudonym:
         if isinstance(other, EncryptedPseudonym):
             return self.value == other.value
         return False
+
+    @classmethod
+    def from_response(cls, resp: PseudonymResponse) -> Self:
+        return cls(encrypted_data=resp.encrypted_pseudonym, iv=resp.iv)

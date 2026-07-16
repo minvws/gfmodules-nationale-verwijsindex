@@ -4,11 +4,16 @@ from uuid import UUID
 
 from app.db.db import Database
 from app.db.models.referral import ReferralEntity
+from app.db.repository.key_info_repository import KeyInfoRepository
 from app.db.repository.referral_repository import ReferralRepository
 from app.logging.events import Log
 from app.models.pseudonym import EncryptedPseudonym
 from app.models.ura import UraNumber
-from app.services.exceptions import ConflictError, NotFoundError
+from app.services.exceptions import (
+    ConflictError,
+    KeyInfoNotRegisteredError,
+    NotFoundError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +38,7 @@ class ReferralService:
         ura_number: UraNumber,
         source: str,
         organization_name: str,
+        key_id: UUID,
         organization_type: str | None = None,
     ) -> ReferralEntity:
         """
@@ -40,6 +46,7 @@ class ReferralService:
         """
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)
+            key_info_repository = session.get_repository(KeyInfoRepository)
 
             if referral_repository.exists(
                 pseudonym=encrypted_pseudonym.value,
@@ -54,12 +61,16 @@ class ReferralService:
                 )
                 raise ConflictError()
 
+            if not key_info_repository.exists(id=key_id):
+                raise KeyInfoNotRegisteredError()
+
             new_referral: ReferralEntity = referral_repository.add_one(
                 ReferralEntity(
                     pseudonym=encrypted_pseudonym.value,
                     ura_number=str(ura_number),
                     source=source,
                     organization_type=organization_type,
+                    key_id=key_id,
                 )
             )
 

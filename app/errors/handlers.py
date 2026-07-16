@@ -17,6 +17,7 @@ from app.services.exceptions import (
     ConflictError,
     ForbiddedError,
     InvalidHeaderPropertyError,
+    InvalidKeyInfoError,
     InvalidModelError,
     NotFoundError,
     PseudonymError,
@@ -122,6 +123,19 @@ def handle_forbidden_error(req: Request, exc: ForbiddedError) -> JSONResponse:
             status_code=status_code,
             content=fhir_error.outcome.model_dump(exclude_none=True),
             headers=fhir_error.headers,
+        )
+
+    return JSONResponse(status_code=status_code, content=str(exc))
+
+
+def handle_invalid_key_info_error(req: Request, exc: InvalidKeyInfoError) -> JSONResponse:
+    path = req.url.path
+    status_code = 503
+    fhir_error = FHIRError(severity="error", code="transient", msg=str(exc))
+    if "fhir" in path:
+        return JSONResponse(
+            status_code=status_code,
+            content=fhir_error.outcome.model_dump(exclude_none=True),
         )
 
     return JSONResponse(status_code=status_code, content=str(exc))

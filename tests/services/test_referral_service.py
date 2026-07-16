@@ -6,7 +6,12 @@ import pytest
 from app.db.models.referral import ReferralEntity
 from app.models.pseudonym import EncryptedPseudonym
 from app.models.ura import UraNumber
-from app.services.exceptions import ConflictError, NotFoundError
+from app.services.exceptions import (
+    ConflictError,
+    KeyInfoNotRegisteredError,
+    NotFoundError,
+)
+from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 
 
@@ -45,14 +50,17 @@ def assert_eq(
 
 def test_add_one_should_succeed(
     referral_service: ReferralService,
+    key_info_service: KeyInfoService,
     ura_number: UraNumber,
 ) -> None:
+    key_info = key_info_service.add_one("some-label", "AES_CBC")
     expected = referral_service.add_one(
         encrypted_pseudonym=EncryptedPseudonym("ps-1", "123"),
         ura_number=ura_number,
         source="SomeDevice",
         organization_name="Test Org",
         organization_type="ziekenhuis",
+        key_id=key_info.id,
     )
     assert isinstance(expected.id, UUID)
     actual = referral_service.get_by_id(expected.id)
@@ -60,9 +68,24 @@ def test_add_one_should_succeed(
     assert_eq(expected, actual)
 
 
+def test_add_one_should_raise_when_key_is_not_created(referral_service: ReferralService, ura_number: UraNumber) -> None:
+    with pytest.raises(KeyInfoNotRegisteredError):
+        referral_service.add_one(
+            encrypted_pseudonym=EncryptedPseudonym("ps-1", "123"),
+            ura_number=ura_number,
+            source="SomeDevice",
+            organization_name="Test Org",
+            organization_type="ziekenhuis",
+            key_id=uuid4(),
+        )
+
+
 def test_add_referral_should_raise_exception_with_duplicates(
-    referral_service: ReferralService, ura_number: UraNumber
+    referral_service: ReferralService,
+    key_info_service: KeyInfoService,
+    ura_number: UraNumber,
 ) -> None:
+    key_info = key_info_service.add_one("label-1", "AES_CBC")
     patient = EncryptedPseudonym("ps-1", "123")
     org_type = "ziekenhuis"
     referral_service.add_one(
@@ -71,6 +94,7 @@ def test_add_referral_should_raise_exception_with_duplicates(
         source="SomeDevice",
         organization_name="Test Org",
         organization_type=org_type,
+        key_id=key_info.id,
     )
     with pytest.raises(ConflictError) as exec:
         referral_service.add_one(
@@ -79,6 +103,7 @@ def test_add_referral_should_raise_exception_with_duplicates(
             source="SomeDevice",
             organization_name="Test Org",
             organization_type=org_type,
+            key_id=key_info.id,
         )
 
     assert "Record already exists" in str(exec.value)
@@ -86,8 +111,10 @@ def test_add_referral_should_raise_exception_with_duplicates(
 
 def test_delete_one_should_succeed(
     referral_service: ReferralService,
+    key_info_service: KeyInfoService,
     ura_number: UraNumber,
 ) -> None:
+    key_info = key_info_service.add_one("label-1", "AES_CBC")
     patient = EncryptedPseudonym("ps-1", "123")
     data = referral_service.add_one(
         encrypted_pseudonym=patient,
@@ -95,6 +122,7 @@ def test_delete_one_should_succeed(
         source="SomeDevice",
         organization_name="Test Org",
         organization_type="huisarts",
+        key_id=key_info.id,
     )
     assert isinstance(data.id, UUID)
     nvi_reference = referral_service.get_by_id(data.id)
@@ -125,7 +153,13 @@ def test_delete_one_should_raise_exception_when_not_found(
     assert "Record not found" in str(exec.value)
 
 
-def test_delete_by_id_should_succeed(referral_service: ReferralService, ura_number: UraNumber) -> None:
+def test_delete_by_id_should_succeed(
+    referral_service: ReferralService,
+    key_info_service: KeyInfoService,
+    ura_number: UraNumber,
+) -> None:
+
+    key_info = key_info_service.add_one("label-1", "AES_CBC")
     patient = EncryptedPseudonym("ps-1", "123")
     patient_reference = referral_service.add_one(
         encrypted_pseudonym=patient,
@@ -133,6 +167,7 @@ def test_delete_by_id_should_succeed(referral_service: ReferralService, ura_numb
         source="SomeDevice",
         organization_name="Test Org",
         organization_type="ziekenhuis",
+        key_id=key_info.id,
     )
     assert isinstance(patient_reference.id, UUID)
     referral_service.delete_by_id(patient_reference.id)
@@ -154,8 +189,10 @@ def test_delet_by_id_should_raise_exception_when_no_match_found(
 
 def test_get_one_should_succeed(
     referral_service: ReferralService,
+    key_info_service: KeyInfoService,
     ura_number: UraNumber,
 ) -> None:
+    key_info = key_info_service.add_one("label-1", "AES_CBC")
     pseudonym = EncryptedPseudonym("ps-1", "123")
 
     expected = referral_service.add_one(
@@ -164,6 +201,7 @@ def test_get_one_should_succeed(
         source="SomeDevice",
         organization_name="Test Org",
         organization_type="ziekenhuis",
+        key_id=key_info.id,
     )
 
     actual = referral_service.get_one(

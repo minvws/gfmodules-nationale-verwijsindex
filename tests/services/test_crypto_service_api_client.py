@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 from requests.exceptions import ConnectionError, HTTPError, Timeout
 
-from app.models.pseudonym import EncryptedPseudonym
+from app.models.pseudonym import PseudonymResponse
 from app.services.crypto_service_api_client import CryptoServiceApiClient
 
 
@@ -22,16 +22,24 @@ def crypto_client(http_mock: MagicMock) -> CryptoServiceApiClient:
 
 def test_exchange_returns_hashed_pseudonym(crypto_client: CryptoServiceApiClient, http_mock: MagicMock) -> None:
     response = MagicMock()
-    response.json.return_value = {"encrypted_pseudonym": "abc", "iv": "123"}
+    response.json.return_value = {
+        "encrypted_pseudonym": "abc",
+        "iv": "123",
+    }
     http_mock.do_request.return_value = response
 
-    result = crypto_client.exchange("some-jwe", "some-blind-factor")
+    result = crypto_client.exchange("some-jwe", "some-blind-factor", "some-label", "CBC_AES")
 
-    assert result == EncryptedPseudonym("abc", "123")
+    assert result == PseudonymResponse(encrypted_pseudonym="abc", iv="123")
     http_mock.do_request.assert_called_once_with(
         method="POST",
         sub_route="process",
-        data={"jwe": "some-jwe", "blind_factor": "some-blind-factor"},
+        data={
+            "jwe": "some-jwe",
+            "blind_factor": "some-blind-factor",
+            "label": "some-label",
+            "mechanism": "CBC_AES",
+        },
     )
 
 
@@ -39,14 +47,14 @@ def test_exchange_raises_on_connection_error(crypto_client: CryptoServiceApiClie
     http_mock.do_request.side_effect = ConnectionError
 
     with pytest.raises(ConnectionError):
-        crypto_client.exchange("jwe", "bf")
+        crypto_client.exchange("jwe", "bf", "some-label", "CBC_AES")
 
 
 def test_exchange_raises_on_timeout(crypto_client: CryptoServiceApiClient, http_mock: MagicMock) -> None:
     http_mock.do_request.side_effect = Timeout
 
     with pytest.raises(ConnectionError):
-        crypto_client.exchange("jwe", "bf")
+        crypto_client.exchange("jwe", "bf", "some-label", "CBC_AES")
 
 
 def test_exchange_raises_on_invalid_json(crypto_client: CryptoServiceApiClient, http_mock: MagicMock) -> None:
@@ -55,7 +63,7 @@ def test_exchange_raises_on_invalid_json(crypto_client: CryptoServiceApiClient, 
     http_mock.do_request.return_value = response
 
     with pytest.raises(RuntimeError):
-        crypto_client.exchange("jwe", "bf")
+        crypto_client.exchange("jwe", "bf", "some-label", "CBC_AES")
 
 
 def test_exchange_raises_on_missing_key(crypto_client: CryptoServiceApiClient, http_mock: MagicMock) -> None:
@@ -64,14 +72,14 @@ def test_exchange_raises_on_missing_key(crypto_client: CryptoServiceApiClient, h
     http_mock.do_request.return_value = response
 
     with pytest.raises(RuntimeError):
-        crypto_client.exchange("jwe", "bf")
+        crypto_client.exchange("jwe", "bf", "some-label", "CBC_AES")
 
 
 def test_exchange_raises_on_http_error(crypto_client: CryptoServiceApiClient, http_mock: MagicMock) -> None:
     http_mock.do_request.side_effect = HTTPError("500")
 
     with pytest.raises(ValueError):
-        crypto_client.exchange("jwe", "bf")
+        crypto_client.exchange("jwe", "bf", "some-label", "CBC_AES")
 
 
 def test_is_healthy_returns_true_on_200(crypto_client: CryptoServiceApiClient, http_mock: MagicMock) -> None:
