@@ -39,11 +39,6 @@ class KeyInfoService:
 
             return active_key_info[0]
 
-    def get_one_or_none(self, label: str) -> KeyInfoEntity | None:
-        with self.database.get_db_session() as session:
-            repo = session.get_repository(KeyInfoRepository)
-            return repo.find_one(label)
-
     def get_many(self, mechanism: str | None = None) -> List[KeyInfoEntity]:
         with self.database.get_db_session() as session:
             repo = session.get_repository(KeyInfoRepository)
