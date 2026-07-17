@@ -8,7 +8,6 @@ from app.models.pseudonym import EncryptedPseudonym
 from app.models.ura import UraNumber
 from app.services.exceptions import (
     ConflictError,
-    KeyInfoNotRegisteredError,
     NotFoundError,
 )
 from app.services.key_info import KeyInfoService
@@ -66,18 +65,6 @@ def test_add_one_should_succeed(
     actual = referral_service.get_by_id(expected.id)
 
     assert_eq(expected, actual)
-
-
-def test_add_one_should_raise_when_key_is_not_created(referral_service: ReferralService, ura_number: UraNumber) -> None:
-    with pytest.raises(KeyInfoNotRegisteredError):
-        referral_service.add_one(
-            encrypted_pseudonym=EncryptedPseudonym("ps-1", "123"),
-            ura_number=ura_number,
-            source="SomeDevice",
-            organization_name="Test Org",
-            organization_type="ziekenhuis",
-            key_id=uuid4(),
-        )
 
 
 def test_add_referral_should_raise_exception_with_duplicates(

@@ -19,19 +19,6 @@ class ForbiddedError(Exception):
         super().__init__(msg)
 
 
-class KeyInfoNotRegisteredError(Exception):
-    """
-    This error would occur for new referrals that have not been rotated yet with the new key
-    or for example mismatch between the CrytpoClient and the NVI itself.
-
-    Should be temporary and can be deprecated once all entries are rotated (encrypted) with
-    the new key.
-    """
-
-    def __init__(self) -> None:
-        super().__init__("KeyInfo not registered for referral")
-
-
 class InvalidKeyInfoError(Exception):
     def __init__(self, msg: str | None = None) -> None:
         msg = msg if msg else "Inconsistency found in KeyInfo"
