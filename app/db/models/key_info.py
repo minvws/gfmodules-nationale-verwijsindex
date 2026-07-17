@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional, cast
+from typing import TYPE_CHECKING, Optional, cast
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
@@ -8,10 +8,17 @@ from sqlalchemy import (
     SQLColumnExpression,
     String,
     exists,
+    select,
     text,
 )
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    WriteOnlyMapped,
+    mapped_column,
+    object_session,
+    relationship,
+)
 from sqlalchemy.types import Uuid
 
 from app.db.models.base import Base
@@ -33,11 +40,17 @@ class KeyInfoEntity(Base):
         TIMESTAMP,
     )
 
-    referrals: Mapped[List["ReferralEntity"]] = relationship(back_populates="key_info")
+    referrals: WriteOnlyMapped["ReferralEntity"] = relationship(back_populates="key_info")
 
     @hybrid_property
     def has_referrals(self) -> bool:
-        return len(self.referrals) > 0
+        # return len(self.referrals) > 0
+        session = object_session(self)
+        if session is None:
+            return False
+
+        stmt = select(exists(self.referrals.select()))
+        return bool(session.scalar(stmt))
 
     @has_referrals.inplace.expression
     @classmethod
