@@ -4,7 +4,9 @@ import pytest
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.db.models.key_info import KeyInfoEntity
+from app.db.models.referral import ReferralEntity
 from app.db.repository.key_info_repository import KeyInfoRepository
+from app.db.repository.referral_repository import ReferralRepository
 
 
 def test_find_one_should_succeed(key_info_repository: KeyInfoRepository, mock_key_info: KeyInfoEntity) -> None:
@@ -153,3 +155,27 @@ def test_exists_should_return_false(key_info_repository: KeyInfoRepository, mock
         actual = key_info_repository.exists("some-other-label")
 
     assert actual is False
+
+
+def test_has_referrals_should_succeed_inside_session(
+    key_info_repository: KeyInfoRepository,
+    mock_key_info: KeyInfoEntity,
+    mock_referral_entity: ReferralEntity,
+) -> None:
+    with key_info_repository.db_session as session:
+        result = key_info_repository.add_one(mock_key_info)
+
+        referral_repo = session.get_repository(ReferralRepository)
+        mock_referral_entity.key_id = result.id
+        referral_repo.add_one(mock_referral_entity)
+
+        expected = key_info_repository.find_one(result.label)
+        assert expected is not None
+        assert expected.has_referrals is True
+
+
+def test_has_referrals_should_raise_outside_session(
+    mock_key_info: KeyInfoEntity,
+) -> None:
+    with pytest.raises(Exception):
+        mock_key_info.has_referrals

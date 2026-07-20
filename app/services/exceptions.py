@@ -25,6 +25,11 @@ class InvalidKeyInfoError(Exception):
         super().__init__(msg)
 
 
+class KeyInfoPropertyError(Exception):
+    def __init__(self) -> None:
+        super().__init__("property `has_referrals` cannot be accessed outside a database Session")
+
+
 class UnauthorizedError(Exception):
     pass
 
