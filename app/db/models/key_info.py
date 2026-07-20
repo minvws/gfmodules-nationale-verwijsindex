@@ -22,6 +22,7 @@ from sqlalchemy.orm import (
 from sqlalchemy.types import Uuid
 
 from app.db.models.base import Base
+from app.services.exceptions import KeyInfoPropertyError
 
 if TYPE_CHECKING:
     from app.db.models.referral import ReferralEntity
@@ -44,10 +45,9 @@ class KeyInfoEntity(Base):
 
     @hybrid_property
     def has_referrals(self) -> bool:
-        # return len(self.referrals) > 0
         session = object_session(self)
         if session is None:
-            return False
+            raise KeyInfoPropertyError()
 
         stmt = select(exists(self.referrals.select()))
         return bool(session.scalar(stmt))
