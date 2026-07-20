@@ -10,15 +10,15 @@ from app.models.ura import UraNumber
 class AuthHeaders(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    oin: Annotated[str | None, Field(alias="x-gf-oin", default=None)]
+    client_oin: Annotated[str | None, Field(alias="x-gf-sub", default=None)]
     source_id: Annotated[str | None, Field(alias="x-gf-source-id", default=None)]
-    ura: Annotated[str, Field(alias="x-gf-sub")]
+    org_ura: Annotated[str, Field(alias="x-gf-org-ura")]
     audience: Annotated[str, Field(alias="x-gf-audience")]
     scope: Annotated[str, Field(alias="x-gf-scope")]
     cert_type: Annotated[str, Field(alias="x-gf-cert-type")]
     organization_name: Annotated[str, Field(alias="x-gf-organization-name")]
 
-    @field_validator("ura", mode="before")
+    @field_validator("org_ura", mode="before")
     @classmethod
     def validate_ura_number(cls, data: str) -> str:
         try:
@@ -46,7 +46,7 @@ class AuthHeaders(BaseModel):
     def from_request(cls, req: Request) -> Self:
         headers = req.headers
         data: Dict[str, Any] = {}
-        optional_fields = ["oin", "x-gf-oin", "source_id", "x-gf-source-id"]
+        optional_fields = ["source_id", "x-gf-source-id"]
         for name, field in cls.model_fields.items():
             header_name = field.alias or name
             value = headers.get(header_name)

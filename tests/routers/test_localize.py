@@ -8,7 +8,6 @@ from app.models.ura import UraNumber
 from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 from tests.routers.conftest import (
-    TEST_OIN,
     TEST_ORG_NAME,
     TEST_URA,
     make_auth_context,
@@ -110,7 +109,6 @@ class TestLocalize:
             claims=AuthenticationClaims(
                 ura_number=UraNumber(TEST_URA),
                 organization_name=TEST_ORG_NAME,
-                oin=TEST_OIN,
                 source_id=None,
             ),
             scope=[AuthorizationScope.READ],

@@ -11,12 +11,12 @@ from app.models.ura import UraNumber
 @pytest.fixture
 def auth_headers_dict(ura_number: UraNumber) -> Dict[str, Any]:
     return {
-        "oin": "oin123",
         "source_id": "source123",
-        "ura": ura_number.value,
         "audience": "audience",
         "scope": "nvi:read",
         "cert_type": "oin",
+        "client_oin": "oin123",
+        "org_ura": ura_number.value,
         "organization_name": "Test Organization",
     }
 
@@ -24,12 +24,12 @@ def auth_headers_dict(ura_number: UraNumber) -> Dict[str, Any]:
 @pytest.fixture()
 def auth_headers(ura_number: UraNumber) -> AuthHeaders:
     return AuthHeaders(
-        oin="oin123",
         source_id="source123",
-        ura=ura_number.value,
         audience="audience",
         scope="nvi:read",
         cert_type="oin",
+        client_oin="oin123",
+        org_ura=ura_number.value,
         organization_name="Test Organization",
     )
 
@@ -37,9 +37,9 @@ def auth_headers(ura_number: UraNumber) -> AuthHeaders:
 @pytest.fixture()
 def header_data(ura_number: UraNumber) -> Dict[str, Any]:
     return {
-        "x-gf-oin": "oin123",
         "x-gf-source-id": "source123",
-        "x-gf-sub": ura_number.value,
+        "x-gf-sub": "oin123",
+        "x-gf-org-ura": ura_number.value,
         "x-gf-audience": "audience",
         "x-gf-scope": "nvi:read",
         "x-gf-cert-type": "oin",
@@ -61,8 +61,8 @@ def test_serialize_with_alias_should_succeed(auth_headers: AuthHeaders, header_d
     assert actual == actual
 
 
-def test_deserialize_should_succeed(auth_headers_dict: Dict[str, Any], auth_headers: AuthHeaders) -> None:
-    actual = AuthHeaders(**auth_headers_dict)
+def test_deserialize_should_succeed(header_data: Dict[str, Any], auth_headers: AuthHeaders) -> None:
+    actual = AuthHeaders(**header_data)
 
     assert actual == auth_headers
 
@@ -79,7 +79,7 @@ def test_deserialize_should_panic_with_invalid_ura(
     auth_headers_dict: Dict[str, Any],
 ) -> None:
     data = auth_headers_dict.copy()
-    data["ura"] = "invalid"
+    data["org_ura"] = "invalid"
 
     with pytest.raises(ValueError) as exec:
         AuthHeaders(**data)

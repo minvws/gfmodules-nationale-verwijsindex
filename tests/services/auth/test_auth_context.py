@@ -12,7 +12,6 @@ def auth_context_consulting(ura_number: UraNumber) -> AuthContext:
         claims=AuthenticationClaims(
             ura_number=ura_number,
             organization_name="Some Organization",
-            oin="some-oin",
         ),
         audience="some-audience",
         scope=[AuthorizationScope.READ],
@@ -25,7 +24,6 @@ def auth_context_source(ura_number: UraNumber) -> AuthContext:
         claims=AuthenticationClaims(
             ura_number=ura_number,
             organization_name="Some Organization",
-            oin="some-oin",
             source_id="some-source-id",
         ),
         audience="some-audience",

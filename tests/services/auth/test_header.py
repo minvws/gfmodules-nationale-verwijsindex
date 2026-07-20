@@ -8,12 +8,12 @@ from app.services.exceptions import InvalidHeaderPropertyError
 
 def test_validate_should_succeed(ura_number: UraNumber, auth_header_service: AuthHeaderService) -> None:
     expected = AuthHeaders(
-        oin="oin123",
         source_id="source123",
-        ura=ura_number.value,
         audience=auth_header_service.expected_audiences[0],
         scope="nvi:read",
         cert_type="oin",
+        client_oin="oin123",
+        org_ura=ura_number.value,
         organization_name="Test Organization",
     )
 
@@ -26,12 +26,12 @@ def test_validate_should_panic_with_invalid_audience(
     ura_number: UraNumber, auth_header_service: AuthHeaderService
 ) -> None:
     data = AuthHeaders(
-        oin="oin123",
         source_id="source123",
-        ura=ura_number.value,
         audience="some-invalid-audience",
         scope="nvi:read",
         cert_type="oin",
+        client_oin="oin123",
+        org_ura=ura_number.value,
         organization_name="Test Organization",
     )
 
