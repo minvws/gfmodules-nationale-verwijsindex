@@ -10,9 +10,9 @@ from app.models.ura import UraNumber
 class AuthHeaders(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    oin: Annotated[str | None, Field(alias="x-gf-oin", default=None)]
+    oin: Annotated[str, Field(alias="x-gf-act-sub")]  # org acting on behalf of main
     source_id: Annotated[str | None, Field(alias="x-gf-source-id", default=None)]
-    ura: Annotated[str, Field(alias="x-gf-sub")]
+    ura: Annotated[str, Field(alias="x-gf-sub")]  # main org
     audience: Annotated[str, Field(alias="x-gf-audience")]
     scope: Annotated[str, Field(alias="x-gf-scope")]
     cert_type: Annotated[str, Field(alias="x-gf-cert-type")]

@@ -37,7 +37,7 @@ def auth_headers(ura_number: UraNumber) -> AuthHeaders:
 @pytest.fixture()
 def header_data(ura_number: UraNumber) -> Dict[str, Any]:
     return {
-        "x-gf-oin": "oin123",
+        "x-gf-act-sub": "oin123",
         "x-gf-source-id": "source123",
         "x-gf-sub": ura_number.value,
         "x-gf-audience": "audience",
