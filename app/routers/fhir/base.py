@@ -23,15 +23,13 @@ def register(
     localisation_list_service: BundleService = Depends(get_bundle_service),
 ) -> Any:
     ctx: AuthContext = request.state.auth
-    cert_ura = ctx.claims.ura_number
     results_bundle = Bundle[Any](entry=[])
     valid_bundle = localisation_list_service.validate_localization_bundle_structure(data)
     if not valid_bundle:
         raise InvalidModelError("Bundle.entry is invalid")
     for i, entry in enumerate(data.entry):
         result = localisation_list_service.process_entry(
-            authenticated_ura=cert_ura,
-            organization_name=ctx.claims.organization_name,
+            ctx=ctx,
             entry=entry,
             index=i,
         )
