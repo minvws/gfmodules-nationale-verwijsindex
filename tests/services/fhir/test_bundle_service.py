@@ -8,6 +8,7 @@ from app.models.auth.data import AuthorizationScope
 from app.models.fhir.bundle import BundleEntry, EntryRequest
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.ura import UraNumber
+from app.services.exceptions import NotFoundError
 from app.services.fhir.bundle import BundleService
 
 TEST_URA = UraNumber("00000001")
@@ -54,6 +55,17 @@ class LocalizationListServiceSpy:
     def delete_by_query(self, *_args: Any, **_kwargs: Any) -> Any:
         self.calls.append("delete_by_query")
         return None, 200
+
+
+class MissingRecordService(LocalizationListServiceSpy):
+    """
+    `delete` for a record that does not exist. LocalizationListService.delete looks the
+    referral up first, so NotFoundError escapes before its own 404 branch is reached.
+    """
+
+    def delete(self, *_args: Any, **_kwargs: Any) -> Any:
+        self.calls.append("delete")
+        raise NotFoundError()
 
 
 @pytest.fixture()
@@ -316,3 +328,66 @@ class TestManagingRequest:
         message = str(result.response.outcome.model_dump())
         assert "Bundle.entry.2" in message
         assert "source_id" in message
+
+
+class TestDeleteMissingRecord:
+    """
+    Regression for issue #513: `DELETE List/{id}` for a record that does not exist reported
+    500 "Record not found" for every scope, because no scope was checked and the blanket
+    `except Exception` swallowed NotFoundError.
+    """
+
+    @pytest.fixture()
+    def service(self) -> LocalizationListServiceSpy:
+        """Overrides the module fixture, so `bundle_service` wraps this one."""
+        return MissingRecordService()
+
+    @pytest.mark.parametrize(
+        ("label", "scopes"),
+        [
+            ("wrong scope", [AuthorizationScope.READ]),
+            ("no scope", []),
+        ],
+    )
+    def test_wrong_scope_is_forbidden_not_server_error(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+        label: str,
+        scopes: List[AuthorizationScope],
+    ) -> None:
+        result = process(bundle_service, make_entry("DELETE", ID_URL), scopes)
+
+        assert result.response is not None
+        assert result.response.status == "403"
+        assert service.calls == []
+
+    def test_missing_record_is_not_found_not_server_error(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+    ) -> None:
+        result = process(bundle_service, make_entry("DELETE", ID_URL), [AuthorizationScope.DELETE])
+
+        assert result.response is not None
+        assert result.response.status == "404"
+        assert service.calls == ["delete"]
+        assert result.response.outcome is not None
+        assert "Record not found" in str(result.response.outcome.model_dump())
+
+    def test_unexpected_error_still_reports_server_error(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+    ) -> None:
+        """The 404 mapping must not swallow genuine failures."""
+
+        def boom(*_args: Any, **_kwargs: Any) -> Any:
+            raise RuntimeError("database is on fire")
+
+        service.delete = boom  # type: ignore[method-assign]
+
+        result = process(bundle_service, make_entry("DELETE", ID_URL), [AuthorizationScope.DELETE])
+
+        assert result.response is not None
+        assert result.response.status == "500"
