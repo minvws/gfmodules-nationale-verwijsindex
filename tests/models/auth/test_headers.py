@@ -111,6 +111,40 @@ def test_from_request_should_panic_with_missing_prop(
     assert "x-gf-sub is required for AuthHeaders" in str(exec.value)
 
 
+@pytest.mark.parametrize(
+    "header_name",
+    ["x-gf-act-sub", "x-gf-sub", "x-gf-audience", "x-gf-scope", "x-gf-cert-type", "x-gf-organization-name"],
+)
+def test_from_request_should_panic_with_any_missing_required_header(
+    header_data: Dict[str, Any],
+    header_name: str,
+) -> None:
+    data = header_data.copy()
+    data.pop(header_name)
+    mock_request = Mock(spec=Request)
+    mock_request.headers = data
+
+    with pytest.raises(ValueError) as exec:
+        AuthHeaders.from_request(mock_request)
+
+    assert f"{header_name} is required for AuthHeaders" in str(exec.value)
+
+
+def test_from_request_should_succeed_without_source_id(
+    header_data: Dict[str, Any],
+) -> None:
+    """source_id is the only optional header; it is the only field declaring a default."""
+    data = header_data.copy()
+    data.pop("x-gf-source-id")
+    mock_request = Mock(spec=Request)
+    mock_request.headers = data
+
+    actual = AuthHeaders.from_request(mock_request)
+
+    assert actual.source_id is None
+    assert actual.oin == "oin123"
+
+
 def test_from_header_should_panic_with_invalid_scope(
     header_data: Dict[str, Any],
 ) -> None:
@@ -123,3 +157,33 @@ def test_from_header_should_panic_with_invalid_scope(
         AuthHeaders.from_request(mock_request)
 
     assert "Invalid scope nvi:invalid-scope" in str(exec.value)
+
+
+@pytest.mark.parametrize("value", ["", " ", "\t", "  \t "])
+def test_from_header_should_panic_with_empty_scope(
+    header_data: Dict[str, Any],
+    value: str,
+) -> None:
+    """An empty header used to pass validation and yield an empty scope list."""
+    data = header_data.copy()
+    data["x-gf-scope"] = value
+    mock_request = Mock(spec=Request)
+    mock_request.headers = data
+
+    with pytest.raises(ValueError) as exec:
+        AuthHeaders.from_request(mock_request)
+
+    assert "x-gf-scope must hold at least one scope" in str(exec.value)
+
+
+def test_from_header_should_accept_multiple_scopes(
+    header_data: Dict[str, Any],
+) -> None:
+    data = header_data.copy()
+    data["x-gf-scope"] = "nvi:read nvi:create"
+    mock_request = Mock(spec=Request)
+    mock_request.headers = data
+
+    actual = AuthHeaders.from_request(mock_request)
+
+    assert actual.scope == "nvi:read nvi:create"
