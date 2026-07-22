@@ -66,7 +66,6 @@ def test_find_many_should_return_two_item(
         ura_number="0000123",
         pseudonym="some-pseudonym",
         source="Some-Device2",
-        organization_type="hospital2",
         key_info=mock_key_info,
     )
     mock_referral_entity.key_info = mock_key_info
@@ -90,14 +89,12 @@ def test_find_many_with_alternative_params_should_succeed(
         ura_number="0000123",
         pseudonym="ps-1",
         source="Some-Device",
-        organization_type="Hospital",
         key_info=mock_key_info,
     )
     mock_referral_2 = ReferralEntity(
         ura_number="0000124",
         pseudonym="ps-2",
         source="Some-Other-Device",
-        organization_type="Hospital",
         key_info=mock_key_info,
     )
     expected = [mock_referral_1, mock_referral_2]
@@ -105,7 +102,7 @@ def test_find_many_with_alternative_params_should_succeed(
     with referral_repository.db_session:
         referral_repository.add_one(mock_referral_1)
         referral_repository.add_one(mock_referral_2)
-        actual = referral_repository.find_many(organization_type="Hospital")
+        actual = referral_repository.find_many()
 
     assert expected == actual
 
@@ -125,91 +122,6 @@ def test_find_many_should_return_empty_list(
         )
 
     assert actual == []
-
-
-def test_find_should_return_one_referral(
-    referral_repository: ReferralRepository,
-    mock_referral_entity: ReferralEntity,
-    mock_key_info: KeyInfoEntity,
-) -> None:
-    with referral_repository.db_session:
-        mock_referral_entity.key_info = mock_key_info
-        referral_repository.add_one(mock_referral_entity)
-        expected = [mock_referral_entity]
-
-        actual = referral_repository.find(
-            pseudonym=mock_referral_entity.pseudonym,
-        )
-
-        assert expected == actual
-
-
-def test_find_should_return_two_referrals(
-    referral_repository: ReferralRepository,
-    mock_referral_entity: ReferralEntity,
-    mock_key_info: KeyInfoEntity,
-) -> None:
-    with referral_repository.db_session:
-        mock_referral_entity.key_info = mock_key_info
-        another_referral = ReferralEntity(
-            pseudonym=mock_referral_entity.pseudonym,
-            ura_number="00000123",
-            source="Some-Device",
-            organization_type=mock_referral_entity.organization_type,
-            key_info=mock_key_info,
-        )
-        referral_repository.add_one(mock_referral_entity)
-        referral_2 = referral_repository.add_one(another_referral)
-        expected = [mock_referral_entity, referral_2]
-
-        actual = referral_repository.find(
-            pseudonym=mock_referral_entity.pseudonym,
-        )
-
-        assert expected == actual
-
-
-def test_find_should_return_two_referrals_from_different_organizations(
-    referral_repository: ReferralRepository,
-    mock_referral_entity: ReferralEntity,
-    mock_key_info: KeyInfoEntity,
-) -> None:
-    with referral_repository.db_session:
-        mock_referral_entity.key_info = mock_key_info
-        different_org_referral = ReferralEntity(
-            pseudonym=mock_referral_entity.pseudonym,
-            ura_number="00000123",
-            source="Some-Device",
-            organization_type="pharmacy",
-            key_info=mock_key_info,
-        )
-        referral_repository.add_one(mock_referral_entity)
-        referral_2 = referral_repository.add_one(different_org_referral)
-        expected = [mock_referral_entity, referral_2]
-        assert mock_referral_entity.organization_type is not None
-        assert referral_2.organization_type is not None
-        actual = referral_repository.find(
-            pseudonym=mock_referral_entity.pseudonym,
-            org_types=[
-                mock_referral_entity.organization_type,
-                referral_2.organization_type,
-            ],
-        )
-
-        assert expected == actual
-
-
-def test_find_should_return_empty_list_when_conditions_are_no_match(
-    referral_repository: ReferralRepository,
-    mock_referral_entity: ReferralEntity,
-    mock_key_info: KeyInfoEntity,
-) -> None:
-    with referral_repository.db_session:
-        mock_referral_entity.key_info = mock_key_info
-        referral_repository.add_one(mock_referral_entity)
-        actual = referral_repository.find(pseudonym="some-other-pseudonym")
-
-        assert actual == []
 
 
 def test_add_one_should_succeed(
@@ -257,7 +169,6 @@ def test_add_one_with_same_unique_index_should_raise_exception(
             ura_number=mock_referral_entity.ura_number,
             pseudonym=mock_referral_entity.pseudonym,
             source=mock_referral_entity.source,
-            organization_type="some-other-type",
             key_id=mock_key_info.id,
         )
         referral_repository.add_one(mock_referral_entity)
@@ -309,14 +220,12 @@ def test_delete_with_only_ura_number_should_remove_all_recordss(
         ura_number="0000123",
         pseudonym="ps-1",
         source="SomeDevice",
-        organization_type="Hospital",
         key_info=mock_key_info,
     )
     referral_2 = ReferralEntity(
         ura_number="0000123",
         pseudonym="ps-2",
         source="SomeOtherDevice",
-        organization_type="Hospital",
         key_info=mock_key_info,
     )
     # referral from a different provider
@@ -324,7 +233,6 @@ def test_delete_with_only_ura_number_should_remove_all_recordss(
         ura_number="0000125",
         pseudonym="ps-3",
         source="AntoherDevice",
-        organization_type="Pharmacy",
         key_info=mock_key_info,
     )
     with referral_repository.db_session:
@@ -345,14 +253,12 @@ def test_delete_with_pseudonym_should_remove_all_records_for_patient(
         ura_number="0000123",
         pseudonym="ps-1",
         source="ImagingMachine",
-        organization_type="Hospital",
         key_info=mock_key_info,
     )
     referral_2 = ReferralEntity(
         ura_number="0000123",
         pseudonym="ps-1",
         source="SomeEPD",
-        organization_type="Hospital",
         key_info=mock_key_info,
     )
     # referral from a different patient
@@ -360,7 +266,6 @@ def test_delete_with_pseudonym_should_remove_all_records_for_patient(
         ura_number="0000123",
         pseudonym="ps-2",
         source="SomeXRay",
-        organization_type="Pharmacy",
         key_info=mock_key_info,
     )
     with referral_repository.db_session:

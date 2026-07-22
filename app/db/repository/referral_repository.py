@@ -1,7 +1,7 @@
-from typing import List, Sequence
+from typing import Sequence
 from uuid import UUID
 
-from sqlalchemy import and_, delete, exists, or_, select
+from sqlalchemy import and_, delete, exists, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db.decorator import repository
@@ -30,7 +30,6 @@ class ReferralRepository(RepositoryBase):
         pseudonym: str | None = None,
         ura_number: str | None = None,
         source: str | None = None,
-        organization_type: str | None = None,
     ) -> Sequence[ReferralEntity]:
         stmt = select(ReferralEntity)
 
@@ -42,9 +41,6 @@ class ReferralRepository(RepositoryBase):
 
         if source is not None:
             stmt = stmt.where(ReferralEntity.source == source)
-
-        if organization_type is not None:
-            stmt = stmt.where(ReferralEntity.organization_type == organization_type)
 
         results = self.db_session.execute(stmt).scalars().all()
         return results
@@ -72,26 +68,6 @@ class ReferralRepository(RepositoryBase):
         results = self.db_session.delete_stmt(stmt)  # type: ignore
 
         return results.rowcount  # type: ignore
-
-    def find(
-        self,
-        pseudonym: str,
-        org_types: List[str] = [],
-    ) -> Sequence[ReferralEntity]:
-        stmt = select(ReferralEntity).where(
-            ReferralEntity.pseudonym == pseudonym,
-        )
-
-        org_filter_condition = []
-        for t in org_types:
-            org_filter_condition.append(ReferralEntity.organization_type == t)
-
-        if len(org_filter_condition) > 0:
-            stmt = stmt.where(or_(*org_filter_condition))
-
-        results = self.db_session.execute(stmt).scalars().all()
-
-        return results
 
     def add_one(self, referral_entity: ReferralEntity) -> ReferralEntity:
         try:

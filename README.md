@@ -65,7 +65,9 @@ erDiagram
         uuid id PK
         varchar pseudonym
         bpchar ura_number
-        varchar organization_type
+        varchar source
+        uuid key_id FK
+        created_at timestamp 
     }
 ```
 
@@ -73,7 +75,6 @@ Explanation of fields:
 
 - `pseudonym`: The pseudonym of the patient whose referral is being stored.
 - `ura_number`: The URA number associated with healthcare provider that registered the referral.
-- `organization_type`: The type of organization that registered the referral, e.g., 'huisarts', 'ziekenhuis', etc.
 
 ## Docker container builds
 
