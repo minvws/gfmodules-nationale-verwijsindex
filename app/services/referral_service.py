@@ -37,7 +37,6 @@ class ReferralService:
         source: str,
         organization_name: str,
         key_id: UUID,
-        organization_type: str | None = None,
     ) -> ReferralEntity:
         """
         Method that adds a referral to the database
@@ -63,7 +62,6 @@ class ReferralService:
                     pseudonym=encrypted_pseudonym.value,
                     ura_number=str(ura_number),
                     source=source,
-                    organization_type=organization_type,
                     key_id=key_id,
                 )
             )

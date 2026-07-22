@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import TIMESTAMP, ForeignKey, String, UniqueConstraint
@@ -27,7 +27,6 @@ class ReferralEntity(Base):
     ura_number: Mapped[str] = mapped_column("ura_number", String)
     pseudonym: Mapped[str] = mapped_column("pseudonym", String)
     source: Mapped[str] = mapped_column("source", String)
-    organization_type: Mapped[Optional[str]] = mapped_column("organization_type", String)
     key_id: Mapped[UUID] = mapped_column("key_id", Uuid, ForeignKey("keys_info.id"))
     created_at: Mapped[datetime] = mapped_column("created_at", TIMESTAMP, default=datetime.now)
 

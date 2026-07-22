@@ -58,7 +58,6 @@ def test_add_one_should_succeed(
         ura_number=ura_number,
         source="SomeDevice",
         organization_name="Test Org",
-        organization_type="ziekenhuis",
         key_id=key_info.id,
     )
     assert isinstance(expected.id, UUID)
@@ -74,13 +73,11 @@ def test_add_referral_should_raise_exception_with_duplicates(
 ) -> None:
     key_info = key_info_service.add_one("label-1", "AES_CBC")
     patient = EncryptedPseudonym("ps-1", "123")
-    org_type = "ziekenhuis"
     referral_service.add_one(
         encrypted_pseudonym=patient,
         ura_number=ura_number,
         source="SomeDevice",
         organization_name="Test Org",
-        organization_type=org_type,
         key_id=key_info.id,
     )
     with pytest.raises(ConflictError) as exec:
@@ -89,7 +86,6 @@ def test_add_referral_should_raise_exception_with_duplicates(
             ura_number=ura_number,
             source="SomeDevice",
             organization_name="Test Org",
-            organization_type=org_type,
             key_id=key_info.id,
         )
 
@@ -108,7 +104,6 @@ def test_delete_one_should_succeed(
         ura_number=ura_number,
         source="SomeDevice",
         organization_name="Test Org",
-        organization_type="huisarts",
         key_id=key_info.id,
     )
     assert isinstance(data.id, UUID)
@@ -153,7 +148,6 @@ def test_delete_by_id_should_succeed(
         ura_number=ura_number,
         source="SomeDevice",
         organization_name="Test Org",
-        organization_type="ziekenhuis",
         key_id=key_info.id,
     )
     assert isinstance(patient_reference.id, UUID)
@@ -187,7 +181,6 @@ def test_get_one_should_succeed(
         ura_number=ura_number,
         source="SomeDevice",
         organization_name="Test Org",
-        organization_type="ziekenhuis",
         key_id=key_info.id,
     )
 
