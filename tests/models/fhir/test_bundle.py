@@ -4,7 +4,6 @@ from uuid import uuid4
 from app.models.fhir.bundle import Bundle, BundleEntry
 from app.models.fhir.elements import CodeableConcept, Coding, Identifier, Reference
 from app.models.fhir.resources.data import (
-    DATA_DOMAIN_SYSTEM,
     EMPTY_REASON_SYSTEM,
     URA_SYSTEM,
     URA_SYSTEM_EXTENSION,
@@ -50,14 +49,6 @@ def test_serialize_should_succeed(ura_number: UraNumber) -> None:
                         },
                         "type": "Device",
                     },
-                    "code": {
-                        "coding": [
-                            {
-                                "code": "not-used",
-                                "system": DATA_DOMAIN_SYSTEM,
-                            },
-                        ],
-                    },
                     "emptyReason": {"coding": [{"system": EMPTY_REASON_SYSTEM, "code": "withheld"}]},
                 }
             }
@@ -87,7 +78,6 @@ def test_serialize_should_succeed(ura_number: UraNumber) -> None:
                         type="Device",
                     ),
                     empty_reason=CodeableConcept(coding=[Coding(system=EMPTY_REASON_SYSTEM, code="withheld")]),
-                    code=CodeableConcept(coding=[Coding(system=DATA_DOMAIN_SYSTEM, code="not-used")]),
                 )
             )
         ],
@@ -132,14 +122,6 @@ def test_deserialize_should_succeed(ura_number: UraNumber) -> None:
                         },
                         "type": "Device",
                     },
-                    "code": {
-                        "coding": [
-                            {
-                                "code": "not-used",
-                                "system": DATA_DOMAIN_SYSTEM,
-                            },
-                        ],
-                    },
                     "emptyReason": {"coding": [{"system": EMPTY_REASON_SYSTEM, "code": "withheld"}]},
                 }
             }
@@ -169,7 +151,6 @@ def test_deserialize_should_succeed(ura_number: UraNumber) -> None:
                         type="Device",
                     ),
                     empty_reason=CodeableConcept(coding=[Coding(system=EMPTY_REASON_SYSTEM, code="withheld")]),
-                    code=CodeableConcept(coding=[Coding(system=DATA_DOMAIN_SYSTEM, code="not-used")]),
                 )
             )
         ],

@@ -12,7 +12,6 @@ from app.models.fhir.elements import (
     Reference,
 )
 from app.models.fhir.resources.data import (
-    DATA_DOMAIN_SYSTEM,
     DEVICE_SYSTEM,
     EMPTY_REASON_SYSTEM,
     PSEUDONYM_SYSTEM,
@@ -36,14 +35,6 @@ class LocalizationList(DomainResource):
     mode: Literal["working", "snapshot", "changes"]
     subject: Reference | None = None
     source: Reference
-    code: CodeableConcept | None = CodeableConcept(
-        coding=[
-            Coding(
-                system=DATA_DOMAIN_SYSTEM,
-                code="not-used",
-            )
-        ]
-    )
     empty_reason: CodeableConcept
 
     @classmethod
@@ -78,14 +69,6 @@ class LocalizationList(DomainResource):
             status="current",
             mode="working",
             source=source,
-            code=CodeableConcept(
-                coding=[
-                    Coding(
-                        system=DATA_DOMAIN_SYSTEM,
-                        code="not-used",
-                    )
-                ]
-            ),
             empty_reason=empty_reason,
         )
 

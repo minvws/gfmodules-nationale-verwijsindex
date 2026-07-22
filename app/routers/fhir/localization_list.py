@@ -12,7 +12,6 @@ from app.dependencies import (
 from app.models.auth.context import AuthContext
 from app.models.auth.data import AuthorizationScope
 from app.models.fhir.resources.data import (
-    DATA_DOMAIN_SYSTEM,
     DEVICE_SYSTEM,
     EMPTY_REASON_SYSTEM,
     PSEUDONYM_SYSTEM,
@@ -86,15 +85,6 @@ router = APIRouter(tags=["FHIR"], prefix="/fhir/List")
                                 }
                             ]
                         },
-                        "code": {
-                            "coding": [
-                                {
-                                    "code": "MEDAFSPRAAK",
-                                    "system": DATA_DOMAIN_SYSTEM,
-                                    "display": "Medicatieafspraak",
-                                }
-                            ]
-                        },
                     }
                 }
             },
@@ -143,15 +133,6 @@ def create(
                             {
                                 "code": "withheld",
                                 "system": EMPTY_REASON_SYSTEM,
-                            }
-                        ]
-                    },
-                    "code": {
-                        "coding": [
-                            {
-                                "code": "MEDAFSPRAAK",
-                                "system": DATA_DOMAIN_SYSTEM,
-                                "display": "Medicatieafspraak",
                             }
                         ]
                     },
@@ -219,15 +200,6 @@ def create(
                                 {
                                     "code": "withheld",
                                     "system": EMPTY_REASON_SYSTEM,
-                                }
-                            ]
-                        },
-                        "code": {
-                            "coding": [
-                                {
-                                    "code": "MEDAFSPRAAK",
-                                    "system": DATA_DOMAIN_SYSTEM,
-                                    "display": "Medicatieafspraak",
                                 }
                             ]
                         },
@@ -307,15 +279,6 @@ def get(
                                             {
                                                 "code": "withheld",
                                                 "system": EMPTY_REASON_SYSTEM,
-                                            }
-                                        ]
-                                    },
-                                    "code": {
-                                        "coding": [
-                                            {
-                                                "code": "MEDAFSPRAAK",
-                                                "system": DATA_DOMAIN_SYSTEM,
-                                                "display": "Medicatieafspraak",
                                             }
                                         ]
                                     },
