@@ -2,14 +2,18 @@ import logging
 from typing import Any
 
 from app.logging.events import Log
+from app.models.auth.context import AuthContext
+from app.models.auth.data import AuthorizationScope
 from app.models.fhir.bundle import Bundle, BundleEntry, EntryRequestDto, EntryResponse
 from app.models.fhir.resources.localization_list.request import LocalizationListParams
 from app.models.fhir.resources.localization_list.resource import LocalizationList
-from app.models.ura import UraNumber
+from app.services.auth.auth_context import AuthContextService
 from app.services.exceptions import (
     ConflictError,
     NotFoundError,
     PseudonymError,
+    UnauthorizedManagingRequestError,
+    UnauthorizedScopeError,
     UnauthorizedUraError,
 )
 from app.services.fhir.localization_list import LocalizationListService
@@ -24,9 +28,10 @@ class BundleService:
     ) -> None:
         self.localizaton_list_service = localisation_list_service
 
-    def process_entry(
-        self, authenticated_ura: UraNumber, organization_name: str, entry: BundleEntry[Any], index: int
-    ) -> BundleEntry[Any]:
+    def process_entry(self, ctx: AuthContext, entry: BundleEntry[Any], index: int) -> BundleEntry[Any]:
+        authenticated_ura = ctx.claims.ura_number
+        organization_name = ctx.claims.organization_name
+
         if entry.request is None:
             return BundleEntry(
                 response=EntryResponse.make_validation_response(f"Bundle.entry.{index}.request is required")
@@ -41,6 +46,31 @@ class BundleService:
         resolved_url = self.resolve_request_url(entry.request.url, index)
         if isinstance(resolved_url, BundleEntry):
             return resolved_url
+
+        endpoint = f"{method} {entry.request.url}"
+
+        required_scope = self.required_scope(method, resolved_url)
+        if required_scope is not None and required_scope not in ctx.scope:
+            error: Exception = UnauthorizedScopeError(ctx.scope, required_scope)
+            Log.event(
+                logger,
+                Log.REFERRAL_ACCESS_DENIED,
+                "Bundle entry denied: missing scope",
+                ura_number=str(authenticated_ura),
+                endpoint=endpoint,
+            )
+            return BundleEntry(response=EntryResponse.make_forbidden_respone(msg=f"Bundle.entry.{index}: {error}"))
+
+        if self.requires_managing_request(method, resolved_url) and not AuthContextService.is_managing_request(ctx):
+            error = UnauthorizedManagingRequestError()
+            Log.event(
+                logger,
+                Log.REFERRAL_ACCESS_DENIED,
+                "Bundle entry denied: not a managing request",
+                ura_number=str(authenticated_ura),
+                endpoint=endpoint,
+            )
+            return BundleEntry(response=EntryResponse.make_forbidden_respone(msg=f"Bundle.entry.{index}: {error}"))
 
         match method:
             case "GET":
@@ -189,6 +219,35 @@ class BundleService:
                         msg=f"Bundle.entry.{index}.request.method {method} not supported"
                     )
                 )
+
+    @staticmethod
+    def required_scope(method: str, resolved_url: EntryRequestDto) -> AuthorizationScope | None:
+        """
+        Scope an entry needs, mirroring the standalone /fhir/List routes. Returns None for
+        methods that are rejected as unsupported further down, so they keep that response.
+        """
+        match method:
+            case "POST":
+                return AuthorizationScope.CREATE
+            case "DELETE":
+                return AuthorizationScope.DELETE
+            case "GET":
+                # A read by id is `nvi:read`; a search by query params is `nvi:localize`.
+                return AuthorizationScope.READ if resolved_url.id else AuthorizationScope.LOCALIZE
+            case _:
+                return None
+
+    @staticmethod
+    def requires_managing_request(method: str, resolved_url: EntryRequestDto) -> bool:
+        """
+        Whether an entry is a managing operation and so needs a source_id, mirroring the
+        standalone /fhir/List routes: creating and deleting by query do, reads and
+        delete-by-id do not.
+        """
+        if method == "POST":
+            return True
+
+        return method == "DELETE" and resolved_url.id is None
 
     @staticmethod
     def validate_localization_bundle_structure(bundle: Bundle[Any]) -> bool:

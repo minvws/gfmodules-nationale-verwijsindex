@@ -34,7 +34,11 @@ class AuthHeaders(BaseModel):
         if not isinstance(data, str):
             raise ValueError(f"Invalid scope type in AuthorizationRoles: {data}")
 
-        for entry in data.split():
+        entries = data.split()
+        if not entries:
+            raise ValueError("x-gf-scope must hold at least one scope")
+
+        for entry in entries:
             try:
                 _ = AuthorizationScope(entry)
             except ValueError as e:
@@ -46,12 +50,13 @@ class AuthHeaders(BaseModel):
     def from_request(cls, req: Request) -> Self:
         headers = req.headers
         data: Dict[str, Any] = {}
-        optional_fields = ["oin", "x-gf-oin", "source_id", "x-gf-source-id"]
+        # A header is optional exactly when its field declares a default, so this cannot
+        # drift out of step with the field definitions above.
         for name, field in cls.model_fields.items():
             header_name = field.alias or name
             value = headers.get(header_name)
 
-            if header_name not in optional_fields and value is None:
+            if field.is_required() and value is None:
                 raise ValueError(f"{header_name} is required for {cls.__name__}")
 
             data[name] = value
