@@ -192,6 +192,15 @@ class BundleService:
                             resolved_url.id, authenticated_ura, organization_name=organization_name
                         )
                         return BundleEntry(response=EntryResponse(status=str(status_code), outcome=outcome))
+                    except NotFoundError as e:
+                        # `delete` looks the referral up first, so a missing record surfaces
+                        # as NotFoundError rather than reaching its own 404 branch.
+                        return BundleEntry(
+                            response=EntryResponse.make_error_response(
+                                msg=f"Bundle.entry.{index}: {str(e)}",
+                                status=str(404),
+                            )
+                        )
                     except Exception as e:
                         return BundleEntry(
                             response=EntryResponse.make_error_response(

@@ -28,7 +28,7 @@ class EntryRequestDto(BaseModel):
         return cls(
             resource=resource,
             id=target_id,
-            params=query_params if len(query_params) > 1 else None,
+            params=query_params if query_params else None,
         )
 
 
