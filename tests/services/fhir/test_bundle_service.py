@@ -16,7 +16,7 @@ TEST_ORG_NAME = "Test Organization"
 TEST_SOURCE_ID = "SRC-001"
 
 RESOURCE_ID = uuid4()
-QUERY_URL = "List?subject:identifier=pseudonym-value&code=MEDAFSPRAAK"
+QUERY_URL = "List?subject:identifier=pseudonym-value"
 ID_URL = f"List/{RESOURCE_ID}"
 
 ALL_SCOPES = [
