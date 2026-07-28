@@ -192,6 +192,20 @@ class BundleService:
                             resolved_url.id, authenticated_ura, organization_name=organization_name
                         )
                         return BundleEntry(response=EntryResponse(status=str(status_code), outcome=outcome))
+                    except NotFoundError as e:
+                        return BundleEntry(
+                            response=EntryResponse.make_error_response(
+                                msg=f"Bundle.entry.{index}: {str(e)}",
+                                status=str(404),
+                            )
+                        )
+                    except UnauthorizedUraError as e:
+                        return BundleEntry(
+                            response=EntryResponse.make_error_response(
+                                msg=f"Bundle.entry.{index}: {str(e)}",
+                                status=str(403),
+                            )
+                        )
                     except Exception as e:
                         return BundleEntry(
                             response=EntryResponse.make_error_response(
@@ -207,11 +221,40 @@ class BundleService:
                             f"Bundle.entry.{index}.request: invalid url parameter"
                         )
                     )
-                outcome, status_code = self.localizaton_list_service.delete_by_query(
-                    params, authenticated_ura, organization_name=organization_name
-                )
-
-                return BundleEntry(response=EntryResponse(status=str(status_code), outcome=outcome))
+                try:
+                    outcome, status_code = self.localizaton_list_service.delete_by_query(
+                        params, authenticated_ura, organization_name=organization_name
+                    )
+                    return BundleEntry(response=EntryResponse(status=str(status_code), outcome=outcome))
+                except NotFoundError as e:
+                    return BundleEntry(
+                        response=EntryResponse.make_error_response(
+                            msg=f"Bundle.entry.{index}: {str(e)}",
+                            status=str(404),
+                        )
+                    )
+                except PseudonymError as e:
+                    Log.event(
+                        logger,
+                        Log.LOCALIZATION_FAILED,
+                        "Localization failed",
+                        ura_number=str(authenticated_ura),
+                        http_status=400,
+                        error_reason=str(e),
+                    )
+                    return BundleEntry(
+                        response=EntryResponse.make_error_response(
+                            msg=f"Bundle.entry.{index}: {str(e)}",
+                            status=str(400),
+                        )
+                    )
+                except Exception as e:
+                    return BundleEntry(
+                        response=EntryResponse.make_error_response(
+                            msg=f"Bundle.entry.{index}: {e}",
+                            status=str(500),
+                        )
+                    )
 
             case _:
                 return BundleEntry(

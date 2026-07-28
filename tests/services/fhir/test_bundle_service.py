@@ -8,6 +8,7 @@ from app.models.auth.data import AuthorizationScope
 from app.models.fhir.bundle import BundleEntry, EntryRequest
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.ura import UraNumber
+from app.services.exceptions import NotFoundError, PseudonymError, UnauthorizedUraError
 from app.services.fhir.bundle import BundleService
 
 TEST_URA = UraNumber("00000001")
@@ -34,6 +35,8 @@ class LocalizationListServiceSpy:
 
     def __init__(self) -> None:
         self.calls: List[str] = []
+        self.delete_error: Exception | None = None
+        self.delete_by_query_error: Exception | None = None
 
     def create(self, *_args: Any, **_kwargs: Any) -> Any:
         self.calls.append("create")
@@ -49,10 +52,14 @@ class LocalizationListServiceSpy:
 
     def delete(self, *_args: Any, **_kwargs: Any) -> Any:
         self.calls.append("delete")
+        if self.delete_error is not None:
+            raise self.delete_error
         return None, 200
 
     def delete_by_query(self, *_args: Any, **_kwargs: Any) -> Any:
         self.calls.append("delete_by_query")
+        if self.delete_by_query_error is not None:
+            raise self.delete_by_query_error
         return None, 200
 
 
@@ -316,3 +323,62 @@ class TestManagingRequest:
         message = str(result.response.outcome.model_dump())
         assert "Bundle.entry.2" in message
         assert "source_id" in message
+
+
+class TestDeleteErrorMapping:
+    """
+    Service errors during a DELETE entry must map to the entry status of the matching
+    standalone route, not a blanket 500.
+    """
+
+    @pytest.mark.parametrize(
+        ("error", "expected_status"),
+        [
+            (NotFoundError(), "404"),
+            (UnauthorizedUraError(), "403"),
+            (RuntimeError("boom"), "500"),
+        ],
+    )
+    def test_delete_by_id_error_maps_to_entry_status(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+        error: Exception,
+        expected_status: str,
+    ) -> None:
+        service.delete_error = error
+
+        result = process(bundle_service, make_entry("DELETE", ID_URL), [AuthorizationScope.DELETE], index=1)
+
+        assert result.response is not None
+        assert result.response.status == expected_status
+        assert result.response.outcome is not None
+        message = str(result.response.outcome.model_dump())
+        assert "Bundle.entry.1" in message
+        assert str(error) in message
+
+    @pytest.mark.parametrize(
+        ("error", "expected_status"),
+        [
+            (NotFoundError(), "404"),
+            (PseudonymError(), "400"),
+            (RuntimeError("boom"), "500"),
+        ],
+    )
+    def test_delete_by_query_error_maps_to_entry_status(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+        error: Exception,
+        expected_status: str,
+    ) -> None:
+        service.delete_by_query_error = error
+
+        result = process(bundle_service, make_entry("DELETE", QUERY_URL), [AuthorizationScope.DELETE], index=1)
+
+        assert result.response is not None
+        assert result.response.status == expected_status
+        assert result.response.outcome is not None
+        message = str(result.response.outcome.model_dump())
+        assert "Bundle.entry.1" in message
+        assert str(error) in message
