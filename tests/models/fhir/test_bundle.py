@@ -1,7 +1,9 @@
 from datetime import datetime
 from uuid import uuid4
 
-from app.models.fhir.bundle import Bundle, BundleEntry
+import pytest
+
+from app.models.fhir.bundle import Bundle, BundleEntry, EntryRequestDto
 from app.models.fhir.elements import CodeableConcept, Coding, Identifier, Reference
 from app.models.fhir.resources.data import (
     EMPTY_REASON_SYSTEM,
@@ -159,3 +161,19 @@ def test_deserialize_should_succeed(ura_number: UraNumber) -> None:
     actual = Bundle[LocalizationList].model_validate(data)
 
     assert expected == actual
+
+
+@pytest.mark.parametrize(
+    ("url", "expected_params"),
+    [
+        ("List", None),
+        ("List?subject:identifier=pseudonym-value", {"subject:identifier": "pseudonym-value"}),
+        (
+            "List?subject:identifier=pseudonym-value&source:identifier=EHR-SYS-2024-001",
+            {"subject:identifier": "pseudonym-value", "source:identifier": "EHR-SYS-2024-001"},
+        ),
+    ],
+)
+def test_from_url_keeps_a_single_query_parameter(url: str, expected_params: dict[str, str] | None) -> None:
+    """A search on one parameter is a search, not a parameterless request."""
+    assert EntryRequestDto.from_url(url).params == expected_params

@@ -20,7 +20,7 @@ from app.models.registrations import (
 )
 from app.services.crypto_service_api_client import CryptoServiceApiClient
 from app.services.exceptions import (
-    InvalidModelError,
+    UnauthorizedManagingRequestError,
     UnauthorizedScopeError,
 )
 from app.services.key_info import KeyInfoService
@@ -79,7 +79,7 @@ def add_registration(
         raise UnauthorizedScopeError(ctx.scope, AuthorizationScope.CREATE)
 
     if ctx.claims.source_id is None:
-        raise InvalidModelError("source_id is required to complete transaction")
+        raise UnauthorizedManagingRequestError()
 
     active_key = key_info_service.get_active_key()
     pseudonym_resp = crypto_client.exchange(
@@ -113,7 +113,7 @@ def delete_registration(
         raise UnauthorizedScopeError(ctx.scope, AuthorizationScope.DELETE)
 
     if ctx.claims.source_id is None:
-        raise InvalidModelError("source_id is required to complete transaction")
+        raise UnauthorizedManagingRequestError()
 
     active_key = key_info_service.get_active_key()
     pseudonym_resp = crypto_client.exchange(

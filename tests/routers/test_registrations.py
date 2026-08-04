@@ -70,7 +70,7 @@ class TestCreateRegistration:
         ctx = make_auth_context(source_id=None, scopes=[AuthorizationScope.CREATE])
         client = make_test_client(referral_service, crypto_client, key_info_service, ctx)
         response = client.post("/registrations", json={"pseudonym": "pseu", "oprf_key": "key1"})
-        assert response.status_code == 400
+        assert response.status_code == 403
 
 
 # ---------------------------------------------------------------------------
@@ -198,4 +198,4 @@ class TestDeleteRegistrations:
     ) -> None:
         ctx = make_auth_context(source_id=None, scopes=[AuthorizationScope.DELETE])
         client = make_test_client(referral_service, crypto_client, key_info_service, ctx)
-        assert client.delete("/registrations", params={"pseudonym": "p", "oprf_key": "k"}).status_code == 400
+        assert client.delete("/registrations", params={"pseudonym": "p", "oprf_key": "k"}).status_code == 403
