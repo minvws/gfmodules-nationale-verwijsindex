@@ -114,13 +114,13 @@ class BundleService:
                         Log.LOCALIZATION_FAILED,
                         "Localization failed",
                         ura_number=str(authenticated_ura),
-                        http_status=400,
+                        http_status=422,
                         error_reason=str(e),
                     )
                     return BundleEntry(
                         response=EntryResponse.make_error_response(
                             msg=f"Bundle.entry.{index}: {str(e)}",
-                            status=str(400),
+                            status=str(422),
                         )
                     )
 
