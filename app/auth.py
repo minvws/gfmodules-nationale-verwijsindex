@@ -33,7 +33,7 @@ def get_auth_ctx(
         auth_headers = AuthHeaders.from_request(request)
     except ValueError as e:
         logger.exception("Failed to extract AuthHeaders")
-        raise ValueError(f"Inavalid Authorization Headers in request: {e}")
+        raise ValueError(f"Invalid Authorization Headers in request: {e}")
 
     validated_auth_headers = auth_headers_service.validate(auth_headers)
     claims = AuthenticationClaims(
