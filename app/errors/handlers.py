@@ -141,7 +141,7 @@ def handle_invalid_key_info_error(req: Request, exc: InvalidKeyInfoError) -> JSO
     return JSONResponse(status_code=status_code, content=str(exc))
 
 
-def hanlde_invalid_model_errors(request: Request, exception: InvalidModelError) -> Response:
+def handle_invalid_model_errors(request: Request, exception: InvalidModelError) -> Response:
     path = request.url.path
     status_code = 400
     if "fhir" in path:
