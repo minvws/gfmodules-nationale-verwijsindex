@@ -157,7 +157,7 @@ def hanlde_invalid_model_errors(request: Request, exception: InvalidModelError) 
 
 def handle_pseudonym_decoding_error(request: Request, exception: PseudonymError) -> Response:
     path = request.url.path
-    status_code = 400
+    status_code = 422
     log_request_failure(request, status_code, exception)
     if "fhir" in path:
         fhir_error = FHIRError(severity="error", code="invalid", msg=str(exception))
