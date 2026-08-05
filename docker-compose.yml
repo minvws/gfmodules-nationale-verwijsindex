@@ -20,6 +20,8 @@ services:
       start_interval: 5s
       interval: 5m
       timeout: 10s
+    networks:
+      - gfmodules
     depends_on:
       postgres:
         condition: service_healthy
@@ -34,6 +36,8 @@ services:
       test: ["CMD-SHELL", "pg_isready --user postgres"]
       start_period: 30s
       start_interval: 1s
+    networks:
+      - gfmodules
     ports:
       - 5401:5432
 
@@ -44,6 +48,14 @@ services:
         - "5515:5515/udp" # SIEM
         - "5516:5516/udp" # Public inspection
         - "5517:5517/udp" # Debug
+    networks:
+      - gfmodules
     volumes:
       - ./docker/syslog-ng.conf:/etc/syslog-ng/syslog-ng.conf
       - ./logs:/var/log/app
+
+
+networks:
+  gfmodules:
+    driver: bridge
+    name: gfmodules

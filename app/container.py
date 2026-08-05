@@ -13,7 +13,7 @@ from app.services.auth.header import AuthHeaderService
 from app.services.crypto_service_api_client import CryptoServiceApiClient
 from app.services.fhir.bundle import BundleService
 from app.services.fhir.localization_list import LocalizationListService
-from app.services.key_info import KeyInfoService
+from app.services.key_info import KeyInfoService, KeyInfoServiceMock
 from app.services.referral_service import ReferralService
 from app.utils.load_capability_statement import (
     CapabilityStatement,
@@ -37,7 +37,7 @@ def container_config(binder: inject.Binder) -> None:
     referral_service = ReferralService(database=db)
     binder.bind(ReferralService, referral_service)
 
-    key_info_service = KeyInfoService(database=db)
+    key_info_service = create_key_info_service(config.crypto_service_api, db)
     binder.bind(KeyInfoService, key_info_service)
 
     auth_header_service = AuthHeaderService(expected_audiences=config.authorization_headers.expected_audiences)
@@ -57,6 +57,12 @@ def container_config(binder: inject.Binder) -> None:
     binder.bind(BundleService, bundle_service)
 
     binder.bind(ConfigCryptoServiceApi, config.crypto_service_api)
+
+
+def create_key_info_service(config: ConfigCryptoServiceApi, db: Database) -> KeyInfoService:
+    if config.enabled:
+        return KeyInfoService(db)
+    return KeyInfoServiceMock()
 
 
 def create_crypto_service_api_client(
