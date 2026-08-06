@@ -10,8 +10,9 @@ from types import TracebackType
 from typing import Any, AsyncIterator
 
 import uvicorn
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Request, Security
 from fastapi.responses import JSONResponse
+from fastapi.security import APIKeyHeader
 
 from app import container
 from app.auth import get_auth_ctx
@@ -206,9 +207,24 @@ def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONRespon
     return JSONResponse(status_code=500, content={"error": "Internal server error"})
 
 
+def api_key_headers(document_gf_headers: bool) -> list[Any]:
+    if document_gf_headers:
+        headers = [
+            "x-gf-audience",
+            "x-gf-cert-type",
+            "x-gf-organization-name",
+            "x-gf-scope",
+            "x-gf-sub",
+            "x-gf-act-cn",
+            "x-gf-act-sub",
+        ]
+    else:
+        headers = ["Authorization"]
+    return [Security(APIKeyHeader(name=header, scheme_name=header, auto_error=False)) for header in headers]
+
+
 def setup_fastapi() -> FastAPI:
     config = get_config()
-
     fastapi = (
         FastAPI(
             docs_url=config.uvicorn.docs_url,
@@ -216,6 +232,7 @@ def setup_fastapi() -> FastAPI:
             title="Localisation API",
             root_path=config.uvicorn.root_path,
             lifespan=_lifespan,
+            dependencies=api_key_headers(config.uvicorn.document_gf_headers),
         )
         if config.uvicorn.swagger_enabled
         else FastAPI(docs_url=None, redoc_url=None, lifespan=_lifespan)
