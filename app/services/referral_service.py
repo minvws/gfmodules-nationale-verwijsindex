@@ -9,7 +9,6 @@ from app.logging.events import Log
 from app.models.pseudonym import EncryptedPseudonym
 from app.models.ura import UraNumber
 from app.services.exceptions import (
-    ConflictError,
     NotFoundError,
 )
 
@@ -38,24 +37,22 @@ class ReferralService:
         organization_name: str,
         key_id: UUID,
     ) -> ReferralEntity:
-        """
-        Method that adds a referral to the database
-        """
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)
 
-            if referral_repository.exists(
+            existing = referral_repository.find_one(
                 pseudonym=encrypted_pseudonym.value,
                 ura_number=str(ura_number),
                 source=source,
-            ):
+            )
+            if existing is not None:
                 Log.event(
                     logger,
                     Log.IDEMPOTENT_REGISTRATION,
                     "Idempotent referral registration",
                     ura_number=str(ura_number),
                 )
-                raise ConflictError()
+                return existing
 
             new_referral: ReferralEntity = referral_repository.add_one(
                 ReferralEntity(
