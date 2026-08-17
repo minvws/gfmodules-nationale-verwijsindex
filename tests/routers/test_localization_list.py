@@ -60,6 +60,11 @@ class TestCreate:
         # The duplicate returns the stored record rather than creating a second one.
         assert second.json()["id"] == first.json()["id"]
 
+    def test_rejects_source_that_differs_from_claims(self, client: TestClient) -> None:
+        response = client.post("/fhir/List", json=_body(source_id="SOMEONE-ELSE"), headers=FHIR_JSON)
+
+        assert response.status_code == 403
+
     def test_requires_create_scope(
         self,
         referral_service: ReferralService,
@@ -126,12 +131,13 @@ class TestGet:
 
 
 class TestQuery:
-    def test_source_query_requires_localize_scope(self, client: TestClient) -> None:
+    def test_returns_bundle_for_own_source(self, client: TestClient) -> None:
         client.post("/fhir/List", json=_body(), headers=FHIR_JSON)
 
         response = client.get("/fhir/List", params={"source:identifier": TEST_SOURCE_ID})
 
-        assert response.status_code == 403
+        assert response.status_code == 200
+        assert response.json()["resourceType"] == "Bundle"
 
     def test_rejects_source_that_differs_from_claims(self, client: TestClient) -> None:
         response = client.get("/fhir/List", params={"source:identifier": "SOMEONE-ELSE"})
@@ -149,6 +155,14 @@ class TestQuery:
 
         assert response.status_code == 403
 
+    def test_source_query_requires_only_read_scope(self, client: TestClient) -> None:
+        response = client.get(
+            "/fhir/List",
+            params={"subject:identifier": TEST_PSEUDONYM_TOKEN, "source:identifier": TEST_SOURCE_ID},
+        )
+
+        assert response.status_code == 200
+
 
 class TestDelete:
     def test_deletes_by_id(self, client: TestClient) -> None:
@@ -158,7 +172,12 @@ class TestDelete:
 
         assert response.status_code == 201
 
-    def test_deletes_by_query(self, client: TestClient) -> None:
+    def test_delete_by_query_rejects_source_that_differs_from_claims(self, client: TestClient) -> None:
+        response = client.delete("/fhir/List", params={"source:identifier": "SOMEONE-ELSE"})
+
+        assert response.status_code == 403
+
+    def test_delete_by_query_accepts_own_source(self, client: TestClient) -> None:
         client.post("/fhir/List", json=_body(), headers=FHIR_JSON)
 
         response = client.delete("/fhir/List", params={"source:identifier": TEST_SOURCE_ID})

@@ -1,7 +1,7 @@
 import logging
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Body, Depends, Query, Request, Response
+from fastapi import APIRouter, Body, Depends, Query, Response
 
 from app.dependencies import (
     get_pseudonym_resolver,
@@ -16,10 +16,7 @@ from app.models.registrations import (
     RegistrationList,
     RegistrationQueryParams,
 )
-from app.services.exceptions import (
-    UnauthorizedManagingRequestError,
-    UnauthorizedScopeError,
-)
+from app.routers.dependencies import require_managing_source, require_scope
 from app.services.pseudonym_resolver import PseudonymResolver
 from app.services.referral_service import ReferralService
 
@@ -31,15 +28,11 @@ router = APIRouter(tags=["Registrations"], prefix="/registrations")
     "",
 )
 def get_registration(
-    request: Request,
     referral_service: Annotated[ReferralService, Depends(get_referral_service)],
     pseudonym_resolver: Annotated[PseudonymResolver, Depends(get_pseudonym_resolver)],
     params: Annotated[RegistrationQueryParams, Query()],
+    ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.READ))],
 ) -> Any:
-    ctx: AuthContext = request.state.auth
-    if AuthorizationScope.READ not in ctx.scope:
-        raise UnauthorizedScopeError(ctx.scope, AuthorizationScope.READ)
-
     resolved = pseudonym_resolver.resolve_jwe(jwe=params.pseudonym, blind_factor=params.oprf_key)
 
     results = referral_service.get_many(ura_number=ctx.claims.ura_number, encrypted_pseudonym=resolved.encrypted)
@@ -58,23 +51,17 @@ def get_registration(
 @router.post("", status_code=201)
 def add_registration(
     data: Annotated[CreateRegistrationRequest, Body()],
-    request: Request,
     referral_service: Annotated[ReferralService, Depends(get_referral_service)],
     pseudonym_resolver: Annotated[PseudonymResolver, Depends(get_pseudonym_resolver)],
+    ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.CREATE))],
+    source: Annotated[str, Depends(require_managing_source)],
 ) -> Any:
-    ctx: AuthContext = request.state.auth
-    if AuthorizationScope.CREATE not in ctx.scope:
-        raise UnauthorizedScopeError(ctx.scope, AuthorizationScope.CREATE)
-
-    if ctx.claims.source_id is None:
-        raise UnauthorizedManagingRequestError()
-
     resolved = pseudonym_resolver.resolve_jwe(jwe=data.pseudonym, blind_factor=data.oprf_key)
 
     new_referral = referral_service.add_one(
         encrypted_pseudonym=resolved.encrypted,
         ura_number=ctx.claims.ura_number,
-        source=ctx.claims.source_id,
+        source=source,
         organization_name=ctx.claims.organization_name,
         key_id=resolved.key_id,
     )
@@ -84,24 +71,18 @@ def add_registration(
 @router.delete("")
 def delete_registration(
     params: Annotated[RegistrationQueryParams, Query()],
-    request: Request,
     referral_service: Annotated[ReferralService, Depends(get_referral_service)],
     pseudonym_resolver: Annotated[PseudonymResolver, Depends(get_pseudonym_resolver)],
+    ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.DELETE))],
+    source: Annotated[str, Depends(require_managing_source)],
 ) -> Any:
-    ctx: AuthContext = request.state.auth
-    if AuthorizationScope.DELETE not in ctx.scope:
-        raise UnauthorizedScopeError(ctx.scope, AuthorizationScope.DELETE)
-
-    if ctx.claims.source_id is None:
-        raise UnauthorizedManagingRequestError()
-
     resolved = pseudonym_resolver.resolve_jwe(jwe=params.pseudonym, blind_factor=params.oprf_key)
     encrypted_pseudonym = resolved.encrypted
 
     deleted_count = referral_service.delete_many(
         ura_number=ctx.claims.ura_number,
         encrypted_pseudonym=encrypted_pseudonym,
-        source=ctx.claims.source_id,
+        source=source,
     )
 
     if deleted_count > 0:

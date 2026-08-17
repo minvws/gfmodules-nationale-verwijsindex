@@ -41,6 +41,11 @@ class UnauthorizedScopeError(UnauthorizedError):
         super().__init__(error_msg)
 
 
+class UnauthorizedSourceError(UnauthorizedError):
+    def __init__(self) -> None:
+        super().__init__("The requested source does not match the authenticated source")
+
+
 class UnauthorizedManagingRequestError(UnauthorizedError):
     def __init__(self) -> None:
         super().__init__("Unauthorized managing request, missing source_id in AuthenticationHeaders")
