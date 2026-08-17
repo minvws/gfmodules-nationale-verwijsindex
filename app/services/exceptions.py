@@ -13,7 +13,7 @@ class ConflictError(Exception):
         super().__init__("Record already exists")
 
 
-class ForbiddedError(Exception):
+class ForbiddenError(Exception):
     def __init__(self, reason: str | None = None) -> None:
         msg = reason if reason else "Operation not allowed"
         super().__init__(msg)
