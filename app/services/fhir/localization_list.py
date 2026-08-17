@@ -5,22 +5,17 @@ from uuid import UUID
 from app.logging.events import Log
 from app.models.fhir.bundle import Bundle, BundleEntry
 from app.models.fhir.resources.localization_list.request import (
-    SUBJECT_IDENTIFIER_PARAM,
     LocalizationListParams,
 )
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
-from app.models.pseudonym import EncryptedPseudonym, PseudonymResponse
 from app.models.ura import UraNumber
-from app.services.crypto_service_api_client import CryptoServiceApiClient
 from app.services.exceptions import (
     NotFoundError,
-    PseudonymError,
     UnauthorizedUraError,
 )
-from app.services.key_info import KeyInfoService
+from app.services.pseudonym_resolver import PseudonymResolver, ResolvedPseudonym
 from app.services.referral_service import ReferralService
-from app.utils.fhir import decode_url_safe_token
 
 logger = logging.getLogger(__name__)
 
@@ -29,25 +24,10 @@ class LocalizationListService:
     def __init__(
         self,
         referral_service: ReferralService,
-        crypto_client: CryptoServiceApiClient,
-        key_info_service: KeyInfoService,
+        pseudonym_resolver: PseudonymResolver,
     ) -> None:
         self.referral_service = referral_service
-        self.key_info_service = key_info_service
-        self._crypto_client = crypto_client
-
-    def _token_to_pseudonym(self, token: str, label: str, mechanism: str) -> PseudonymResponse:
-        try:
-            data = decode_url_safe_token(token)
-            return self._crypto_client.exchange(
-                jwe=data["evaluated_output"],
-                blind_factor=data["blind_factor"],
-                label=label,
-                mechanism=mechanism,
-            )
-        except Exception:
-            logger.exception("Error occurred while decoding pseudonym token")
-            raise PseudonymError(f"Invalid pseudonym in {SUBJECT_IDENTIFIER_PARAM}")
+        self._pseudonym_resolver = pseudonym_resolver
 
     def create(
         self,
@@ -68,21 +48,14 @@ class LocalizationListService:
             )
             raise UnauthorizedUraError("Registration not linked to the authorized URA")
 
-        active_key = self.key_info_service.get_active_key()
-        pseudonym_resp = self._token_to_pseudonym(
-            token=data.get_encoded_pseudonym(),
-            label=active_key.label,
-            mechanism=active_key.mechanism,
-        )
-
-        encrypted_pseudonym = EncryptedPseudonym.from_response(pseudonym_resp)
+        resolved = self._pseudonym_resolver.resolve_token(data.get_encoded_pseudonym())
 
         new_referral = self.referral_service.add_one(
             ura_number=ura_number,
-            encrypted_pseudonym=encrypted_pseudonym,
+            encrypted_pseudonym=resolved.encrypted,
             source=device,
             organization_name=organization_name,
-            key_id=active_key.id,
+            key_id=resolved.key_id,
         )
 
         return LocalizationList.from_referral(new_referral)
@@ -121,17 +94,12 @@ class LocalizationListService:
         if params.empty() or is_localize is False:
             ura_number = authenticated_ura
 
-        pseudonym_resp: None | PseudonymResponse = None
+        resolved: ResolvedPseudonym | None = None
         if params.subject:
-            active_key = self.key_info_service.get_active_key()
-            pseudonym_resp = self._token_to_pseudonym(
-                token=params.subject,
-                label=active_key.label,
-                mechanism=active_key.mechanism,
-            )
+            resolved = self._pseudonym_resolver.resolve_token(params.subject)
 
         referrals = self.referral_service.get_many(
-            encrypted_pseudonym=(EncryptedPseudonym.from_response(pseudonym_resp) if pseudonym_resp else None),
+            encrypted_pseudonym=(resolved.encrypted if resolved else None),
             source=params.source,
             ura_number=ura_number,
         )
@@ -144,7 +112,7 @@ class LocalizationListService:
                     "Localization succeeded",
                     organization=organization_name,
                     ura_number=str(authenticated_ura),
-                    pseudonym_hash=str(pseudonym_resp) if pseudonym_resp else None,
+                    pseudonym_hash=str(resolved.response) if resolved else None,
                     result_count=len(referrals),
                 )
             else:
@@ -202,30 +170,25 @@ class LocalizationListService:
     ) -> Tuple[OperationOutcome, int]:
         ura_number = authenticated_ura
 
-        pseudonym_resp: PseudonymResponse | None = None
+        resolved: ResolvedPseudonym | None = None
         if params.subject:
-            active_token = self.key_info_service.get_active_key()
-            pseudonym_resp = self._token_to_pseudonym(
-                token=params.subject,
-                label=active_token.label,
-                mechanism=active_token.label,
-            )
+            resolved = self._pseudonym_resolver.resolve_token(params.subject)
 
         deleted_count = self.referral_service.delete_many(
-            encrypted_pseudonym=(EncryptedPseudonym.from_response(pseudonym_resp) if pseudonym_resp else None),
+            encrypted_pseudonym=(resolved.encrypted if resolved else None),
             source=params.source,
             ura_number=ura_number,
         )
 
         if deleted_count > 0:
-            if pseudonym_resp is not None:
+            if resolved is not None:
                 Log.event(
                     logger,
                     Log.ALL_PATIENT_REFERRALS_DELETED,
                     "All patient referrals deleted",
                     organization=organization_name,
                     ura_number=str(ura_number),
-                    pseudonym_hash=str(pseudonym_resp),
+                    pseudonym_hash=str(resolved.response),
                     deleted_count=deleted_count,
                 )
             else:
