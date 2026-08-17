@@ -1,27 +1,18 @@
 import logging
 from typing import no_type_check
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.errors.fhir import FHIRError
+from app.errors.mapping import EXCEPTION_MAP, should_log, spec_for
 from app.logging.events import Log, NVIEvent
 from app.models.fhir.resources.localization_list.request import SUBJECT_IDENTIFIER_PARAM
 from app.models.fhir.resources.operation_outcome.resource import (
     OperationOutcome,
     OperationOutcomeDetail,
     OperationOutcomeIssue,
-)
-from app.services.exceptions import (
-    ConflictError,
-    ForbiddedError,
-    InvalidHeaderPropertyError,
-    InvalidKeyInfoError,
-    InvalidModelError,
-    NotFoundError,
-    PseudonymError,
-    UnauthorizedError,
 )
 
 logger = logging.getLogger(__name__)
@@ -69,127 +60,14 @@ def log_request_failure(request: Request, status_code: int, exc: Exception) -> N
     )
 
 
-def handle_not_found_error(request: Request, exception: NotFoundError) -> JSONResponse:
-    path = request.url.path
-    status_code = 404
-    if "fhir" in path:
-        fhir_error = FHIRError(severity="error", code="not-found", msg=str(exception))
-        return JSONResponse(
-            status_code=status_code,
-            content=fhir_error.outcome.model_dump(exclude_none=True),
-            headers=fhir_error.headers,
-        )
+def handle_mapped_exception(request: Request, exc: Exception) -> JSONResponse:
+    spec = spec_for(exc)
+    status_code = spec.http_status
+    if should_log(exc):
+        log_request_failure(request, status_code, exc)
 
-    return JSONResponse(
-        content=str(exception),
-        status_code=status_code,
-    )
-
-
-def handle_conflict_error(request: Request, exception: ConflictError) -> JSONResponse:
-    path = request.url.path
-    status_code = 409
-    if "fhir" in path:
-        fhir_error = FHIRError(severity="error", code="conflict", msg=str(exception))
-        return JSONResponse(
-            status_code=status_code,
-            content=fhir_error.outcome.model_dump(exclude_none=True),
-            headers=fhir_error.headers,
-        )
-
-    return JSONResponse(status_code=status_code, content=str(exception))
-
-
-def handle_unauthorized_error(req: Request, exc: UnauthorizedError) -> JSONResponse:
-    path = req.url.path
-    status_code = 403
-    if "fhir" in path:
-        fhir_error = FHIRError(severity="error", code="security", msg=str(exc))
-        return JSONResponse(
-            status_code=status_code,
-            content=fhir_error.outcome.model_dump(exclude_none=True),
-            headers=fhir_error.headers,
-        )
-
-    return JSONResponse(status_code=status_code, content=str(exc))
-
-
-def handle_forbidden_error(req: Request, exc: ForbiddedError) -> JSONResponse:
-    path = req.url.path
-    status_code = 403
-    if "fhir" in path:
-        fhir_error = FHIRError(severity="error", code="forbidden", msg=str(exc))
-        return JSONResponse(
-            status_code=status_code,
-            content=fhir_error.outcome.model_dump(exclude_none=True),
-            headers=fhir_error.headers,
-        )
-
-    return JSONResponse(status_code=status_code, content=str(exc))
-
-
-def handle_invalid_key_info_error(req: Request, exc: InvalidKeyInfoError) -> JSONResponse:
-    path = req.url.path
-    status_code = 503
-    fhir_error = FHIRError(severity="error", code="transient", msg=str(exc))
-    if "fhir" in path:
-        return JSONResponse(
-            status_code=status_code,
-            content=fhir_error.outcome.model_dump(exclude_none=True),
-        )
-
-    return JSONResponse(status_code=status_code, content=str(exc))
-
-
-def handle_invalid_model_errors(request: Request, exception: InvalidModelError) -> Response:
-    path = request.url.path
-    status_code = 400
-    if "fhir" in path:
-        fhir_error = FHIRError(severity="error", code="structure", msg=str(exception))
-        return JSONResponse(
-            status_code=status_code,
-            content=fhir_error.outcome.model_dump(exclude_none=True),
-            headers=fhir_error.headers,
-        )
-
-    return JSONResponse(status_code=status_code, content=str(exception))
-
-
-def handle_pseudonym_decoding_error(request: Request, exception: PseudonymError) -> Response:
-    path = request.url.path
-    status_code = 422
-    log_request_failure(request, status_code, exception)
-    if "fhir" in path:
-        fhir_error = FHIRError(severity="error", code="invalid", msg=str(exception))
-        return JSONResponse(
-            status_code=status_code,
-            content=fhir_error.outcome.model_dump(exclude_none=True),
-            headers=fhir_error.headers,
-        )
-
-    return JSONResponse(status_code=status_code, content=str(exception))
-
-
-def handle_value_error(request: Request, exception: ValueError) -> JSONResponse:
-    path = request.url.path
-    status_code = 400
-    log_request_failure(request, status_code, exception)
-    if "fhir" in path:
-        fhir_error = FHIRError(severity="error", code="invalid", msg=str(exception))
-        return JSONResponse(
-            status_code=status_code,
-            content=fhir_error.outcome.model_dump(exclude_none=True),
-            headers=fhir_error.headers,
-        )
-
-    return JSONResponse(status_code=status_code, content=str(exception))
-
-
-def handle_invalid_header_property_error(req: Request, exc: InvalidHeaderPropertyError) -> JSONResponse:
-    path = req.url.path
-    status_code = 401
-    if "fhir" in path:
-        fhir_error = FHIRError(severity="error", code="invalid", msg=str(exc))
+    if "fhir" in request.url.path:
+        fhir_error = FHIRError(severity=spec.severity, code=spec.fhir_code, msg=str(exc))
         return JSONResponse(
             status_code=status_code,
             content=fhir_error.outcome.model_dump(exclude_none=True),
@@ -252,12 +130,8 @@ def default_exception_handler(req: Request, exc: Exception) -> JSONResponse:
 
 @no_type_check
 def register_exceptions(app: FastAPI) -> None:
-    app.add_exception_handler(NotFoundError, handle_not_found_error)
-    app.add_exception_handler(UnauthorizedError, handle_unauthorized_error)
-    app.add_exception_handler(PseudonymError, handle_pseudonym_decoding_error)
-    app.add_exception_handler(ConflictError, handle_conflict_error)
-    app.add_exception_handler(InvalidHeaderPropertyError, handle_invalid_header_property_error)
+    for exception_type in EXCEPTION_MAP:
+        app.add_exception_handler(exception_type, handle_mapped_exception)
 
     app.add_exception_handler(RequestValidationError, handle_request_validation_exception)
-    app.add_exception_handler(ValueError, handle_value_error)
     app.add_exception_handler(Exception, default_exception_handler)

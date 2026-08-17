@@ -7,7 +7,7 @@ from app.db.models.key_info import KeyInfoEntity
 from app.db.repository.key_info_repository import KeyInfoRepository
 from app.services.exceptions import (
     ConflictError,
-    ForbiddedError,
+    ForbiddenError,
     InvalidKeyInfoError,
     NotFoundError,
 )
@@ -63,7 +63,7 @@ class KeyInfoService:
                 raise NotFoundError()
 
             if target.has_referrals:
-                raise ForbiddedError("Key label has referrals associated with it")
+                raise ForbiddenError("Key label has referrals associated with it")
 
             target.deleted_at = datetime.now()
             session.add(target)

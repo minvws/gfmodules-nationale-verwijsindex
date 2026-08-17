@@ -3,7 +3,6 @@ from fastapi.testclient import TestClient
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.models.auth.data import AuthorizationScope
-from app.services.exceptions import InvalidKeyInfoError
 from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 from tests.routers.conftest import (
@@ -37,18 +36,31 @@ class TestCreateRegistration:
             json={"pseudonym": "pseu", "oprf_key": "key1"},
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         body = response.json()
         assert body["ura_number"] == TEST_URA
         assert body["source_id"] == TEST_SOURCE_ID
         assert "created_at" in body
 
-    def test_creates_should_raise_when_no_key_registerd(self, source_client: TestClient) -> None:
-        with pytest.raises(InvalidKeyInfoError):
-            source_client.post(
-                "/registrations",
-                json={"pseudonym": "pseu", "oprf_key": "key1"},
-            )
+    def test_create_is_idempotent(self, source_client: TestClient, key_info_service: KeyInfoService) -> None:
+        key_info_service.add_one("nvi-label", mechanism="AES_CBC")
+        payload = {"pseudonym": "pseu", "oprf_key": "key1"}
+
+        first = source_client.post("/registrations", json=payload)
+        second = source_client.post("/registrations", json=payload)
+
+        assert first.status_code == 201
+        assert second.status_code == 201
+        # Idempotent: the second call returns the same stored record, not a new one.
+        assert second.json()["created_at"] == first.json()["created_at"]
+
+    def test_creates_returns_503_when_no_key_registerd(self, source_client: TestClient) -> None:
+        response = source_client.post(
+            "/registrations",
+            json={"pseudonym": "pseu", "oprf_key": "key1"},
+        )
+
+        assert response.status_code == 503
 
     def test_requires_create_scope(
         self,

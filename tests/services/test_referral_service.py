@@ -7,7 +7,6 @@ from app.db.models.referral import ReferralEntity
 from app.models.pseudonym import EncryptedPseudonym
 from app.models.ura import UraNumber
 from app.services.exceptions import (
-    ConflictError,
     NotFoundError,
 )
 from app.services.key_info import KeyInfoService
@@ -66,30 +65,31 @@ def test_add_one_should_succeed(
     assert_eq(expected, actual)
 
 
-def test_add_referral_should_raise_exception_with_duplicates(
+def test_add_referral_is_idempotent_for_duplicates(
     referral_service: ReferralService,
     key_info_service: KeyInfoService,
     ura_number: UraNumber,
 ) -> None:
     key_info = key_info_service.add_one("label-1", "AES_CBC")
     patient = EncryptedPseudonym("ps-1", "123")
-    referral_service.add_one(
+    first = referral_service.add_one(
         encrypted_pseudonym=patient,
         ura_number=ura_number,
         source="SomeDevice",
         organization_name="Test Org",
         key_id=key_info.id,
     )
-    with pytest.raises(ConflictError) as exec:
-        referral_service.add_one(
-            encrypted_pseudonym=patient,
-            ura_number=ura_number,
-            source="SomeDevice",
-            organization_name="Test Org",
-            key_id=key_info.id,
-        )
 
-    assert "Record already exists" in str(exec.value)
+    second = referral_service.add_one(
+        encrypted_pseudonym=patient,
+        ura_number=ura_number,
+        source="SomeDevice",
+        organization_name="Test Org",
+        key_id=key_info.id,
+    )
+
+    assert second.id == first.id
+    assert len(referral_service.get_many(ura_number=ura_number)) == 1
 
 
 def test_delete_one_should_succeed(

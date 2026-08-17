@@ -13,7 +13,7 @@ class ConflictError(Exception):
         super().__init__("Record already exists")
 
 
-class ForbiddedError(Exception):
+class ForbiddenError(Exception):
     def __init__(self, reason: str | None = None) -> None:
         msg = reason if reason else "Operation not allowed"
         super().__init__(msg)
@@ -39,6 +39,11 @@ class UnauthorizedScopeError(UnauthorizedError):
         values = ", ".join([s.value for s in scopes])
         error_msg = f"{values} not authorized for requested action. required scope: `{required_scope.value}`"
         super().__init__(error_msg)
+
+
+class UnauthorizedSourceError(UnauthorizedError):
+    def __init__(self) -> None:
+        super().__init__("The requested source does not match the authenticated source")
 
 
 class UnauthorizedManagingRequestError(UnauthorizedError):

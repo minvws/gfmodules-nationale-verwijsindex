@@ -9,12 +9,57 @@ from app.db.models.key_info import KeyInfoEntity
 from app.db.models.referral import ReferralEntity
 from app.db.repository.key_info_repository import KeyInfoRepository
 from app.db.repository.referral_repository import ReferralRepository
+from app.models.fhir.elements import (
+    CodeableConcept,
+    Coding,
+    Identifier,
+    Reference,
+)
+from app.models.fhir.resources.data import (
+    DEVICE_SYSTEM,
+    EMPTY_REASON_SYSTEM,
+    PSEUDONYM_SYSTEM,
+    URA_SYSTEM,
+    URA_SYSTEM_EXTENSION,
+)
+from app.models.fhir.resources.localization_list.resource import (
+    LocalizationList,
+    ReferenceExtension,
+)
 from app.models.ura import UraNumber
 from app.services.auth.header import AuthHeaderService
 from app.services.http import HttpService
 from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 from tests.test_config import get_test_config
+
+# A url-safe base64 token decoding to {"evaluated_output": "JWE", "blind_factor": "BF"},
+# which is the shape `decode_url_safe_token` expects of List.subject.
+TEST_PSEUDONYM_TOKEN = "eyJldmFsdWF0ZWRfb3V0cHV0IjogIkpXRSIsICJibGluZF9mYWN0b3IiOiAiQkYifQ"
+
+
+def make_list_resource(
+    ura: str = "00000001",
+    source_id: str = "SRC-001",
+    pseudonym: str | None = TEST_PSEUDONYM_TOKEN,
+) -> LocalizationList:
+    return LocalizationList(
+        extension=[
+            ReferenceExtension(
+                value_reference=Reference(identifier=Identifier(system=URA_SYSTEM, value=ura)),
+                url=URA_SYSTEM_EXTENSION,
+            )
+        ],
+        status="current",
+        mode="working",
+        subject=(
+            Reference(identifier=Identifier(system=PSEUDONYM_SYSTEM, value=pseudonym))
+            if pseudonym is not None
+            else None
+        ),
+        source=Reference(identifier=Identifier(system=DEVICE_SYSTEM, value=source_id), type="Device"),
+        empty_reason=CodeableConcept(coding=[Coding(system=EMPTY_REASON_SYSTEM, code="withheld")]),
+    )
 
 
 @pytest.fixture(autouse=True)

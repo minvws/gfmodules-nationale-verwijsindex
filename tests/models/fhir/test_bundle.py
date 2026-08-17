@@ -1,7 +1,5 @@
 from datetime import datetime
-from uuid import uuid4
-
-import pytest
+from uuid import UUID, uuid4
 
 from app.models.fhir.bundle import Bundle, BundleEntry, EntryRequestDto
 from app.models.fhir.elements import CodeableConcept, Coding, Identifier, Reference
@@ -163,17 +161,25 @@ def test_deserialize_should_succeed(ura_number: UraNumber) -> None:
     assert expected == actual
 
 
-@pytest.mark.parametrize(
-    ("url", "expected_params"),
-    [
-        ("List", None),
-        ("List?subject:identifier=pseudonym-value", {"subject:identifier": "pseudonym-value"}),
-        (
-            "List?subject:identifier=pseudonym-value&source:identifier=EHR-SYS-2024-001",
-            {"subject:identifier": "pseudonym-value", "source:identifier": "EHR-SYS-2024-001"},
-        ),
-    ],
-)
-def test_from_url_keeps_a_single_query_parameter(url: str, expected_params: dict[str, str] | None) -> None:
-    """A search on one parameter is a search, not a parameterless request."""
-    assert EntryRequestDto.from_url(url).params == expected_params
+class TestEntryRequestDtoFromUrl:
+    def test_parses_resource_and_id(self) -> None:
+        dto = EntryRequestDto.from_url("List/0f14d0ab-9605-4a62-a9e4-5ed26688389b")
+
+        assert dto.resource == "List"
+        assert dto.id == UUID("0f14d0ab-9605-4a62-a9e4-5ed26688389b")
+        assert dto.params is None
+
+    def test_keeps_a_single_query_parameter(self) -> None:
+        # A one-criterion search is the common case; dropping it made the entry parse
+        # as a paramless query and fail validation.
+        dto = EntryRequestDto.from_url("List?source:identifier=SRC-001")
+
+        assert dto.params == {"source:identifier": "SRC-001"}
+
+    def test_keeps_multiple_query_parameters(self) -> None:
+        dto = EntryRequestDto.from_url("List?source:identifier=SRC-001&subject:identifier=pseu")
+
+        assert dto.params == {"source:identifier": "SRC-001", "subject:identifier": "pseu"}
+
+    def test_has_no_params_when_query_is_absent(self) -> None:
+        assert EntryRequestDto.from_url("List").params is None

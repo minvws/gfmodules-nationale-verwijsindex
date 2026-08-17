@@ -13,7 +13,7 @@ from app.services.exceptions import InvalidModelError
 from app.services.fhir.bundle import BundleService
 
 logger = logging.getLogger(__name__)
-router = APIRouter(tags=["poc - FHIR"], prefix="/fhir")
+router = APIRouter(tags=["FHIR"], prefix="/fhir")
 
 
 @router.post("", response_model_exclude_none=True)

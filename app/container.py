@@ -14,6 +14,7 @@ from app.services.crypto_service_api_client import CryptoServiceApiClient
 from app.services.fhir.bundle import BundleService
 from app.services.fhir.localization_list import LocalizationListService
 from app.services.key_info import KeyInfoService, KeyInfoServiceMock
+from app.services.pseudonym_resolver import PseudonymResolver
 from app.services.referral_service import ReferralService
 from app.utils.load_capability_statement import (
     CapabilityStatement,
@@ -46,10 +47,15 @@ def container_config(binder: inject.Binder) -> None:
     crypto_client = create_crypto_service_api_client(config.crypto_service_api)
     binder.bind(CryptoServiceApiClient, crypto_client)
 
+    pseudonym_resolver = PseudonymResolver(
+        crypto_client=crypto_client,
+        key_info_service=key_info_service,
+    )
+    binder.bind(PseudonymResolver, pseudonym_resolver)
+
     localization_list_service = LocalizationListService(
         referral_service=referral_service,
-        key_info_service=key_info_service,
-        crypto_client=crypto_client,
+        pseudonym_resolver=pseudonym_resolver,
     )
     binder.bind(LocalizationListService, localization_list_service)
 

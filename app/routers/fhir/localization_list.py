@@ -2,7 +2,7 @@ import logging
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, Request
+from fastapi import APIRouter, Body, Depends
 from fastapi.encoders import jsonable_encoder
 from fastapi.params import Query
 
@@ -26,15 +26,55 @@ from app.models.fhir.resources.localization_list.resource import LocalizationLis
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.response import DeleteResponse, FHIRJSONResponse
 from app.models.ura import UraNumber
-from app.services.auth.auth_context import AuthContextService
-from app.services.exceptions import (
-    UnauthorizedManagingRequestError,
-    UnauthorizedScopeError,
+from app.routers.dependencies import (
+    require_managing_request,
+    require_scope,
+    require_scope_for_localization_query,
+    require_source_matches_body,
+    require_source_matches_query,
 )
 from app.services.fhir.localization_list import LocalizationListService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["FHIR"], prefix="/fhir/List")
+
+_LIST_EXAMPLE = {
+    "resourceType": "List",
+    "extension": [
+        {
+            "valueReference": {
+                "identifier": {
+                    "system": URA_SYSTEM,
+                    "value": "11111111",
+                }
+            },
+            "url": URA_SYSTEM_EXTENSION,
+        }
+    ],
+    "subject": {
+        "identifier": {
+            "system": PSEUDONYM_SYSTEM,
+            "value": "eyJldmFsdWF0ZWRfb3V0cHV0IjoiSldFX0ZST01fUFJTIiwiYmxpbmRfZmFjdG9yIjoiQ0xJRU5UX0dFTl9CTElORF9GQUNUT1IifQ",
+        }
+    },
+    "source": {
+        "identifier": {
+            "system": DEVICE_SYSTEM,
+            "value": "EHR-SYS-2024-001",
+        },
+        "type": "Device",
+    },
+    "status": "current",
+    "mode": "working",
+    "emptyReason": {
+        "coding": [
+            {
+                "code": "withheld",
+                "system": EMPTY_REASON_SYSTEM,
+            }
+        ]
+    },
+}
 
 
 @router.post(
@@ -47,47 +87,7 @@ router = APIRouter(tags=["FHIR"], prefix="/fhir/List")
     responses={
         201: {
             "description": "A List resource created",
-            "content": {
-                "application/fhir+json": {
-                    "example": {
-                        "resourceType": "List",
-                        "extension": [
-                            {
-                                "valueReference": {
-                                    "identifier": {
-                                        "system": URA_SYSTEM,
-                                        "value": "11111111",
-                                    }
-                                },
-                                "url": URA_SYSTEM_EXTENSION,
-                            }
-                        ],
-                        "subject": {
-                            "identifier": {
-                                "system": PSEUDONYM_SYSTEM,
-                                "value": "eyJldmFsdWF0ZWRfb3V0cHV0IjoiSldFX0ZST01fUFJTIiwiYmxpbmRfZmFjdG9yIjoiQ0xJRU5UX0dFTl9CTElORF9GQUNUT1IifQ",
-                            }
-                        },
-                        "source": {
-                            "identifier": {
-                                "system": DEVICE_SYSTEM,
-                                "value": "EHR-SYS-2024-001",
-                            },
-                            "type": "Device",
-                        },
-                        "status": "current",
-                        "mode": "working",
-                        "emptyReason": {
-                            "coding": [
-                                {
-                                    "code": "withheld",
-                                    "system": EMPTY_REASON_SYSTEM,
-                                }
-                            ]
-                        },
-                    }
-                }
-            },
+            "content": {"application/fhir+json": {"example": _LIST_EXAMPLE}},
         },
         400: {"model": OperationOutcome},
         403: {"model": OperationOutcome},
@@ -99,58 +99,14 @@ def create(
         LocalizationList,
         Body(
             media_type="application/fhir+json",
-            examples=[
-                {
-                    "resourceType": "List",
-                    "extension": [
-                        {
-                            "valueReference": {
-                                "identifier": {
-                                    "system": URA_SYSTEM,
-                                    "value": "11111111",
-                                }
-                            },
-                            "url": URA_SYSTEM_EXTENSION,
-                        }
-                    ],
-                    "subject": {
-                        "identifier": {
-                            "system": PSEUDONYM_SYSTEM,
-                            "value": "eyJldmFsdWF0ZWRfb3V0cHV0IjoiSldFX0ZST01fUFJTIiwiYmxpbmRfZmFjdG9yIjoiQ0xJRU5UX0dFTl9CTElORF9GQUNUT1IifQ",
-                        }
-                    },
-                    "source": {
-                        "identifier": {
-                            "system": DEVICE_SYSTEM,
-                            "value": "EHR-SYS-2024-001",
-                        },
-                        "type": "Device",
-                    },
-                    "status": "current",
-                    "mode": "working",
-                    "emptyReason": {
-                        "coding": [
-                            {
-                                "code": "withheld",
-                                "system": EMPTY_REASON_SYSTEM,
-                            }
-                        ]
-                    },
-                }
-            ],
+            examples=[_LIST_EXAMPLE],
         ),
     ],
-    request: Request,
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
+    ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.CREATE))],
+    _managing: Annotated[AuthContext, Depends(require_managing_request)],
+    _source: Annotated[AuthContext, Depends(require_source_matches_body)],
 ) -> Any:
-    ctx: AuthContext = request.state.auth
-    if AuthorizationScope.CREATE not in ctx.scope:
-        raise UnauthorizedScopeError(scopes=ctx.scope, required_scope=AuthorizationScope.CREATE)
-
-    valid_managing_request = AuthContextService.is_managing_request(ctx)
-    if not valid_managing_request:
-        raise UnauthorizedManagingRequestError()
-
     authorized_ura: UraNumber = ctx.claims.ura_number
     return service.create(data, authorized_ura, organization_name=ctx.claims.organization_name)
 
@@ -165,47 +121,7 @@ def create(
     responses={
         200: {
             "description": "List resource retrieved successfully",
-            "content": {
-                "application/fhir+json": {
-                    "example": {
-                        "resourceType": "List",
-                        "extension": [
-                            {
-                                "valueReference": {
-                                    "identifier": {
-                                        "system": URA_SYSTEM,
-                                        "value": "11111111",
-                                    }
-                                },
-                                "url": URA_SYSTEM_EXTENSION,
-                            }
-                        ],
-                        "subject": {
-                            "identifier": {
-                                "system": PSEUDONYM_SYSTEM,
-                                "value": "eyJldmFsdWF0ZWRfb3V0cHV0IjoiSldFX0ZST01fUFJTIiwiYmxpbmRfZmFjdG9yIjoiQ0xJRU5UX0dFTl9CTElORF9GQUNUT1IifQ",
-                            }
-                        },
-                        "source": {
-                            "identifier": {
-                                "system": DEVICE_SYSTEM,
-                                "value": "EHR-SYS-2024-001",
-                            },
-                            "type": "Device",
-                        },
-                        "status": "current",
-                        "mode": "working",
-                        "emptyReason": {
-                            "coding": [
-                                {
-                                    "code": "withheld",
-                                    "system": EMPTY_REASON_SYSTEM,
-                                }
-                            ]
-                        },
-                    }
-                }
-            },
+            "content": {"application/fhir+json": {"example": _LIST_EXAMPLE}},
         },
         400: {"model": OperationOutcome},
         403: {"model": OperationOutcome},
@@ -215,13 +131,9 @@ def create(
 )
 def get(
     id: UUID,
-    request: Request,
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
+    ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.READ))],
 ) -> Any:
-    ctx: AuthContext = request.state.auth
-    if AuthorizationScope.READ not in ctx.scope:
-        raise UnauthorizedScopeError(scopes=ctx.scope, required_scope=AuthorizationScope.READ)
-
     authorized_ura = ctx.claims.ura_number
     return service.get(id, authorized_ura, organization_name=ctx.claims.organization_name)
 
@@ -244,47 +156,7 @@ def get(
                 "application/fhir+json": {
                     "example": {
                         "resourceType": "Bundle",
-                        "entry": [
-                            {
-                                "resource": {
-                                    "resourceType": "List",
-                                    "extension": [
-                                        {
-                                            "valueReference": {
-                                                "identifier": {
-                                                    "system": URA_SYSTEM,
-                                                    "value": "11111111",
-                                                }
-                                            },
-                                            "url": URA_SYSTEM_EXTENSION,
-                                        }
-                                    ],
-                                    "subject": {
-                                        "identifier": {
-                                            "system": PSEUDONYM_SYSTEM,
-                                            "value": "eyJldmFsdWF0ZWRfb3V0cHV0IjoiSldFX0ZST01fUFJTIiwiYmxpbmRfZmFjdG9yIjoiQ0xJRU5UX0dFTl9CTElORF9GQUNUT1IifQ",
-                                        }
-                                    },
-                                    "source": {
-                                        "identifier": {
-                                            "system": DEVICE_SYSTEM,
-                                            "value": "EHR-SYS-2024-001",
-                                        },
-                                        "type": "Device",
-                                    },
-                                    "status": "current",
-                                    "mode": "working",
-                                    "emptyReason": {
-                                        "coding": [
-                                            {
-                                                "code": "withheld",
-                                                "system": EMPTY_REASON_SYSTEM,
-                                            }
-                                        ]
-                                    },
-                                },
-                            }
-                        ],
+                        "entry": [{"resource": _LIST_EXAMPLE}],
                     },
                 },
             },
@@ -297,14 +169,11 @@ def get(
     },
 )
 def query(
-    request: Request,
     params: Annotated[LocalizationListParams, Query()],
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
+    ctx: Annotated[AuthContext, Depends(require_scope_for_localization_query)],
+    _source: Annotated[AuthContext, Depends(require_source_matches_query)],
 ) -> Any:
-    ctx: AuthContext = request.state.auth
-    if AuthorizationScope.LOCALIZE not in ctx.scope:
-        raise UnauthorizedScopeError(scopes=ctx.scope, required_scope=AuthorizationScope.LOCALIZE)
-
     authorized_ura = ctx.claims.ura_number
     return service.query(params, authorized_ura, organization_name=ctx.claims.organization_name)
 
@@ -314,9 +183,9 @@ def query(
     response_model_exclude_none=True,
     summary="Delete a List resource by ID",
     description="Delete a specific List resource based on ID",
-    status_code=201,
+    status_code=200,
     responses={
-        201: {"description": "Resource 1234 has been deleted successfully"},
+        200: {"description": "Resource 1234 has been deleted successfully"},
         400: {"model": OperationOutcome},
         403: {"model": OperationOutcome},
         404: {"model": OperationOutcome},
@@ -327,13 +196,10 @@ def query(
 )
 def delete(
     id: UUID,
-    request: Request,
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
+    ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.DELETE))],
+    _managing: Annotated[AuthContext, Depends(require_managing_request)],
 ) -> Any:
-    ctx: AuthContext = request.state.auth
-    if AuthorizationScope.DELETE not in ctx.scope:
-        raise UnauthorizedScopeError(scopes=ctx.scope, required_scope=AuthorizationScope.DELETE)
-
     authorized_ura = ctx.claims.ura_number
     outcome, status_code = service.delete(id, authorized_ura, organization_name=ctx.claims.organization_name)
     return FHIRJSONResponse(
@@ -347,9 +213,9 @@ def delete(
     response_model_exclude_none=True,
     summary="Delete List resources based query parameters",
     description="Bulk delete for resources based on specific query parameter combinations, only resources that matches the client UraNumber would be deleted",
-    status_code=201,
+    status_code=200,
     responses={
-        201: {"description": "Resources have been deleted successfully"},
+        200: {"description": "Resources have been deleted successfully"},
         400: {"model": OperationOutcome},
         403: {"model": OperationOutcome},
         404: {"model": OperationOutcome},
@@ -359,18 +225,12 @@ def delete(
     response_class=DeleteResponse,
 )
 def delete_for_query(
-    request: Request,
     params: Annotated[LocalizationListParams, Query()],
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
+    ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.DELETE))],
+    _managing: Annotated[AuthContext, Depends(require_managing_request)],
+    _source: Annotated[AuthContext, Depends(require_source_matches_query)],
 ) -> Any:
-    ctx: AuthContext = request.state.auth
-    if AuthorizationScope.DELETE not in ctx.scope:
-        raise UnauthorizedScopeError(scopes=ctx.scope, required_scope=AuthorizationScope.DELETE)
-
-    valid_managing_request = AuthContextService.is_managing_request(ctx)
-    if not valid_managing_request:
-        raise UnauthorizedManagingRequestError()
-
     authenticated_ura = ctx.claims.ura_number
     outcome, status_code = service.delete_by_query(
         params, authenticated_ura, organization_name=ctx.claims.organization_name
