@@ -3,7 +3,6 @@ from fastapi.testclient import TestClient
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.models.auth.data import AuthorizationScope
-from app.services.exceptions import InvalidKeyInfoError
 from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 from tests.routers.conftest import (
@@ -43,12 +42,13 @@ class TestCreateRegistration:
         assert body["source_id"] == TEST_SOURCE_ID
         assert "created_at" in body
 
-    def test_creates_should_raise_when_no_key_registerd(self, source_client: TestClient) -> None:
-        with pytest.raises(InvalidKeyInfoError):
-            source_client.post(
-                "/registrations",
-                json={"pseudonym": "pseu", "oprf_key": "key1"},
-            )
+    def test_creates_returns_503_when_no_key_registerd(self, source_client: TestClient) -> None:
+        response = source_client.post(
+            "/registrations",
+            json={"pseudonym": "pseu", "oprf_key": "key1"},
+        )
+
+        assert response.status_code == 503
 
     def test_requires_create_scope(
         self,
