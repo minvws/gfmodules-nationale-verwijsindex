@@ -188,7 +188,7 @@ class TestEntryOutcomes:
         result = _process(bundle_service, _entry("DELETE", "List?source:identifier=SRC-001"), index=1)
 
         assert result.response is not None
-        assert result.response.status == "201"
+        assert result.response.status == "200"
 
     def test_get_by_id_returns_resource(self, bundle_service: BundleService, key_info_service: KeyInfoService) -> None:
         key_info_service.add_one("nvi-label", "AES_CBC")
@@ -220,7 +220,7 @@ class TestEntryOutcomes:
         result = _process(bundle_service, _entry("DELETE", f"List/{created.resource.id}"), index=1)
 
         assert result.response is not None
-        assert result.response.status == "201"
+        assert result.response.status == "200"
 
 
 class TestEntryFailureMapping:

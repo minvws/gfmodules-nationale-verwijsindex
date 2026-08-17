@@ -170,7 +170,7 @@ class TestDelete:
 
         response = client.delete(f"/fhir/List/{created['id']}")
 
-        assert response.status_code == 201
+        assert response.status_code == 200
 
     def test_delete_by_id_requires_a_source_id(
         self,
@@ -238,4 +238,11 @@ class TestDelete:
 
         response = client.delete("/fhir/List", params={"source:identifier": TEST_SOURCE_ID})
 
-        assert response.status_code == 201
+        assert response.status_code == 200
+
+    def test_delete_by_query_reports_not_found_when_nothing_matched(self, client: TestClient) -> None:
+        # Nothing was registered, so the bulk delete matches no rows.
+        response = client.delete("/fhir/List", params={"source:identifier": TEST_SOURCE_ID})
+
+        assert response.status_code == 404
+        assert response.json()["issue"][0]["code"] == "not-found"

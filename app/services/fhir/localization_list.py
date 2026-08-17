@@ -160,7 +160,7 @@ class LocalizationListService:
             )
             return (
                 OperationOutcome.make_good_outcome(f"Resource {id} has been deleted successfully"),
-                201,
+                200,
             )
         else:
             return (
@@ -187,28 +187,31 @@ class LocalizationListService:
             ura_number=ura_number,
         )
 
-        if deleted_count > 0:
-            if resolved is not None:
-                Log.event(
-                    logger,
-                    Log.ALL_PATIENT_REFERRALS_DELETED,
-                    "All patient referrals deleted",
-                    organization=organization_name,
-                    ura_number=str(ura_number),
-                    pseudonym_hash=str(resolved.response),
-                    deleted_count=deleted_count,
-                )
-            else:
-                Log.event(
-                    logger,
-                    Log.ALL_URA_REFERRALS_DELETED,
-                    "All URA referrals deleted",
-                    organization=organization_name,
-                    ura_number=str(ura_number),
-                    deleted_count=deleted_count,
-                )
-
+        if deleted_count < 1:
+            return (
+                OperationOutcome.make_error_outcome(code="not-found", msg="No resources matched the given criteria"),
+                404,
+            )
+        if resolved is not None:
+            Log.event(
+                logger,
+                Log.ALL_PATIENT_REFERRALS_DELETED,
+                "All patient referrals deleted",
+                organization=organization_name,
+                ura_number=str(ura_number),
+                pseudonym_hash=str(resolved.response),
+                deleted_count=deleted_count,
+            )
+        else:
+            Log.event(
+                logger,
+                Log.ALL_URA_REFERRALS_DELETED,
+                "All URA referrals deleted",
+                organization=organization_name,
+                ura_number=str(ura_number),
+                deleted_count=deleted_count,
+            )
         return (
-            OperationOutcome.make_good_outcome("Resources have been deleted successfully"),
-            201,
+            OperationOutcome.make_good_outcome(f"{deleted_count} resources have been deleted successfully"),
+            200,
         )
