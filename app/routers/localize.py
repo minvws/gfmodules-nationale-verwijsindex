@@ -4,18 +4,15 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Body, Depends
 
 from app.dependencies import (
-    get_crypto_service_api_client,
-    get_key_info_service,
+    get_pseudonym_resolver,
     get_referral_service,
 )
 from app.logging.events import Log
 from app.models.auth.context import AuthContext
 from app.models.auth.data import AuthorizationScope
-from app.models.pseudonym import EncryptedPseudonym
 from app.models.registrations import LocalizeRequest, Registration
 from app.routers.dependencies import require_scope
-from app.services.crypto_service_api_client import CryptoServiceApiClient
-from app.services.key_info import KeyInfoService
+from app.services.pseudonym_resolver import PseudonymResolver
 from app.services.referral_service import ReferralService
 
 logger = logging.getLogger(__name__)
@@ -26,20 +23,12 @@ router = APIRouter(tags=["Localization"], prefix="/localize")
 def localize(
     data: Annotated[LocalizeRequest, Body()],
     referral_service: Annotated[ReferralService, Depends(get_referral_service)],
-    crypto_client: Annotated[CryptoServiceApiClient, Depends(get_crypto_service_api_client)],
-    key_info_service: Annotated[KeyInfoService, Depends(get_key_info_service)],
+    pseudonym_resolver: Annotated[PseudonymResolver, Depends(get_pseudonym_resolver)],
     ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.LOCALIZE))],
 ) -> Any:
-    active_key = key_info_service.get_active_key()
-    pseudonym_resp = crypto_client.exchange(
-        jwe=data.pseudonym,
-        blind_factor=data.oprf_key,
-        label=active_key.label,
-        mechanism=active_key.mechanism,
-    )
-    encrypted_pseudonym = EncryptedPseudonym.from_response(pseudonym_resp)
+    resolved = pseudonym_resolver.resolve_jwe(jwe=data.pseudonym, blind_factor=data.oprf_key)
 
-    results = referral_service.get_many(encrypted_pseudonym=encrypted_pseudonym)
+    results = referral_service.get_many(encrypted_pseudonym=resolved.encrypted)
 
     ura_number = str(ctx.claims.ura_number)
     if results:
@@ -49,7 +38,7 @@ def localize(
             "Localization succeeded",
             organization=ctx.claims.organization_name,
             ura_number=ura_number,
-            pseudonym_hash=str(pseudonym_resp),
+            pseudonym_hash=str(resolved.response),
             result_count=len(results),
         )
     else:
