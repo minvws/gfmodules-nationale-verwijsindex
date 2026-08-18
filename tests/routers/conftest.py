@@ -10,14 +10,18 @@ from app.config import ConfigDatabase, set_config
 from app.db.db import Database
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.dependencies import (
+    get_bundle_service,
     get_crypto_service_api_client,
     get_key_info_service,
+    get_localization_list_service,
     get_pseudonym_resolver,
     get_referral_service,
 )
 from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.data import AuthorizationScope
 from app.models.ura import UraNumber
+from app.services.fhir.bundle import BundleService
+from app.services.fhir.localization_list import LocalizationListService
 from app.services.key_info import KeyInfoService
 from app.services.pseudonym_resolver import PseudonymResolver
 from app.services.referral_service import ReferralService
@@ -101,11 +105,17 @@ def make_test_client(
     app = setup_fastapi()
 
     pseudonym_resolver = PseudonymResolver(crypto_client=crypto_client, key_info_service=key_info_service)
+    localization_list_service = LocalizationListService(
+        referral_service=referral_service,
+        pseudonym_resolver=pseudonym_resolver,
+    )
 
     app.dependency_overrides[get_referral_service] = lambda: referral_service
     app.dependency_overrides[get_crypto_service_api_client] = lambda: crypto_client
     app.dependency_overrides[get_key_info_service] = lambda: key_info_service
     app.dependency_overrides[get_pseudonym_resolver] = lambda: pseudonym_resolver
+    app.dependency_overrides[get_localization_list_service] = lambda: localization_list_service
+    app.dependency_overrides[get_bundle_service] = lambda: BundleService(localization_list_service)
 
     def override_auth_ctx(request: Request) -> AuthContext:
         request.state.auth = auth_context
