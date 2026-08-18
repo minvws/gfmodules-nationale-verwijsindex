@@ -61,7 +61,7 @@ class BundleService:
             )
             return BundleEntry(response=EntryResponse.make_forbidden_respone(msg=f"Bundle.entry.{index}: {error}"))
 
-        if self.requires_managing_request(method, resolved_url) and not AuthContextService.is_managing_request(ctx):
+        if self.requires_managing_request(method) and not AuthContextService.is_managing_request(ctx):
             error = UnauthorizedManagingRequestError()
             Log.event(
                 logger,
@@ -186,10 +186,16 @@ class BundleService:
                     )
 
             case "DELETE":
+                managing_source = ctx.claims.source_id
+                assert managing_source is not None  # noqa: S101 - guaranteed by the managing-request guard above
+
                 if resolved_url.id:
                     try:
                         outcome, status_code = self.localizaton_list_service.delete(
-                            resolved_url.id, authenticated_ura, organization_name=organization_name
+                            resolved_url.id,
+                            authenticated_ura,
+                            managing_source,
+                            organization_name=organization_name,
                         )
                         return BundleEntry(response=EntryResponse(status=str(status_code), outcome=outcome))
                     except NotFoundError as e:
@@ -223,7 +229,7 @@ class BundleService:
                     )
                 try:
                     outcome, status_code = self.localizaton_list_service.delete_by_query(
-                        params, authenticated_ura, organization_name=organization_name
+                        params, authenticated_ura, managing_source, organization_name=organization_name
                     )
                     return BundleEntry(response=EntryResponse(status=str(status_code), outcome=outcome))
                 except NotFoundError as e:
@@ -281,16 +287,9 @@ class BundleService:
                 return None
 
     @staticmethod
-    def requires_managing_request(method: str, resolved_url: EntryRequestDto) -> bool:
-        """
-        Whether an entry is a managing operation and so needs a source_id, mirroring the
-        standalone /fhir/List routes: creating and deleting by query do, reads and
-        delete-by-id do not.
-        """
-        if method == "POST":
-            return True
-
-        return method == "DELETE" and resolved_url.id is None
+    def requires_managing_request(method: str) -> bool:
+        """Whether an entry is a managing operation and so needs a source_id"""
+        return method in ("POST", "DELETE")
 
     @staticmethod
     def validate_localization_bundle_structure(bundle: Bundle[Any]) -> bool:

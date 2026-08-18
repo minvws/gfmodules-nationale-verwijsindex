@@ -247,6 +247,7 @@ class TestManagingRequest:
         [
             ("POST", "List", AuthorizationScope.CREATE),
             ("DELETE", QUERY_URL, AuthorizationScope.DELETE),
+            ("DELETE", ID_URL, AuthorizationScope.DELETE),
         ],
     )
     def test_denies_managing_entry_without_source_id(
@@ -268,7 +269,6 @@ class TestManagingRequest:
         [
             ("GET", ID_URL, AuthorizationScope.READ, "get"),
             ("GET", QUERY_URL, AuthorizationScope.LOCALIZE, "query"),
-            ("DELETE", ID_URL, AuthorizationScope.DELETE, "delete"),
         ],
     )
     def test_non_managing_entry_does_not_need_source_id(

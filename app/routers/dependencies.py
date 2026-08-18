@@ -28,20 +28,16 @@ def require_scope(scope: AuthorizationScope) -> Callable[..., AuthContext]:
     return dependency
 
 
-def require_managing_request(ctx: AuthContext = Depends(get_auth_context)) -> AuthContext:
+def _require_managing_request(ctx: AuthContext) -> AuthContext:
     if not AuthContextService.is_managing_request(ctx):
         raise UnauthorizedManagingRequestError()
     return ctx
 
 
 def require_managing_source(ctx: AuthContext = Depends(get_auth_context)) -> str:
-    """The source the caller is authenticated as, for operations that must have one.
-
-    Same guard as :func:`require_managing_request`, but returns the source itself so a
-    route that stores it receives a ``str`` rather than re-narrowing an optional claim.
-    """
-    source_id = require_managing_request(ctx).claims.source_id
-    assert source_id is not None  # noqa: S101 - guaranteed by require_managing_request
+    """The source the caller is authenticated as, for operations that must have one."""
+    source_id = _require_managing_request(ctx).claims.source_id
+    assert source_id is not None  # noqa: S101 - guaranteed by _require_managing_request
     return source_id
 
 

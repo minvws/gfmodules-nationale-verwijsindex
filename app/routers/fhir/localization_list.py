@@ -27,7 +27,7 @@ from app.models.fhir.resources.operation_outcome.resource import OperationOutcom
 from app.models.response import DeleteResponse, FHIRJSONResponse
 from app.models.ura import UraNumber
 from app.routers.dependencies import (
-    require_managing_request,
+    require_managing_source,
     require_scope,
     require_scope_for_localization_query,
     require_source_matches_body,
@@ -104,8 +104,7 @@ def create(
     ],
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
     ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.CREATE))],
-    _managing: Annotated[AuthContext, Depends(require_managing_request)],
-    _source: Annotated[AuthContext, Depends(require_source_matches_body)],
+    _source_match: Annotated[AuthContext, Depends(require_source_matches_body)],
 ) -> Any:
     authorized_ura: UraNumber = ctx.claims.ura_number
     return service.create(data, authorized_ura, organization_name=ctx.claims.organization_name)
@@ -172,7 +171,7 @@ def query(
     params: Annotated[LocalizationListParams, Query()],
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
     ctx: Annotated[AuthContext, Depends(require_scope_for_localization_query)],
-    _source: Annotated[AuthContext, Depends(require_source_matches_query)],
+    _source_match: Annotated[AuthContext, Depends(require_source_matches_query)],
 ) -> Any:
     authorized_ura = ctx.claims.ura_number
     return service.query(params, authorized_ura, organization_name=ctx.claims.organization_name)
@@ -198,10 +197,10 @@ def delete(
     id: UUID,
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
     ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.DELETE))],
-    _managing: Annotated[AuthContext, Depends(require_managing_request)],
+    source: Annotated[str, Depends(require_managing_source)],
 ) -> Any:
     authorized_ura = ctx.claims.ura_number
-    outcome, status_code = service.delete(id, authorized_ura, organization_name=ctx.claims.organization_name)
+    outcome, status_code = service.delete(id, authorized_ura, source, organization_name=ctx.claims.organization_name)
     return FHIRJSONResponse(
         status_code=status_code,
         content=jsonable_encoder(outcome.model_dump(exclude_none=True)),
@@ -212,7 +211,7 @@ def delete(
     path="",
     response_model_exclude_none=True,
     summary="Delete List resources based query parameters",
-    description="Bulk delete for resources based on specific query parameter combinations, only resources that matches the client UraNumber would be deleted",
+    description="Bulk delete for resources based on specific query parameter combinations, only resources registered by the client's own URA Number and source would be deleted",
     status_code=201,
     responses={
         201: {"description": "Resources have been deleted successfully"},
@@ -228,12 +227,12 @@ def delete_for_query(
     params: Annotated[LocalizationListParams, Query()],
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
     ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.DELETE))],
-    _managing: Annotated[AuthContext, Depends(require_managing_request)],
-    _source: Annotated[AuthContext, Depends(require_source_matches_query)],
+    source: Annotated[str, Depends(require_managing_source)],
+    _source_match: Annotated[AuthContext, Depends(require_source_matches_query)],
 ) -> Any:
     authenticated_ura = ctx.claims.ura_number
     outcome, status_code = service.delete_by_query(
-        params, authenticated_ura, organization_name=ctx.claims.organization_name
+        params, authenticated_ura, source, organization_name=ctx.claims.organization_name
     )
 
     return FHIRJSONResponse(

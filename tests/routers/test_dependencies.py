@@ -4,8 +4,8 @@ from fastapi import Request
 from app.models.auth.data import AuthorizationScope
 from app.models.fhir.resources.localization_list.request import LocalizationListParams
 from app.routers.dependencies import (
+    _require_managing_request,
     get_auth_context,
-    require_managing_request,
     require_managing_source,
     require_scope,
     require_scope_for_localization_query,
@@ -51,13 +51,13 @@ def test_require_scope_raises_when_scope_missing() -> None:
 
 def test_require_managing_request_returns_context_when_source_id_present() -> None:
     ctx = make_auth_context(source_id="SRC-001")
-    assert require_managing_request(ctx) is ctx
+    assert _require_managing_request(ctx) is ctx
 
 
 def test_require_managing_request_raises_when_source_id_missing() -> None:
     ctx = make_auth_context(source_id=None)
     with pytest.raises(UnauthorizedManagingRequestError):
-        require_managing_request(ctx)
+        _require_managing_request(ctx)
 
 
 def test_require_managing_source_returns_the_source_id() -> None:
