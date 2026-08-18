@@ -50,7 +50,7 @@ class LocalizationList(DomainResource):
         )
         source = Reference(
             identifier=Identifier(
-                system="https://cp1-test.example.org/device-identifiers",
+                system=DEVICE_SYSTEM,
                 value=referral.source,
             ),
             type="Device",
