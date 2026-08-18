@@ -40,7 +40,7 @@ class TestRegisterBundle:
         assert response.status_code == 200
         entry = response.json()["entry"][0]
         assert entry["response"]["status"] == "200"
-        assert "id" not in entry["resource"]
+        assert entry["resource"]["id"] is not None
 
     def test_rejects_an_empty_bundle(self, client: TestClient) -> None:
         response = client.post("/fhir", json=_bundle(), headers=FHIR_JSON)

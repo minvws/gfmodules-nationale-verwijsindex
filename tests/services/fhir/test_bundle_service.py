@@ -361,7 +361,7 @@ class TestDeleteErrorMapping:
         ("error", "expected_status"),
         [
             (NotFoundError(), "404"),
-            (PseudonymError(), "400"),
+            (PseudonymError(), "422"),
             (RuntimeError("boom"), "500"),
         ],
     )
