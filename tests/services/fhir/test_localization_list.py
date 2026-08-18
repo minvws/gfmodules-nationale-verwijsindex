@@ -16,6 +16,8 @@ from tests.conftest import TEST_PSEUDONYM_TOKEN, make_list_resource
 
 AUTH_URA = UraNumber("00000001")
 OTHER_URA = UraNumber("99999999")
+AUTH_SOURCE = "SRC-001"
+OTHER_SOURCE = "SRC-002"
 
 
 @pytest.fixture()
@@ -123,7 +125,7 @@ class TestDelete:
         created = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
         assert isinstance(created.id, UUID)
 
-        _, status = service.delete(created.id, AUTH_URA, organization_name="Org")
+        _, status = service.delete(created.id, AUTH_URA, AUTH_SOURCE, organization_name="Org")
 
         assert status == 201
 
@@ -131,10 +133,20 @@ class TestDelete:
         created = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
         assert isinstance(created.id, UUID)
 
-        outcome, status = service.delete(created.id, OTHER_URA, organization_name="Other")
+        outcome, status = service.delete(created.id, OTHER_URA, AUTH_SOURCE, organization_name="Other")
 
         assert status == 404
         assert outcome.issue[0].code == "warning"
+
+    def test_hides_another_sources_resource_behind_404(self, service: LocalizationListService) -> None:
+        created = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        assert isinstance(created.id, UUID)
+
+        outcome, status = service.delete(created.id, AUTH_URA, OTHER_SOURCE, organization_name="Org")
+
+        assert status == 404
+        assert outcome.issue[0].code == "warning"
+        assert service.query(_params(), AUTH_URA, organization_name="Org").total == 1
 
 
 class TestDeleteByQuery:
@@ -145,7 +157,7 @@ class TestDeleteByQuery:
 
         with caplog.at_level(logging.INFO):
             _, status = service.delete_by_query(
-                _params(subject=TEST_PSEUDONYM_TOKEN), AUTH_URA, organization_name="Org"
+                _params(subject=TEST_PSEUDONYM_TOKEN), AUTH_URA, AUTH_SOURCE, organization_name="Org"
             )
 
         assert status == 201
@@ -157,13 +169,28 @@ class TestDeleteByQuery:
         service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
 
         with caplog.at_level(logging.INFO):
-            _, status = service.delete_by_query(_params(source="SRC-001"), AUTH_URA, organization_name="Org")
+            _, status = service.delete_by_query(_params(), AUTH_URA, AUTH_SOURCE, organization_name="Org")
 
         assert status == 201
         assert Log.ALL_URA_REFERRALS_DELETED.event_id in _event_ids(caplog)
 
+    def test_is_scoped_to_the_callers_own_source(self, service: LocalizationListService) -> None:
+        service.create(make_list_resource(ura=str(AUTH_URA), source_id=AUTH_SOURCE), AUTH_URA, organization_name="Org")
+        service.create(make_list_resource(ura=str(AUTH_URA), source_id=OTHER_SOURCE), AUTH_URA, organization_name="Org")
+
+        _, status = service.delete_by_query(
+            _params(subject=TEST_PSEUDONYM_TOKEN), AUTH_URA, AUTH_SOURCE, organization_name="Org"
+        )
+
+        assert status == 201
+        # The sibling source's referral for the same URA and pseudonym survives.
+        remaining = service.query(_params(), AUTH_URA, organization_name="Org")
+        assert remaining.total == 1
+        assert remaining.entry[0].resource is not None
+        assert remaining.entry[0].resource.get_device() == OTHER_SOURCE
+
     def test_reports_success_even_when_nothing_matched(self, service: LocalizationListService) -> None:
-        outcome, status = service.delete_by_query(_params(source="NOTHING"), AUTH_URA, organization_name="Org")
+        outcome, status = service.delete_by_query(_params(), AUTH_URA, "NOTHING", organization_name="Org")
 
         assert status == 201
         assert outcome.issue[0].details is not None
@@ -173,7 +200,7 @@ class TestDeleteByQuery:
         self, service: LocalizationListService, caplog: pytest.LogCaptureFixture
     ) -> None:
         with caplog.at_level(logging.INFO):
-            service.delete_by_query(_params(source="NOTHING"), AUTH_URA, organization_name="Org")
+            service.delete_by_query(_params(), AUTH_URA, "NOTHING", organization_name="Org")
 
         assert Log.ALL_PATIENT_REFERRALS_DELETED.event_id not in _event_ids(caplog)
         assert Log.ALL_URA_REFERRALS_DELETED.event_id not in _event_ids(caplog)

@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 from app.models.fhir.bundle import Bundle, BundleEntry, EntryRequestDto
 from app.models.fhir.elements import CodeableConcept, Coding, Identifier, Reference
 from app.models.fhir.resources.data import (
+    DEVICE_SYSTEM,
     EMPTY_REASON_SYSTEM,
     URA_SYSTEM,
     URA_SYSTEM_EXTENSION,
@@ -44,7 +45,7 @@ def test_serialize_should_succeed(ura_number: UraNumber) -> None:
                     "mode": "working",
                     "source": {
                         "identifier": {
-                            "system": "https://cp1-test.example.org/device-identifiers",
+                            "system": DEVICE_SYSTEM,
                             "value": "EHR-SYS-2024-001",
                         },
                         "type": "Device",
@@ -72,7 +73,7 @@ def test_serialize_should_succeed(ura_number: UraNumber) -> None:
                     mode="working",
                     source=Reference(
                         identifier=Identifier(
-                            system="https://cp1-test.example.org/device-identifiers",
+                            system=DEVICE_SYSTEM,
                             value="EHR-SYS-2024-001",
                         ),
                         type="Device",
@@ -117,7 +118,7 @@ def test_deserialize_should_succeed(ura_number: UraNumber) -> None:
                     "mode": "working",
                     "source": {
                         "identifier": {
-                            "system": "https://cp1-test.example.org/device-identifiers",
+                            "system": DEVICE_SYSTEM,
                             "value": "EHR-SYS-2024-001",
                         },
                         "type": "Device",
@@ -145,7 +146,7 @@ def test_deserialize_should_succeed(ura_number: UraNumber) -> None:
                     mode="working",
                     source=Reference(
                         identifier=Identifier(
-                            system="https://cp1-test.example.org/device-identifiers",
+                            system=DEVICE_SYSTEM,
                             value="EHR-SYS-2024-001",
                         ),
                         type="Device",

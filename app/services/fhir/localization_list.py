@@ -140,9 +140,15 @@ class LocalizationListService:
 
         return bundle
 
-    def delete(self, id: UUID, authenticated_ura: UraNumber, organization_name: str) -> Tuple[OperationOutcome, int]:
+    def delete(
+        self,
+        id: UUID,
+        authenticated_ura: UraNumber,
+        source: str,
+        organization_name: str,
+    ) -> Tuple[OperationOutcome, int]:
         target = self.referral_service.get_by_id(id)
-        affected_rows = self.referral_service.delete_many(ura_number=authenticated_ura, id=id)
+        affected_rows = self.referral_service.delete_many(ura_number=authenticated_ura, source=source, id=id)
         if affected_rows > 0:
             Log.event(
                 logger,
@@ -166,6 +172,7 @@ class LocalizationListService:
         self,
         params: LocalizationListParams,
         authenticated_ura: UraNumber,
+        source: str,
         organization_name: str,
     ) -> Tuple[OperationOutcome, int]:
         ura_number = authenticated_ura
@@ -176,7 +183,7 @@ class LocalizationListService:
 
         deleted_count = self.referral_service.delete_many(
             encrypted_pseudonym=(resolved.encrypted if resolved else None),
-            source=params.source,
+            source=source,
             ura_number=ura_number,
         )
 
