@@ -60,7 +60,7 @@ class TestRegisterBundle:
         statuses = [e["response"]["status"] for e in response.json()["entry"]]
         assert statuses == ["200", "403"]
 
-    def test_search_entry_requires_localize_scope_even_without_a_subject(self, client: TestClient) -> None:
+    def test_processes_a_get_query_entry(self, client: TestClient) -> None:
         client.post("/fhir", json=_bundle(_post_entry()), headers=FHIR_JSON)
 
         response = client.post(
@@ -70,4 +70,6 @@ class TestRegisterBundle:
         )
 
         assert response.status_code == 200
-        assert response.json()["entry"][0]["response"]["status"] == "403"
+        entry = response.json()["entry"][0]
+        assert entry["response"]["status"] == "200"
+        assert entry["resource"]["resourceType"] == "Bundle"

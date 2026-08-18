@@ -247,20 +247,24 @@ class BundleService:
 
     @staticmethod
     def required_scope(method: str, resolved_url: EntryRequestDto) -> AuthorizationScope | None:
-        """
-        Scope an entry needs, mirroring the standalone /fhir/List routes. Returns None for
-        methods that are rejected as unsupported further down, so they keep that response.
-        """
         match method:
             case "POST":
                 return AuthorizationScope.CREATE
             case "DELETE":
                 return AuthorizationScope.DELETE
             case "GET":
-                # A read by id is `nvi:read`; a search by query params is `nvi:localize`.
-                return AuthorizationScope.READ if resolved_url.id else AuthorizationScope.LOCALIZE
+                return AuthorizationScope.READ if resolved_url.id else BundleService._query_scope(resolved_url.params)
             case _:
                 return None
+
+    @staticmethod
+    def _query_scope(params: dict[str, str] | None) -> AuthorizationScope:
+        try:
+            parsed = LocalizationListParams.model_validate(params or {})
+        except ValueError:
+            return AuthorizationScope.LOCALIZE
+
+        return AuthorizationScope.LOCALIZE if parsed.is_localize_params() else AuthorizationScope.READ
 
     @staticmethod
     def requires_managing_request(method: str) -> bool:

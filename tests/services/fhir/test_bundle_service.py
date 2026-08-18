@@ -17,6 +17,7 @@ TEST_SOURCE_ID = "SRC-001"
 
 RESOURCE_ID = uuid4()
 QUERY_URL = "List?subject:identifier=pseudonym-value"
+SOURCE_QUERY_URL = f"List?source:identifier={TEST_SOURCE_ID}"
 ID_URL = f"List/{RESOURCE_ID}"
 
 ALL_SCOPES = [
@@ -161,6 +162,44 @@ class TestRequiredScope:
         service: LocalizationListServiceSpy,
     ) -> None:
         result = process(bundle_service, make_entry("GET", QUERY_URL), [AuthorizationScope.READ])
+
+        assert result.response is not None
+        assert result.response.status == "403"
+        assert service.calls == []
+
+    @pytest.mark.parametrize(
+        ("url", "required"),
+        [
+            (QUERY_URL, AuthorizationScope.LOCALIZE),
+            (SOURCE_QUERY_URL, AuthorizationScope.READ),
+            (f"{QUERY_URL}&source:identifier={TEST_SOURCE_ID}", AuthorizationScope.READ),
+        ],
+    )
+    def test_search_scope_follows_what_is_searched_for(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+        url: str,
+        required: AuthorizationScope,
+    ) -> None:
+        allowed = process(bundle_service, make_entry("GET", url), [required])
+
+        assert service.calls == ["query"]
+
+        service.calls.clear()
+        denied = process(bundle_service, make_entry("GET", url), [s for s in ALL_SCOPES if s != required])
+
+        assert allowed.response is not None
+        assert denied.response is not None
+        assert denied.response.status == "403"
+        assert service.calls == []
+
+    def test_unparseable_search_params_require_the_stricter_scope(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+    ) -> None:
+        result = process(bundle_service, make_entry("GET", "List?unsupported=1"), [AuthorizationScope.READ])
 
         assert result.response is not None
         assert result.response.status == "403"
