@@ -10,6 +10,7 @@ from app.models.fhir.resources.localization_list.resource import LocalizationLis
 from app.models.ura import UraNumber
 from app.services.exceptions import NotFoundError, PseudonymError, UnauthorizedUraError
 from app.services.fhir.bundle import BundleService
+from tests.conftest import make_list_resource
 
 TEST_URA = UraNumber("00000001")
 TEST_ORG_NAME = "Test Organization"
@@ -421,3 +422,92 @@ class TestDeleteErrorMapping:
         message = str(result.response.outcome.model_dump())
         assert "Bundle.entry.1" in message
         assert str(error) in message
+
+
+class TestSourceMatch:
+    def test_denies_a_post_naming_another_source(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+    ) -> None:
+        entry = make_entry("POST", "List", make_list_resource(source_id="SRC-999"))
+
+        result = process(bundle_service, entry, [AuthorizationScope.CREATE])
+
+        assert result.response is not None
+        assert result.response.status == "403"
+        assert service.calls == []
+
+    def test_allows_a_post_naming_the_callers_own_source(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+    ) -> None:
+        entry = make_entry("POST", "List", make_list_resource(source_id=TEST_SOURCE_ID))
+
+        process(bundle_service, entry, [AuthorizationScope.CREATE])
+
+        assert service.calls == ["create"]
+
+    @pytest.mark.parametrize(
+        ("method", "required"),
+        [
+            ("GET", AuthorizationScope.READ),
+            ("DELETE", AuthorizationScope.DELETE),
+        ],
+    )
+    def test_denies_a_query_naming_another_source(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+        method: HttpMethod,
+        required: AuthorizationScope,
+    ) -> None:
+        result = process(bundle_service, make_entry(method, "List?source:identifier=SRC-999"), [required])
+
+        assert result.response is not None
+        assert result.response.status == "403"
+        assert service.calls == []
+
+    @pytest.mark.parametrize(
+        ("method", "required", "expected_call"),
+        [
+            ("GET", AuthorizationScope.READ, "query"),
+            ("DELETE", AuthorizationScope.DELETE, "delete_by_query"),
+        ],
+    )
+    def test_allows_a_query_naming_the_callers_own_source(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+        method: HttpMethod,
+        required: AuthorizationScope,
+        expected_call: str,
+    ) -> None:
+        process(bundle_service, make_entry(method, f"List?source:identifier={TEST_SOURCE_ID}"), [required])
+
+        assert service.calls == [expected_call]
+
+    def test_a_localization_search_names_no_source_and_is_unguarded(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+    ) -> None:
+        process(bundle_service, make_entry("GET", QUERY_URL), [AuthorizationScope.LOCALIZE], source_id=None)
+
+        assert service.calls == ["query"]
+
+    def test_scope_is_checked_before_the_source(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+    ) -> None:
+        """A caller missing both should hear about the scope, not the source."""
+        result = process(bundle_service, make_entry("GET", "List?source:identifier=SRC-999"), [])
+
+        assert result.response is not None
+        assert result.response.outcome is not None
+        message = str(result.response.outcome.model_dump())
+        assert AuthorizationScope.READ.value in message
+        assert "source does not match" not in message
+        assert service.calls == []
