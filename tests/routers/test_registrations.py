@@ -36,11 +36,22 @@ class TestCreateRegistration:
             json={"pseudonym": "pseu", "oprf_key": "key1"},
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         body = response.json()
         assert body["ura_number"] == TEST_URA
         assert body["source_id"] == TEST_SOURCE_ID
         assert "created_at" in body
+
+    def test_create_is_idempotent(self, source_client: TestClient, key_info_service: KeyInfoService) -> None:
+        key_info_service.add_one("nvi-label", mechanism="AES_CBC")
+        payload = {"pseudonym": "pseu", "oprf_key": "key1"}
+
+        first = source_client.post("/registrations", json=payload)
+        second = source_client.post("/registrations", json=payload)
+
+        assert first.status_code == 201
+        assert second.status_code == 201
+        assert second.json()["created_at"] == first.json()["created_at"]
 
     def test_creates_returns_503_when_no_key_registerd(self, source_client: TestClient) -> None:
         response = source_client.post(

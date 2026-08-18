@@ -55,7 +55,7 @@ def get_registration(
     return RegistrationList.from_entities(results)
 
 
-@router.post("")
+@router.post("", status_code=201)
 def add_registration(
     data: Annotated[CreateRegistrationRequest, Body()],
     request: Request,
