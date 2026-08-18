@@ -121,13 +121,13 @@ class TestQuery:
 
 
 class TestDelete:
-    def test_deletes_and_reports_201(self, service: LocalizationListService) -> None:
+    def test_deletes_and_reports_200(self, service: LocalizationListService) -> None:
         created = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
         assert isinstance(created.id, UUID)
 
         _, status = service.delete(created.id, AUTH_URA, AUTH_SOURCE, organization_name="Org")
 
-        assert status == 201
+        assert status == 200
 
     def test_reports_404_when_nothing_was_deleted(self, service: LocalizationListService) -> None:
         created = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
@@ -160,7 +160,7 @@ class TestDeleteByQuery:
                 _params(subject=TEST_PSEUDONYM_TOKEN), AUTH_URA, AUTH_SOURCE, organization_name="Org"
             )
 
-        assert status == 201
+        assert status == 200
         assert Log.ALL_PATIENT_REFERRALS_DELETED.event_id in _event_ids(caplog)
 
     def test_deletes_without_subject_and_logs_ura_scope(
@@ -171,7 +171,7 @@ class TestDeleteByQuery:
         with caplog.at_level(logging.INFO):
             _, status = service.delete_by_query(_params(), AUTH_URA, AUTH_SOURCE, organization_name="Org")
 
-        assert status == 201
+        assert status == 200
         assert Log.ALL_URA_REFERRALS_DELETED.event_id in _event_ids(caplog)
 
     def test_is_scoped_to_the_callers_own_source(self, service: LocalizationListService) -> None:
@@ -182,19 +182,27 @@ class TestDeleteByQuery:
             _params(subject=TEST_PSEUDONYM_TOKEN), AUTH_URA, AUTH_SOURCE, organization_name="Org"
         )
 
-        assert status == 201
+        assert status == 200
         # The sibling source's referral for the same URA and pseudonym survives.
         remaining = service.query(_params(), AUTH_URA, organization_name="Org")
         assert remaining.total == 1
         assert remaining.entry[0].resource is not None
         assert remaining.entry[0].resource.get_device() == OTHER_SOURCE
 
-    def test_reports_success_even_when_nothing_matched(self, service: LocalizationListService) -> None:
+    def test_reports_not_found_when_nothing_matched(self, service: LocalizationListService) -> None:
         outcome, status = service.delete_by_query(_params(), AUTH_URA, "NOTHING", organization_name="Org")
 
-        assert status == 201
+        assert status == 404
+        assert outcome.issue[0].code == "not-found"
+
+    def test_reports_the_deleted_count_on_success(self, service: LocalizationListService) -> None:
+        service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+
+        outcome, status = service.delete_by_query(_params(), AUTH_URA, AUTH_SOURCE, organization_name="Org")
+
+        assert status == 200
         assert outcome.issue[0].details is not None
-        assert outcome.issue[0].details.text == "Resources have been deleted successfully"
+        assert outcome.issue[0].details.text == "1 resources have been deleted successfully"
 
     def test_does_not_log_a_deletion_event_when_nothing_matched(
         self, service: LocalizationListService, caplog: pytest.LogCaptureFixture

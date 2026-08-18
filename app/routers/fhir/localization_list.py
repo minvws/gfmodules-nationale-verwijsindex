@@ -182,9 +182,9 @@ def query(
     response_model_exclude_none=True,
     summary="Delete a List resource by ID",
     description="Delete a specific List resource based on ID",
-    status_code=201,
+    status_code=200,
     responses={
-        201: {"description": "Resource 1234 has been deleted successfully"},
+        200: {"description": "Resource 1234 has been deleted successfully"},
         400: {"model": OperationOutcome},
         403: {"model": OperationOutcome},
         404: {"model": OperationOutcome},
@@ -212,9 +212,9 @@ def delete(
     response_model_exclude_none=True,
     summary="Delete List resources based query parameters",
     description="Bulk delete for resources based on specific query parameter combinations, only resources registered by the client's own URA Number and source would be deleted",
-    status_code=201,
+    status_code=200,
     responses={
-        201: {"description": "Resources have been deleted successfully"},
+        200: {"description": "Resources have been deleted successfully"},
         400: {"model": OperationOutcome},
         403: {"model": OperationOutcome},
         404: {"model": OperationOutcome},
