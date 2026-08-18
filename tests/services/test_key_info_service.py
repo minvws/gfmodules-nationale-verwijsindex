@@ -4,7 +4,7 @@ from app.db.db import Database
 from app.db.models.key_info import KeyInfoEntity
 from app.db.models.referral import ReferralEntity
 from app.db.repository.key_info_repository import KeyInfoRepository
-from app.services.exceptions import ConflictError, ForbiddedError, NotFoundError
+from app.services.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.services.key_info import KeyInfoService
 
 
@@ -100,5 +100,5 @@ def test_delete_should_raise_when_key_has_referrals(
         assert updated_key is not None
         assert updated_key.has_referrals is True
 
-    with pytest.raises(ForbiddedError):
+    with pytest.raises(ForbiddenError):
         key_info_service.delete_one(updated_key.label)

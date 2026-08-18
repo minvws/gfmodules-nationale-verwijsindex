@@ -15,7 +15,7 @@ from app.models.fhir.resources.operation_outcome.resource import (
 )
 from app.services.exceptions import (
     ConflictError,
-    ForbiddedError,
+    ForbiddenError,
     InvalidHeaderPropertyError,
     InvalidKeyInfoError,
     InvalidModelError,
@@ -114,7 +114,7 @@ def handle_unauthorized_error(req: Request, exc: UnauthorizedError) -> JSONRespo
     return JSONResponse(status_code=status_code, content=str(exc))
 
 
-def handle_forbidden_error(req: Request, exc: ForbiddedError) -> JSONResponse:
+def handle_forbidden_error(req: Request, exc: ForbiddenError) -> JSONResponse:
     path = req.url.path
     status_code = 403
     if "fhir" in path:
