@@ -1,7 +1,7 @@
 import logging
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
 
 from app.dependencies import get_bundle_service, get_capability_statement
 from app.models.auth.context import AuthContext
@@ -9,6 +9,7 @@ from app.models.fhir.bundle import Bundle
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.response import FHIRJSONResponse
+from app.routers.dependencies import get_auth_context
 from app.services.exceptions import InvalidModelError
 from app.services.fhir.bundle import BundleService
 
@@ -19,10 +20,9 @@ router = APIRouter(tags=["FHIR"], prefix="/fhir")
 @router.post("", response_model_exclude_none=True)
 def register(
     data: Bundle[LocalizationList],
-    request: Request,
-    localisation_list_service: BundleService = Depends(get_bundle_service),
+    localisation_list_service: Annotated[BundleService, Depends(get_bundle_service)],
+    ctx: Annotated[AuthContext, Depends(get_auth_context)],
 ) -> Any:
-    ctx: AuthContext = request.state.auth
     results_bundle = Bundle[Any](entry=[])
     valid_bundle = localisation_list_service.validate_localization_bundle_structure(data)
     if not valid_bundle:

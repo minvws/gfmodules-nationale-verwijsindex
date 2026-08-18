@@ -1,7 +1,7 @@
 import logging
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Body, Depends, Request
+from fastapi import APIRouter, Body, Depends
 
 from app.dependencies import (
     get_crypto_service_api_client,
@@ -13,8 +13,8 @@ from app.models.auth.context import AuthContext
 from app.models.auth.data import AuthorizationScope
 from app.models.pseudonym import EncryptedPseudonym
 from app.models.registrations import LocalizeRequest, Registration
+from app.routers.dependencies import require_scope
 from app.services.crypto_service_api_client import CryptoServiceApiClient
-from app.services.exceptions import UnauthorizedScopeError
 from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 
@@ -24,16 +24,12 @@ router = APIRouter(tags=["Localization"], prefix="/localize")
 
 @router.post("")
 def localize(
-    request: Request,
     data: Annotated[LocalizeRequest, Body()],
     referral_service: Annotated[ReferralService, Depends(get_referral_service)],
     crypto_client: Annotated[CryptoServiceApiClient, Depends(get_crypto_service_api_client)],
     key_info_service: Annotated[KeyInfoService, Depends(get_key_info_service)],
+    ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.LOCALIZE))],
 ) -> Any:
-    ctx: AuthContext = request.state.auth
-    if AuthorizationScope.LOCALIZE not in ctx.scope:
-        raise UnauthorizedScopeError(ctx.scope, AuthorizationScope.LOCALIZE)
-
     active_key = key_info_service.get_active_key()
     pseudonym_resp = crypto_client.exchange(
         jwe=data.pseudonym,
