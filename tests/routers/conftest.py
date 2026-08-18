@@ -12,12 +12,14 @@ from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.dependencies import (
     get_crypto_service_api_client,
     get_key_info_service,
+    get_pseudonym_resolver,
     get_referral_service,
 )
 from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.data import AuthorizationScope
 from app.models.ura import UraNumber
 from app.services.key_info import KeyInfoService
+from app.services.pseudonym_resolver import PseudonymResolver
 from app.services.referral_service import ReferralService
 from tests.test_config import get_test_config
 
@@ -98,9 +100,12 @@ def make_test_client(
     set_config(get_test_config())
     app = setup_fastapi()
 
+    pseudonym_resolver = PseudonymResolver(crypto_client=crypto_client, key_info_service=key_info_service)
+
     app.dependency_overrides[get_referral_service] = lambda: referral_service
     app.dependency_overrides[get_crypto_service_api_client] = lambda: crypto_client
     app.dependency_overrides[get_key_info_service] = lambda: key_info_service
+    app.dependency_overrides[get_pseudonym_resolver] = lambda: pseudonym_resolver
 
     def override_auth_ctx(request: Request) -> AuthContext:
         request.state.auth = auth_context
