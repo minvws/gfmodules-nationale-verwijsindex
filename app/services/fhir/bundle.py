@@ -13,6 +13,7 @@ from app.services.auth.auth_context import AuthContextService
 from app.services.exceptions import (
     UnauthorizedManagingRequestError,
     UnauthorizedScopeError,
+    UnauthorizedSourceError,
 )
 from app.services.fhir.localization_list import LocalizationListService
 
@@ -70,6 +71,24 @@ class BundleService:
             )
             return BundleEntry(response=EntryResponse.make_forbidden_respone(msg=f"Bundle.entry.{index}: {error}"))
 
+        resource: LocalizationList | None = None
+        if method == "POST":
+            validated = self._validate_post_resource(entry, authenticated_ura, index)
+            if isinstance(validated, BundleEntry):
+                return validated
+            resource = validated
+
+        params: LocalizationListParams | None = None
+        if method in ("GET", "DELETE") and resolved_url.id is None:
+            parsed = self._parse_params(resolved_url, index)
+            if isinstance(parsed, BundleEntry):
+                return parsed
+            params = parsed
+
+        denied = self._deny_mismatched_source(ctx, resource, params, index, endpoint)
+        if denied is not None:
+            return denied
+
         match method:
             case "GET":
                 if resolved_url.id:
@@ -85,21 +104,14 @@ class BundleService:
                         ),
                     )
 
-                try:
-                    params = LocalizationListParams.model_validate(resolved_url.params)
-                except ValueError as e:
-                    return BundleEntry(
-                        response=EntryResponse.make_validation_response(
-                            f"Bundle.entry.{index}.request: invalid url parameter: {e}"
-                        )
-                    )
-
+                query_params = params
+                assert query_params is not None  # noqa: S101 - parsed above for every id-less GET
                 return self._entry_result(
                     index,
                     authenticated_ura,
                     lambda: BundleEntry(
                         resource=self.localizaton_list_service.query(
-                            params, authenticated_ura, organization_name=organization_name
+                            query_params, authenticated_ura, organization_name=organization_name
                         ),
                         response=EntryResponse.make_good_response(),
                     ),
@@ -108,17 +120,14 @@ class BundleService:
                 )
 
             case "POST":
-                validated = self._validate_post_resource(entry, authenticated_ura, index)
-                if isinstance(validated, BundleEntry):
-                    return validated
-
-                resource = validated
+                post_resource = resource
+                assert post_resource is not None  # noqa: S101 - validated above for every POST
                 return self._entry_result(
                     index,
                     authenticated_ura,
                     lambda: BundleEntry(
                         resource=self.localizaton_list_service.create(
-                            resource, authenticated_ura, organization_name=organization_name
+                            post_resource, authenticated_ura, organization_name=organization_name
                         ),
                         response=EntryResponse.make_good_response(msg="Resource has been created successfully"),
                     ),
@@ -140,16 +149,8 @@ class BundleService:
                         ),
                     )
 
-                try:
-                    params = LocalizationListParams.model_validate(resolved_url.params)
-                except ValueError:
-                    return BundleEntry(
-                        response=EntryResponse.make_validation_response(
-                            f"Bundle.entry.{index}.request: invalid url parameter"
-                        )
-                    )
-
                 delete_params = params
+                assert delete_params is not None  # noqa: S101 - parsed above for every id-less DELETE
                 return self._entry_result(
                     index,
                     authenticated_ura,
@@ -212,6 +213,56 @@ class BundleService:
             params, authenticated_ura, source, organization_name=organization_name
         )
         return BundleEntry(response=EntryResponse(status=str(status_code), outcome=outcome))
+
+    @staticmethod
+    def _parse_params(resolved_url: EntryRequestDto, index: int) -> LocalizationListParams | BundleEntry[Any]:
+        try:
+            return LocalizationListParams.model_validate(resolved_url.params)
+        except ValueError as e:
+            return BundleEntry(
+                response=EntryResponse.make_validation_response(
+                    f"Bundle.entry.{index}.request: invalid url parameter: {e}"
+                )
+            )
+
+    def _deny_mismatched_source(
+        self,
+        ctx: AuthContext,
+        resource: LocalizationList | None,
+        params: LocalizationListParams | None,
+        index: int,
+        endpoint: str,
+    ) -> BundleEntry[Any] | None:
+        """Reject an entry naming a source other than the caller's, mirroring the standalone routes.
+
+        Returns ``None`` when the entry may proceed. An entry that names no source at all
+        is left alone, so localization searches keep working for a caller without one.
+        """
+        try:
+            entry_source = resource.get_device() if resource is not None else (params.source if params else None)
+        except ValueError as e:
+            # A source built on the wrong naming system, which the standalone route rejects
+            # before it reaches the service too.
+            return BundleEntry(
+                response=EntryResponse.make_error_response(
+                    msg=f"Bundle.entry.{index}: {e}",
+                    status=str(spec_for(e).http_status),
+                )
+            )
+
+        try:
+            AuthContextService.assert_source_matches(ctx, entry_source)
+        except UnauthorizedSourceError as error:
+            Log.event(
+                logger,
+                Log.REFERRAL_ACCESS_DENIED,
+                "Bundle entry denied: source does not match the authenticated source",
+                ura_number=str(ctx.claims.ura_number),
+                endpoint=endpoint,
+            )
+            return BundleEntry(response=EntryResponse.make_forbidden_respone(msg=f"Bundle.entry.{index}: {error}"))
+
+        return None
 
     def _validate_post_resource(
         self, entry: BundleEntry[Any], authenticated_ura: UraNumber, index: int

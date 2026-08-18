@@ -10,7 +10,6 @@ from app.services.auth.auth_context import AuthContextService
 from app.services.exceptions import (
     UnauthorizedManagingRequestError,
     UnauthorizedScopeError,
-    UnauthorizedSourceError,
 )
 
 
@@ -52,17 +51,6 @@ def require_scope_for_localization_query(
     return ctx
 
 
-def _assert_source_matches(ctx: AuthContext, source: str | None) -> AuthContext:
-    """A client-supplied source must match the caller's authenticated source.
-
-    A request that supplies no source is left unguarded: localization queries carry a
-    subject and no source, so they pass through without needing a special case.
-    """
-    if source is not None and ctx.claims.source_id != source:
-        raise UnauthorizedSourceError()
-    return ctx
-
-
 def require_source_matches_body(
     # NOTE: this parameter's name and type must stay identical to the body parameter of
     # the route that depends on it. FastAPI merges body parameters across the dependency
@@ -71,11 +59,11 @@ def require_source_matches_body(
     data: Annotated[LocalizationList, Body(media_type="application/fhir+json")],
     ctx: AuthContext = Depends(get_auth_context),
 ) -> AuthContext:
-    return _assert_source_matches(ctx, data.get_device())
+    return AuthContextService.assert_source_matches(ctx, data.get_device())
 
 
 def require_source_matches_query(
     params: Annotated[LocalizationListParams, Query()],
     ctx: AuthContext = Depends(get_auth_context),
 ) -> AuthContext:
-    return _assert_source_matches(ctx, params.source)
+    return AuthContextService.assert_source_matches(ctx, params.source)
