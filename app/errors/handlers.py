@@ -17,6 +17,8 @@ from app.models.fhir.resources.operation_outcome.resource import (
 
 logger = logging.getLogger(__name__)
 
+_DENIAL_STATUSES = frozenset({401, 403})
+
 
 def _failure_event_for(request: Request, status_code: int) -> NVIEvent | None:
     path = request.url.path
@@ -60,9 +62,22 @@ def log_request_failure(request: Request, status_code: int, exc: Exception) -> N
     )
 
 
+def _log_rejection(request: Request, status_code: int, exc: Exception) -> None:
+    """Record why a request was rejected."""
+    level = logging.WARNING if status_code in _DENIAL_STATUSES else logging.INFO
+    logger.log(
+        level,
+        "Request rejected with %s (%s): %s",
+        status_code,
+        type(exc).__name__,
+        _summarize_reason(exc),
+    )
+
+
 def handle_mapped_exception(request: Request, exc: Exception) -> JSONResponse:
     spec = spec_for(exc)
     status_code = spec.http_status
+    _log_rejection(request, status_code, exc)
     if should_log(exc):
         log_request_failure(request, status_code, exc)
 

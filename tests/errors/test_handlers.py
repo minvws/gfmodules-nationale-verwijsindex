@@ -15,6 +15,7 @@ from app.services.exceptions import (
     NotFoundError,
     PseudonymError,
     UnauthorizedScopeError,
+    UnauthorizedSourceError,
 )
 
 _pending: dict[str, Exception] = {}
@@ -140,6 +141,39 @@ class TestFailureLogging:
             _client().post("/registrations")
 
         assert Log.REFERRAL_REGISTRATION_FAILED.event_id in _event_ids(caplog)
+
+
+class TestRejectionLogging:
+    def test_authorisation_denial_is_logged_as_a_warning(self, caplog: pytest.LogCaptureFixture) -> None:
+        _pending["exc"] = UnauthorizedSourceError()
+        with caplog.at_level(logging.WARNING):
+            resp = _client().get("/fhir/boom")
+
+        assert resp.status_code == 403
+        assert "The requested source does not match the authenticated source" in caplog.text
+        assert "UnauthorizedSourceError" in caplog.text
+
+    def test_denial_is_logged_on_routes_without_a_failure_event(self, caplog: pytest.LogCaptureFixture) -> None:
+        _pending["exc"] = UnauthorizedSourceError()
+        with caplog.at_level(logging.WARNING):
+            _client().get("/fhir/List")
+
+        assert _event_ids(caplog) == []
+        assert "The requested source does not match the authenticated source" in caplog.text
+
+    def test_routine_failures_stay_below_warning(self, caplog: pytest.LogCaptureFixture) -> None:
+        _pending["exc"] = NotFoundError()
+        with caplog.at_level(logging.WARNING):
+            _client().get("/fhir/boom")
+
+        assert caplog.records == []
+
+    def test_routine_failures_are_still_logged_at_info(self, caplog: pytest.LogCaptureFixture) -> None:
+        _pending["exc"] = NotFoundError()
+        with caplog.at_level(logging.INFO):
+            _client().get("/fhir/boom")
+
+        assert "Record not found" in caplog.text
 
 
 class TestRequestValidationHandler:

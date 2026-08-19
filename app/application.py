@@ -27,7 +27,7 @@ from app.errors.handlers import (
 )
 from app.logging.config_builder import LogConfigBuilder
 from app.logging.events import Log
-from app.logging.middleware import RequestContextMiddleware
+from app.logging.middleware import RequestContextMiddleware, bind_request_context
 from app.routers.default import router as default_router
 from app.routers.fhir.base import router as fhir_base_router
 from app.routers.fhir.localization_list import router as fhir_list_router
@@ -194,17 +194,22 @@ def _emit_app_started() -> None:
 
 
 def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    Log.event(
-        logger,
-        Log.SYS_UNHANDLED_EXCEPTION,
-        "Unhandled exception",
-        exc_info=exc,
-        exception_type=type(exc).__name__,
-        endpoint=request.url.path,
-        method=request.method,
-    )
-    log_request_failure(request, 500, exc)
-    return JSONResponse(status_code=500, content={"error": "Internal server error"})
+    # needed as context would be tore down already when the exception handler is called, so we need to rebind it here
+    with bind_request_context(request) as context:
+        Log.event(
+            logger,
+            Log.SYS_UNHANDLED_EXCEPTION,
+            "Unhandled exception",
+            exc_info=exc,
+            exception_type=type(exc).__name__,
+            endpoint=request.url.path,
+            method=request.method,
+        )
+        log_request_failure(request, 500, exc)
+        response = JSONResponse(status_code=500, content={"error": "Internal server error"})
+        if context is not None:
+            context.apply_to(response)
+        return response
 
 
 def api_key_headers(document_gf_headers: bool) -> list[Any]:
