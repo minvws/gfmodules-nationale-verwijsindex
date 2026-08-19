@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
+from starlette.types import ASGIApp
 
 from app.logging.context import (
     CLIENT_TRACE_ID_HEADER,
@@ -27,6 +28,7 @@ from app.logging.events import Log
 
 _SAFE_HEADER_VALUE = re.compile(r"[^a-zA-Z0-9\-_]")
 _access_logger = logging.getLogger("app.access")
+_logger = logging.getLogger(__name__)
 
 
 def _sanitize(value: str) -> str:
@@ -82,12 +84,24 @@ def _bind(context: RequestContext) -> Generator[None]:
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app: ASGIApp, correlation_id_expected: bool = False) -> None:
+        super().__init__(app)
+        self.correlation_id_expected = correlation_id_expected
+
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         context = RequestContext.from_request(request)
 
         response: Response | None = None
         start = time.perf_counter()
         with _bind(context):
+            if self.correlation_id_expected and context.correlation_id == UNSET:
+                Log.event(
+                    _logger,
+                    Log.SYS_MISSING_CORRELATION_ID,
+                    f"Request arrived without {CORRELATION_ID_HEADER}",
+                    endpoint=context.endpoint,
+                    method=context.method,
+                )
             try:
                 response = await call_next(request)
                 context.apply_to(response)
