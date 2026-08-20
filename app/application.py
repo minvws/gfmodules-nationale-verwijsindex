@@ -10,8 +10,7 @@ from types import TracebackType
 from typing import Any, AsyncIterator
 
 import uvicorn
-from fastapi import Depends, FastAPI, Request, Security
-from fastapi.responses import JSONResponse
+from fastapi import Depends, FastAPI, Security
 from fastapi.security import APIKeyHeader
 
 from app import container
@@ -21,10 +20,7 @@ from app.config import (
     _PATH,
     get_config,
 )
-from app.errors.handlers import (
-    log_request_failure,
-    register_exceptions,
-)
+from app.errors.handlers import register_exceptions
 from app.logging.config_builder import LogConfigBuilder
 from app.logging.events import Log
 from app.logging.middleware import RequestContextMiddleware
@@ -193,20 +189,6 @@ def _emit_app_started() -> None:
     )
 
 
-def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    Log.event(
-        logger,
-        Log.SYS_UNHANDLED_EXCEPTION,
-        "Unhandled exception",
-        exc_info=exc,
-        exception_type=type(exc).__name__,
-        endpoint=request.url.path,
-        method=request.method,
-    )
-    log_request_failure(request, 500, exc)
-    return JSONResponse(status_code=500, content={"error": "Internal server error"})
-
-
 def api_key_headers(document_gf_headers: bool) -> list[Any]:
     if document_gf_headers:
         headers = [
@@ -263,7 +245,5 @@ def setup_fastapi() -> FastAPI:
         RequestContextMiddleware,
         correlation_id_expected=config.logging.correlation_id_expected,
     )
-
-    fastapi.add_exception_handler(Exception, _unhandled_exception_handler)
 
     return fastapi
