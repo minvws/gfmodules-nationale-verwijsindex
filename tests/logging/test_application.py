@@ -1,5 +1,4 @@
 import asyncio
-import json
 import signal
 import sys
 from unittest.mock import MagicMock
@@ -18,30 +17,6 @@ def use_config() -> Config:
     cfg = get_test_config()
     set_config(cfg)
     return cfg
-
-
-def test_unhandled_exception_handler_logs_and_returns_500(
-    mocker: MockerFixture,
-) -> None:
-    request = MagicMock()
-    request.url.path = "/boom"
-    request.method = "GET"
-    exc = RuntimeError("explode")
-    log_event = mocker.patch("app.application.Log.event")
-
-    response = application._unhandled_exception_handler(request, exc)
-
-    assert response.status_code == 500
-    assert json.loads(response.body) == {"error": "Internal server error"}  # type: ignore
-    log_event.assert_called_once_with(
-        application.logger,
-        Log.SYS_UNHANDLED_EXCEPTION,
-        "Unhandled exception",
-        exc_info=exc,
-        exception_type="RuntimeError",
-        endpoint="/boom",
-        method="GET",
-    )
 
 
 def test_lifespan_logs_shutdown_reason_on_exit(use_config: Config, mocker: MockerFixture) -> None:

@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from app.errors.fhir import FHIRError
 from app.errors.mapping import EXCEPTION_MAP, should_log, spec_for
 from app.logging.events import Log, NVIEvent
+from app.logging.middleware import restore_request_context
 from app.models.fhir.resources.localization_list.request import SUBJECT_IDENTIFIER_PARAM
 from app.models.fhir.resources.operation_outcome.resource import (
     OperationOutcome,
@@ -119,11 +120,20 @@ def handle_request_validation_exception(req: Request, exc: RequestValidationErro
     return JSONResponse(status_code=status_code, content=exc.errors())
 
 
-def default_exception_handler(req: Request, exc: Exception) -> JSONResponse:
-    path = req.url.path
+@restore_request_context
+def handle_unhandled_exception(req: Request, exc: Exception) -> JSONResponse:
     status_code = 500
+    Log.event(
+        logger,
+        Log.SYS_UNHANDLED_EXCEPTION,
+        "Unhandled exception",
+        exc_info=exc,
+        exception_type=type(exc).__name__,
+        endpoint=req.url.path,
+        method=req.method,
+    )
     log_request_failure(req, status_code, exc)
-    if "fhir" in path:
+    if "fhir" in req.url.path:
         fhir_error = FHIRError(
             severity="error",
             code="expression",
@@ -137,10 +147,7 @@ def default_exception_handler(req: Request, exc: Exception) -> JSONResponse:
             headers=fhir_error.headers,
         )
 
-    return JSONResponse(
-        status_code=status_code,
-        content=f"An unexpected error occurred {type(exc).__name__}",
-    )
+    return JSONResponse(status_code=status_code, content={"error": "Internal server error"})
 
 
 @no_type_check
@@ -149,4 +156,4 @@ def register_exceptions(app: FastAPI) -> None:
         app.add_exception_handler(exception_type, handle_mapped_exception)
 
     app.add_exception_handler(RequestValidationError, handle_request_validation_exception)
-    app.add_exception_handler(Exception, default_exception_handler)
+    app.add_exception_handler(Exception, handle_unhandled_exception)
