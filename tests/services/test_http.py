@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from requests.exceptions import HTTPError, Timeout
 
+from app.logging.context import CORRELATION_ID_HEADER, correlation_id_var
 from app.services.http import HttpService
 
 PATCHED_MODULE = "app.services.http.request"
@@ -43,3 +44,40 @@ def test_do_request_raise_excetion_with_general_http_error(response: MagicMock, 
     response.return_value = mock_response
     with pytest.raises(HTTPError):
         http_service.do_request("GET")
+
+
+@patch(PATCHED_MODULE)
+def test_do_request_propagates_the_correlation_id(response: MagicMock, http_service: HttpService) -> None:
+    token = correlation_id_var.set("some-generated-id")
+    try:
+        http_service.do_request("GET")
+    finally:
+        correlation_id_var.reset(token)
+
+    assert response.call_args.kwargs["headers"][CORRELATION_ID_HEADER] == "some-generated-id"
+
+
+@patch(PATCHED_MODULE)
+def test_do_request_works_without_caller_headers(response: MagicMock, http_service: HttpService) -> None:
+    http_service.do_request("GET", sub_route="health")
+
+    assert response.call_args.kwargs["headers"] == {}
+
+
+@patch(PATCHED_MODULE)
+def test_do_request_omits_the_correlation_id_when_absent(response: MagicMock, http_service: HttpService) -> None:
+    http_service.do_request("GET", headers={"Authorization": "Bearer x"})
+
+    assert response.call_args.kwargs["headers"] == {"Authorization": "Bearer x"}
+
+
+@patch(PATCHED_MODULE)
+def test_do_request_does_not_mutate_the_caller_headers(response: MagicMock, http_service: HttpService) -> None:
+    headers = {"Authorization": "Bearer x"}
+    token = correlation_id_var.set("some-generated-id")
+    try:
+        http_service.do_request("GET", headers=headers)
+    finally:
+        correlation_id_var.reset(token)
+
+    assert headers == {"Authorization": "Bearer x"}
