@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from pytest_mock import MockerFixture
+from gfmodules.logging.testing import assert_event_emitted, capture_records
 
 from app.errors import handlers
 from app.errors.handlers import handle_unhandled_exception, register_exceptions
@@ -249,23 +249,22 @@ class TestUnhandledExceptionHandler:
         assert set(_event_ids(caplog)) == {Log.SYS_UNHANDLED_EXCEPTION.event_id, Log.LOCALIZATION_ERROR.event_id}
         assert {r.levelno for r in caplog.records if hasattr(r, "event_id")} == {logging.ERROR}
 
-    def test_logs_the_unhandled_exception_event(self, mocker: MockerFixture) -> None:
+    def test_logs_the_unhandled_exception_event(self) -> None:
         request = MagicMock()
         request.url.path = "/boom"
         request.method = "GET"
         exc = RuntimeError("explode")
-        log_event = mocker.patch("app.errors.handlers.Log.event")
 
-        response = handle_unhandled_exception(request, exc)
+        with capture_records(handlers.logger.name) as records:
+            response = handle_unhandled_exception(request, exc)
 
         assert response.status_code == 500
         assert json.loads(response.body) == {"error": "Internal server error"}  # type: ignore
-        log_event.assert_called_once_with(
-            handlers.logger,
+        entry = assert_event_emitted(
+            records,
             Log.SYS_UNHANDLED_EXCEPTION,
-            "Unhandled exception",
-            exc_info=exc,
             exception_type="RuntimeError",
             endpoint="/boom",
             method="GET",
         )
+        assert entry.record.exc_info is not None

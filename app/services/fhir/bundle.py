@@ -1,8 +1,11 @@
 import logging
 from typing import Any, Callable
 
+import gfmodules.logging as gflog
+from gfmodules.logging import LogEvent
+
 from app.errors.mapping import spec_for
-from app.logging.events import Log, NVIEvent
+from app.logging.events import Log
 from app.models.auth.context import AuthContext
 from app.models.auth.data import AuthorizationScope
 from app.models.fhir.bundle import Bundle, BundleEntry, EntryRequestDto, EntryResponse
@@ -51,23 +54,21 @@ class BundleService:
         required_scope = self.required_scope(method, resolved_url)
         if required_scope is not None and required_scope not in ctx.scope:
             error: Exception = UnauthorizedScopeError(ctx.scope, required_scope)
-            Log.event(
+            gflog.emit(
                 logger,
                 Log.REFERRAL_ACCESS_DENIED,
                 "Bundle entry denied: missing scope",
-                ura_number=str(authenticated_ura),
-                endpoint=endpoint,
+                fields={"ura_number": str(authenticated_ura), "endpoint": endpoint},
             )
             return BundleEntry(response=EntryResponse.make_forbidden_respone(msg=f"Bundle.entry.{index}: {error}"))
 
         if self.requires_managing_request(method) and not AuthContextService.is_managing_request(ctx):
             error = UnauthorizedManagingRequestError()
-            Log.event(
+            gflog.emit(
                 logger,
                 Log.REFERRAL_ACCESS_DENIED,
                 "Bundle entry denied: not a managing request",
-                ura_number=str(authenticated_ura),
-                endpoint=endpoint,
+                fields={"ura_number": str(authenticated_ura), "endpoint": endpoint},
             )
             return BundleEntry(response=EntryResponse.make_forbidden_respone(msg=f"Bundle.entry.{index}: {error}"))
 
@@ -174,7 +175,7 @@ class BundleService:
         authenticated_ura: UraNumber,
         action: Callable[[], BundleEntry[Any]],
         *,
-        failure_event: NVIEvent | None = None,
+        failure_event: LogEvent | None = None,
         failure_msg: str = "",
     ) -> BundleEntry[Any]:
         """Run an entry's service call, mapping any raised exception to an error entry."""
@@ -183,13 +184,11 @@ class BundleService:
         except Exception as exc:
             status_code = spec_for(exc).http_status
             if failure_event is not None:
-                Log.event(
+                gflog.emit(
                     logger,
                     failure_event,
                     failure_msg,
-                    ura_number=str(authenticated_ura),
-                    http_status=status_code,
-                    error_reason=str(exc),
+                    fields={"ura_number": str(authenticated_ura), "http_status": status_code, "error_reason": str(exc)},
                 )
             return BundleEntry(
                 response=EntryResponse.make_error_response(
@@ -253,12 +252,11 @@ class BundleService:
         try:
             AuthContextService.assert_source_matches(ctx, entry_source)
         except UnauthorizedSourceError as error:
-            Log.event(
+            gflog.emit(
                 logger,
                 Log.REFERRAL_ACCESS_DENIED,
                 "Bundle entry denied: source does not match the authenticated source",
-                ura_number=str(ctx.claims.ura_number),
-                endpoint=endpoint,
+                fields={"ura_number": str(ctx.claims.ura_number), "endpoint": endpoint},
             )
             return BundleEntry(response=EntryResponse.make_forbidden_respone(msg=f"Bundle.entry.{index}: {error}"))
 
@@ -269,26 +267,30 @@ class BundleService:
     ) -> LocalizationList | BundleEntry[Any]:
         """Return the validated ``LocalizationList`` or an error ``BundleEntry``."""
         if entry.resource is None:
-            Log.event(
+            gflog.emit(
                 logger,
                 Log.REFERRAL_REGISTRATION_FAILED,
                 "Referral registration failed",
-                ura_number=str(authenticated_ura),
-                http_status=422,
-                error_reason=f"Bundle.entry.{index}: resource cannot be empty",
+                fields={
+                    "ura_number": str(authenticated_ura),
+                    "http_status": 422,
+                    "error_reason": f"Bundle.entry.{index}: resource cannot be empty",
+                },
             )
             return BundleEntry(
                 response=EntryResponse.make_validation_response(msg=f"Bundle.entry.{index}: resource cannot be empty")
             )
 
         if not isinstance(entry.resource, LocalizationList):
-            Log.event(
+            gflog.emit(
                 logger,
                 Log.REFERRAL_REGISTRATION_FAILED,
                 "Referral registration failed",
-                ura_number=str(authenticated_ura),
-                http_status=422,
-                error_reason=f"Bundle.entry.{index}: invalid List resource",
+                fields={
+                    "ura_number": str(authenticated_ura),
+                    "http_status": 422,
+                    "error_reason": f"Bundle.entry.{index}: invalid List resource",
+                },
             )
             return BundleEntry(
                 response=EntryResponse.make_validation_response(f"Bundle.entry.{index}: invalid List resource")

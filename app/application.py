@@ -1,17 +1,15 @@
 import json
 import logging
 import os
-import signal
-import sys
 from contextlib import asynccontextmanager
-from logging.config import dictConfig
 from pathlib import Path
-from types import TracebackType
 from typing import Any, AsyncIterator
 
+import gfmodules.logging as gflog
 import uvicorn
 from fastapi import Depends, FastAPI, Security
 from fastapi.security import APIKeyHeader
+from gfmodules.logging.middleware import RequestContextMiddleware
 
 from app import container
 from app.auth import get_auth_ctx
@@ -21,9 +19,7 @@ from app.config import (
     get_config,
 )
 from app.errors.handlers import register_exceptions
-from app.logging.config_builder import LogConfigBuilder
 from app.logging.events import Log
-from app.logging.middleware import RequestContextMiddleware
 from app.routers.default import router as default_router
 from app.routers.fhir.base import router as fhir_base_router
 from app.routers.fhir.localization_list import router as fhir_list_router
@@ -33,8 +29,6 @@ from app.routers.registrations import router as registrations_router
 from app.stats import StatsdMiddleware
 
 logger = logging.getLogger(__name__)
-
-_shutdown_reason: str = "graceful"
 
 
 def get_uvicorn_params() -> dict[str, Any]:
@@ -65,8 +59,8 @@ def run() -> None:
 
 def application_init() -> None:
     setup_logging()
-    _install_excepthook()
-    _install_signal_handlers()
+    gflog.install_excepthook(logger)
+    gflog.install_signal_handlers()
 
 
 def create_fastapi_app() -> FastAPI:
@@ -74,12 +68,12 @@ def create_fastapi_app() -> FastAPI:
     try:
         fastapi = setup_fastapi()
     except Exception as exc:
-        Log.event(
+        gflog.emit(
             logger,
             Log.SYS_UNHANDLED_EXCEPTION,
             "Unhandled exception during application startup",
+            fields={"exception_type": type(exc).__name__},
             exc_info=exc,
-            exception_type=type(exc).__name__,
         )
         raise
 
@@ -88,15 +82,7 @@ def create_fastapi_app() -> FastAPI:
 
 def setup_logging() -> None:
     config = get_config()
-    loglevel = config.app.loglevel.upper()
-    if loglevel not in logging.getLevelNamesMapping():
-        raise ValueError(f"Invalid loglevel {loglevel}")
-
-    log_config = LogConfigBuilder(
-        loglevel=loglevel,
-        logging_config=config.logging,
-    ).build()
-    dictConfig(log_config)
+    gflog.configure(config=config.logging, loglevel=config.app.loglevel, catalogue=Log)
 
 
 def _read_version() -> str:
@@ -109,84 +95,15 @@ def _read_version() -> str:
         return "unknown"
 
 
-def _install_excepthook() -> None:
-    """Route uncaught exceptions through our own logging so the traceback stays in the
-    debug stream only. Without this, Python prints the traceback to stderr and
-    it leaks into stdout logs."""
-
-    def _hook(
-        exc_type: type[BaseException],
-        exc_value: BaseException,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        if issubclass(exc_type, KeyboardInterrupt):
-            sys.__excepthook__(exc_type, exc_value, exc_tb)
-            return
-        global _shutdown_reason
-        _shutdown_reason = "crash"
-        Log.event(
-            logger,
-            Log.SYS_APP_CRASHED,
-            "Application crashed: uncaught exception",
-            shutdown_reason=_shutdown_reason,
-            last_exception_type=exc_type.__name__,
-            exc_info=(exc_type, exc_value, exc_tb),
-        )
-
-    sys.excepthook = _hook
-
-
-def _install_signal_handlers() -> None:
-    """Record the shutdown reason then delegate to the previously-installed
-    handler (typically uvicorn's), so we don't disrupt graceful shutdown."""
-
-    for sig in (signal.SIGTERM, signal.SIGINT):
-        try:
-            previous = signal.getsignal(sig)
-        except (ValueError, OSError):
-            continue
-
-        def _make_handler(signum: int, prev: Any) -> Any:
-            def _handler(s: int, frame: Any) -> None:
-                global _shutdown_reason
-                _shutdown_reason = f"signal:{signal.Signals(signum).name}"
-                if callable(prev):
-                    prev(s, frame)
-
-            return _handler
-
-        try:
-            signal.signal(sig, _make_handler(sig, previous))
-        except (ValueError, OSError):
-            pass
-
-
 @asynccontextmanager
 async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
-    global _shutdown_reason
-    _emit_app_started()
-    try:
-        yield
-    finally:
-        if _shutdown_reason != "crash":
-            Log.event(
-                logger,
-                Log.SYS_APP_STOPPED,
-                "Application stopped",
-                shutdown_reason=_shutdown_reason,
-            )
-
-
-def _emit_app_started() -> None:
-    cfg = get_config()
-    Log.event(
+    async with gflog.lifespan_logging(
         logger,
-        Log.SYS_APP_STARTED,
-        "Application started",
         version=_read_version(),
         config_path=os.environ.get(_ENVIRONMENT_CONFIG_PATH_NAME, _PATH),
-        crypto_service_api_enabled=cfg.crypto_service_api.enabled,
-    )
+        started_fields={"crypto_service_api_enabled": get_config().crypto_service_api.enabled},
+    ):
+        yield
 
 
 def api_key_headers(document_gf_headers: bool) -> list[Any]:
@@ -244,6 +161,7 @@ def setup_fastapi() -> FastAPI:
     fastapi.add_middleware(
         RequestContextMiddleware,
         correlation_id_expected=config.logging.correlation_id_expected,
+        trust_forwarded_for=config.logging.trust_forwarded_for,
     )
 
     return fastapi

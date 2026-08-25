@@ -14,7 +14,7 @@ def _operational_error() -> OperationalError:
 
 def test_retry_emits_db_connection_failed_on_operational_error(mocker: MockerFixture) -> None:
     mocker.patch("app.db.session.sleep")
-    log_event = mocker.patch("app.db.session.Log.event")
+    log_event = mocker.patch("app.db.session.gflog.emit")
     session = DbSession(engine=MagicMock(), retry_backoff=[0.5])
 
     attempts = {"n": 0}
@@ -30,14 +30,14 @@ def test_retry_emits_db_connection_failed_on_operational_error(mocker: MockerFix
     log_event.assert_called_once()
     args, kwargs = log_event.call_args
     assert args[1] is Log.DB_CONNECTION_FAILED
-    assert kwargs["error_type"] == "OperationalError"
-    assert kwargs["retry_attempt"] == 1
-    assert kwargs["backoff_seconds"] == 0.5
+    assert kwargs["fields"]["error_type"] == "OperationalError"
+    assert kwargs["fields"]["retry_attempt"] == 1
+    assert kwargs["fields"]["backoff_seconds"] == 0.5
 
 
 def test_retry_emits_db_connection_failed_per_attempt(mocker: MockerFixture) -> None:
     mocker.patch("app.db.session.sleep")
-    log_event = mocker.patch("app.db.session.Log.event")
+    log_event = mocker.patch("app.db.session.gflog.emit")
     session = DbSession(engine=MagicMock(), retry_backoff=[0.1, 0.2])
 
     attempts = {"n": 0}
@@ -51,12 +51,12 @@ def test_retry_emits_db_connection_failed_per_attempt(mocker: MockerFixture) -> 
     assert session._retry(op) == "ok"
 
     assert log_event.call_count == 2
-    assert [c.kwargs["retry_attempt"] for c in log_event.call_args_list] == [1, 2]
-    assert [c.kwargs["backoff_seconds"] for c in log_event.call_args_list] == [0.1, 0.2]
+    assert [c.kwargs["fields"]["retry_attempt"] for c in log_event.call_args_list] == [1, 2]
+    assert [c.kwargs["fields"]["backoff_seconds"] for c in log_event.call_args_list] == [0.1, 0.2]
 
 
 def test_retry_emits_db_schema_error_on_data_error_and_reraises(mocker: MockerFixture) -> None:
-    log_event = mocker.patch("app.db.session.Log.event")
+    log_event = mocker.patch("app.db.session.gflog.emit")
     session = DbSession(engine=MagicMock(), retry_backoff=[])
 
     def op() -> str:
@@ -72,6 +72,6 @@ def test_retry_emits_db_schema_error_on_data_error_and_reraises(mocker: MockerFi
     log_event.assert_called_once()
     args, kwargs = log_event.call_args
     assert args[1] is Log.DB_SCHEMA_ERROR
-    assert kwargs["exception_type"] == "DataError"
-    assert kwargs["value_length"] == 11
-    assert kwargs["column_limit"] == 8
+    assert kwargs["fields"]["exception_type"] == "DataError"
+    assert kwargs["fields"]["value_length"] == 11
+    assert kwargs["fields"]["column_limit"] == 8
