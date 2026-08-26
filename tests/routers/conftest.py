@@ -3,6 +3,7 @@ from typing import Any, Generator
 import pytest
 from fastapi import Request
 from fastapi.testclient import TestClient
+from pydantic import SecretStr
 
 from app.application import setup_fastapi
 from app.auth import get_auth_ctx
@@ -71,7 +72,7 @@ def make_localize_auth_context(ura: str = TEST_URA) -> AuthContext:
 
 @pytest.fixture()
 def db() -> Generator[Database, Any, None]:
-    config_database = ConfigDatabase(dsn="sqlite:///:memory:", retry_backoff=[])
+    config_database = ConfigDatabase(dsn=SecretStr("sqlite:///:memory:"), retry_backoff=[])
     db = Database(config_database=config_database)
     db.generate_tables()
     try:

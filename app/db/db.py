@@ -17,9 +17,10 @@ class Database:
         self._config_database = config_database
 
         try:
-            if "sqlite://" in config_database.dsn:
+            dsn = config_database.dsn.get_secret_value()
+            if "sqlite://" in dsn:
                 self.engine = create_engine(
-                    config_database.dsn,
+                    dsn,
                     connect_args={
                         "check_same_thread": False,
                         "uri": True,
@@ -30,7 +31,7 @@ class Database:
                     conn.execute(text("PRAGMA foreign_keys=ON"))
             else:
                 self.engine = create_engine(
-                    config_database.dsn,
+                    dsn,
                     echo=False,
                     pool_pre_ping=config_database.pool_pre_ping,
                     pool_recycle=config_database.pool_recycle,

@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 import pytest
+from pydantic import SecretStr
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.config import ConfigDatabase
@@ -287,7 +288,7 @@ def test_delete_should_raise_exception_when_connection_to_db_is_down(
 ) -> None:
     db = Database(
         config_database=ConfigDatabase(
-            dsn="postgresql+psycopg://postgres:connection@does_not_exists:12345/imaginary-db",
+            dsn=SecretStr("postgresql+psycopg://postgres:connection@does_not_exists:12345/imaginary-db"),
             retry_backoff=[0.1, 0.2, 0.4],
         )
     )
