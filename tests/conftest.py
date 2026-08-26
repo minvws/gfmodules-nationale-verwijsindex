@@ -2,6 +2,7 @@ from collections.abc import Generator
 from typing import Any
 
 import pytest
+from pydantic import SecretStr
 
 from app.config import ConfigDatabase
 from app.db.db import Database
@@ -64,7 +65,7 @@ def make_list_resource(
 
 @pytest.fixture(autouse=True)
 def database() -> Generator[Database, Any, None]:
-    config_database = ConfigDatabase(dsn="sqlite:///:memory:", retry_backoff=[])
+    config_database = ConfigDatabase(dsn=SecretStr("sqlite:///:memory:"), retry_backoff=[])
     db = Database(config_database=config_database)
     db.generate_tables()
     try:
