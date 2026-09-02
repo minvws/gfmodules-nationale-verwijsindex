@@ -1,5 +1,6 @@
 import pytest
 
+from app.models.auth.data import AuthorizationScope
 from app.models.auth.headers import AuthHeaders
 from app.models.ura import UraNumber
 from app.services.auth.header import AuthHeaderService
@@ -12,7 +13,7 @@ def test_validate_should_succeed(ura_number: UraNumber, auth_header_service: Aut
         source_id="source123",
         ura=ura_number.value,
         audience=auth_header_service.expected_audiences[0],
-        scope="nvi:read",
+        scope=[AuthorizationScope.READ],
         cert_type="oin",
         organization_name="Test Organization",
     )
@@ -30,7 +31,7 @@ def test_validate_should_panic_with_invalid_audience(
         source_id="source123",
         ura=ura_number.value,
         audience="some-invalid-audience",
-        scope="nvi:read",
+        scope=[AuthorizationScope.READ],
         cert_type="oin",
         organization_name="Test Organization",
     )

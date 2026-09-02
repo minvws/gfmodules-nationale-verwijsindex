@@ -4,6 +4,7 @@ from unittest.mock import Mock
 import pytest
 from fastapi import Request
 
+from app.models.auth.data import AuthorizationScope
 from app.models.auth.headers import AuthHeaders
 from app.models.ura import UraNumber
 
@@ -15,7 +16,7 @@ def auth_headers_dict(ura_number: UraNumber) -> Dict[str, Any]:
         "source_id": "source123",
         "ura": ura_number.value,
         "audience": "audience",
-        "scope": "nvi:read",
+        "scope": [AuthorizationScope.READ],
         "cert_type": "oin",
         "organization_name": "Test Organization",
     }
@@ -28,7 +29,7 @@ def auth_headers(ura_number: UraNumber) -> AuthHeaders:
         source_id="source123",
         ura=ura_number.value,
         audience="audience",
-        scope="nvi:read",
+        scope=[AuthorizationScope.READ],
         cert_type="oin",
         organization_name="Test Organization",
     )
@@ -55,10 +56,10 @@ def test_serialize_should_succeed(auth_headers: AuthHeaders, auth_headers_dict: 
 
 def test_serialize_with_alias_should_succeed(auth_headers: AuthHeaders, header_data: Dict[str, Any]) -> None:
     expected = header_data.copy()
-    expected["x-gf-scope"] = [expected["x-gf-scope"][0]]
+    expected["x-gf-scope"] = [AuthorizationScope.READ]
     actual = auth_headers.model_dump(by_alias=True)
 
-    assert actual == actual
+    assert actual == expected
 
 
 def test_deserialize_should_succeed(auth_headers_dict: Dict[str, Any], auth_headers: AuthHeaders) -> None:
@@ -145,18 +146,22 @@ def test_from_request_should_succeed_without_source_id(
     assert actual.oin == "oin123"
 
 
-def test_from_header_should_panic_with_invalid_scope(
+@pytest.mark.parametrize("value", ["nvi:invalid-scope", "prs:oprf", "nvi:read_typo prs:read"])
+def test_from_header_should_panic_without_a_known_scope(
     header_data: Dict[str, Any],
+    value: str,
 ) -> None:
+    """A token that grants this service nothing is refused up front, rather than left to
+    fail the requirement of each individual route."""
     data = header_data.copy()
-    data["x-gf-scope"] = "nvi:invalid-scope"
+    data["x-gf-scope"] = value
     mock_request = Mock(spec=Request)
     mock_request.headers = data
 
     with pytest.raises(ValueError) as exec:
         AuthHeaders.from_request(mock_request)
 
-    assert "Invalid scope nvi:invalid-scope" in str(exec.value)
+    assert "x-gf-scope must hold at least one known scope" in str(exec.value)
 
 
 @pytest.mark.parametrize("value", ["", " ", "\t", "  \t "])
@@ -173,7 +178,7 @@ def test_from_header_should_panic_with_empty_scope(
     with pytest.raises(ValueError) as exec:
         AuthHeaders.from_request(mock_request)
 
-    assert "x-gf-scope must hold at least one scope" in str(exec.value)
+    assert "x-gf-scope must hold at least one known scope" in str(exec.value)
 
 
 def test_from_header_should_accept_multiple_scopes(
@@ -186,4 +191,29 @@ def test_from_header_should_accept_multiple_scopes(
 
     actual = AuthHeaders.from_request(mock_request)
 
-    assert actual.scope == "nvi:read nvi:create"
+    assert actual.scope == [AuthorizationScope.READ, AuthorizationScope.CREATE]
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("nvi:read prs:oprf", [AuthorizationScope.READ]),
+        ("prs:oprf nvi:read", [AuthorizationScope.READ]),
+        ("lmr:write nvi:read nvi:create", [AuthorizationScope.READ, AuthorizationScope.CREATE]),
+    ],
+)
+def test_from_header_should_ignore_unknown_scopes_alongside_a_known_one(
+    header_data: Dict[str, Any],
+    value: str,
+    expected: list[AuthorizationScope],
+) -> None:
+    """An access token may carry scopes belonging to other services. Those must not fail
+    the request, and must not grant anything here either."""
+    data = header_data.copy()
+    data["x-gf-scope"] = value
+    mock_request = Mock(spec=Request)
+    mock_request.headers = data
+
+    actual = AuthHeaders.from_request(mock_request)
+
+    assert actual.scope == expected
