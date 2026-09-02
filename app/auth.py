@@ -5,7 +5,6 @@ from starlette.requests import Request
 
 from app import dependencies
 from app.models.auth.context import AuthContext, AuthenticationClaims
-from app.models.auth.data import AuthorizationScope
 from app.models.auth.headers import AuthHeaders
 from app.models.ura import UraNumber
 from app.services.auth.header import AuthHeaderService
@@ -44,7 +43,7 @@ def get_auth_ctx(
     )
     ctx = AuthContext(
         claims=claims,
-        scope=[AuthorizationScope(s) for s in validated_auth_headers.scope.split()],
+        scope=validated_auth_headers.scope,
         audience=validated_auth_headers.audience,
     )
     request.state.auth = ctx
