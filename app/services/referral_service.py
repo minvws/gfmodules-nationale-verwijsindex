@@ -2,6 +2,8 @@ import logging
 from typing import Sequence
 from uuid import UUID
 
+import gfmodules.logging as gflog
+
 from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
@@ -46,11 +48,11 @@ class ReferralService:
                 source=source,
             )
             if existing is not None:
-                Log.event(
+                gflog.emit(
                     logger,
                     Log.IDEMPOTENT_REGISTRATION,
                     "Idempotent referral registration",
-                    ura_number=str(ura_number),
+                    fields={"ura_number": str(ura_number)},
                 )
                 return existing
 
@@ -63,13 +65,15 @@ class ReferralService:
                 )
             )
 
-            Log.event(
+            gflog.emit(
                 logger,
                 Log.REGISTERED_REFERRAL,
                 "Referral registered",
-                organization=organization_name,
-                ura_number=str(ura_number),
-                pseudonym_hash=str(encrypted_pseudonym),
+                fields={
+                    "organization": organization_name,
+                    "ura_number": str(ura_number),
+                    "pseudonym_hash": str(encrypted_pseudonym),
+                },
             )
             return new_referral
 

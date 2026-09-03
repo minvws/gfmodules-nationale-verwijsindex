@@ -1,215 +1,155 @@
-"""Integration tests for per-field stream routing.
-
-Wires up the PUBLIC_INSPECT (stroom 1), APP (stroom 2) and SIEM (stroom 3)
-handlers the same way ``LogConfigBuilder`` does and asserts each stream only
-receives the fields the referral/localization events assign to it.
-"""
-
-import io
-import json
 import logging
-from typing import Any, Iterator
+from collections.abc import Iterator
+from contextlib import ExitStack
+from typing import Any
 
+import gfmodules.logging as gflog
 import pytest
+from gfmodules.logging import LogEvent, LoggingStreams, bind_context
+from gfmodules.logging.testing import assert_fields_absent, capture_stream
 
-from app.logging.context import correlation_id_var, endpoint_var, ip_var, method_var, request_id_var
 from app.logging.events import Log
-from app.logging.filters import (
-    AppFilter,
-    LoggingStreams,
-    PublicInspectFilter,
-    SiemFilter,
-)
-from app.logging.formatter import JsonFormatter
+
+_LOGGER_NAME = "app.test_stream_routing"
+_ORGANIZATION = "some_name"
+_URA = "12345678"
+_PSEUDONYM_HASH = "abcd1234abcd1234"
+
+Routed = dict[LoggingStreams, list[dict[str, Any]]]
 
 
 @pytest.fixture
-def streams() -> Iterator[tuple[logging.Logger, io.StringIO, io.StringIO, io.StringIO]]:
-    pub_buf, app_buf, siem_buf = io.StringIO(), io.StringIO(), io.StringIO()
+def route() -> Iterator[Any]:
+    logger = logging.getLogger(_LOGGER_NAME)
 
-    pub_handler = logging.StreamHandler(pub_buf)
-    pub_handler.addFilter(PublicInspectFilter())
-    pub_handler.setFormatter(JsonFormatter(include_traces=False, stream=LoggingStreams.PUBLIC_INSPECT))
+    def _route(event: LogEvent, message: str = "event", **fields: Any) -> Routed:
+        with ExitStack() as stack:
+            routed: Routed = {
+                stream: stack.enter_context(capture_stream(stream, _LOGGER_NAME)) for stream in LoggingStreams
+            }
+            gflog.emit(logger, event, message, fields={**fields})
+        return routed
 
-    app_handler = logging.StreamHandler(app_buf)
-    app_handler.addFilter(AppFilter())
-    app_handler.setFormatter(JsonFormatter(include_traces=False, stream=LoggingStreams.APP))
-
-    siem_handler = logging.StreamHandler(siem_buf)
-    siem_handler.addFilter(SiemFilter())
-    siem_handler.setFormatter(JsonFormatter(include_traces=False, stream=LoggingStreams.SIEM))
-
-    logger = logging.getLogger("app.test_stream_routing")
-    logger.setLevel(logging.DEBUG)
-    logger.handlers = [pub_handler, app_handler, siem_handler]
-    logger.propagate = False
-
-    tokens = [
-        request_id_var.set("req-1"),
-        ip_var.set("10.0.0.1"),
-        endpoint_var.set("/token"),
-        method_var.set("POST"),
-        correlation_id_var.set("corr-1"),
-    ]
-    try:
-        yield logger, pub_buf, app_buf, siem_buf
-    finally:
-        logger.handlers = []
-        request_id_var.reset(tokens[0])
-        ip_var.reset(tokens[1])
-        endpoint_var.reset(tokens[2])
-        method_var.reset(tokens[3])
-        correlation_id_var.reset(tokens[4])
+    with bind_context(
+        {
+            "request_id": "req-1",
+            "ip": "10.0.0.1",
+            "endpoint": "/token",
+            "method": "POST",
+            "correlation_id": "corr-1",
+        }
+    ):
+        yield _route
 
 
-def _messages(buf: io.StringIO) -> list[dict[str, Any]]:
-    return [json.loads(line)["message"] for line in buf.getvalue().splitlines()]
+class TestReferralRegistration:
+    @pytest.fixture
+    def routed(self, route: Any) -> Routed:
+        return dict(
+            route(
+                Log.REGISTERED_REFERRAL,
+                "registered",
+                organization=_ORGANIZATION,
+                ura_number=_URA,
+                pseudonym_hash=_PSEUDONYM_HASH,
+            )
+        )
+
+    def test_public_inspect_receives_the_organization_and_pseudonym_hash(self, routed: Routed) -> None:
+        message = routed[LoggingStreams.PUBLIC_INSPECT][0]
+        assert message["organization"] == _ORGANIZATION
+        assert message["ura_number"] == _URA
+        assert message["pseudonym_hash"] == _PSEUDONYM_HASH
+
+    def test_app_receives_the_ura_number_but_not_the_pseudonym_hash(self, routed: Routed) -> None:
+        assert routed[LoggingStreams.APP][0]["ura_number"] == _URA
+        assert_fields_absent(routed[LoggingStreams.APP], "pseudonym_hash", "organization")
+
+    def test_siem_receives_nothing_at_all(self, routed: Routed) -> None:
+        assert routed[LoggingStreams.SIEM] == []
+
+    def test_correlation_metadata_is_retained_in_every_routed_stream(self, routed: Routed) -> None:
+        for stream in (LoggingStreams.PUBLIC_INSPECT, LoggingStreams.APP):
+            message = routed[stream][0]
+            assert message["request_id"] == "req-1"
+            assert message["ip"] == "10.0.0.1"
+            assert message["correlation_id"] == "corr-1"
 
 
-def test_registered_referral_routes_sensitive_fields_to_public_only(
-    streams: tuple[logging.Logger, io.StringIO, io.StringIO, io.StringIO],
-) -> None:
-    logger, pub_buf, app_buf, siem_buf = streams
-    Log.event(
-        logger,
-        Log.REGISTERED_REFERRAL,
-        "registered",
-        organization="some_name",
-        ura_number="12345678",
-        pseudonym_hash="abcd1234abcd1234",
-    )
+class TestReferralAccessDenied:
+    @pytest.fixture
+    def routed(self, route: Any) -> Routed:
+        return dict(
+            route(Log.REFERRAL_ACCESS_DENIED, "access denied", ura_number=_URA, resource_ura="87654321"),
+        )
 
-    pub_msg = _messages(pub_buf)[0]
-    app_msg = _messages(app_buf)[0]
+    def test_app_receives_the_endpoint_and_siem_does_not(self, routed: Routed) -> None:
+        assert routed[LoggingStreams.APP][0]["endpoint"] == "/token"
+        assert routed[LoggingStreams.SIEM][0]["resource_ura"] == "87654321"
+        assert_fields_absent(routed[LoggingStreams.SIEM], "endpoint")
 
-    # PUB (stroom 1) gets organization + ura_number + pseudonym_hash
-    assert pub_msg["organization"] == "some_name"
-    assert pub_msg["ura_number"] == "12345678"
-    assert pub_msg["pseudonym_hash"] == "abcd1234abcd1234"
-
-    # APP (stroom 2) gets ura_number only
-    assert app_msg["ura_number"] == "12345678"
-    assert "pseudonym_hash" not in app_msg
-    assert "organization" not in app_msg
-
-    # REGISTERED_REFERRAL is not routed to SIEM (stroom 3)
-    assert siem_buf.getvalue() == ""
-
-    # correlation metadata is retained in the routed streams
-    for msg in (pub_msg, app_msg):
-        assert msg["request_id"] == "req-1"
-        assert msg["ip"] == "10.0.0.1"
-        assert msg["correlation_id"] == "corr-1"
+    def test_public_inspect_receives_nothing(self, routed: Routed) -> None:
+        assert routed[LoggingStreams.PUBLIC_INSPECT] == []
 
 
-def test_referral_access_denied_routes_to_app_and_siem_without_endpoint_in_siem(
-    streams: tuple[logging.Logger, io.StringIO, io.StringIO, io.StringIO],
-) -> None:
-    logger, pub_buf, app_buf, siem_buf = streams
-    Log.event(
-        logger,
-        Log.REFERRAL_ACCESS_DENIED,
-        "access denied",
-        ura_number="12345678",
-        resource_ura="87654321",
-    )
+class TestLocalization:
+    @pytest.fixture
+    def routed(self, route: Any) -> Routed:
+        return dict(
+            route(
+                Log.LOCALIZATION_SUCCESS,
+                "localized",
+                organization=_ORGANIZATION,
+                ura_number=_URA,
+                pseudonym_hash=_PSEUDONYM_HASH,
+                result_count=3,
+            )
+        )
 
-    app_msg = _messages(app_buf)[0]
-    siem_msg = _messages(siem_buf)[0]
+    def test_public_inspect_receives_the_organization_but_not_the_result_count(self, routed: Routed) -> None:
+        message = routed[LoggingStreams.PUBLIC_INSPECT][0]
+        assert message["organization"] == _ORGANIZATION
+        assert message["pseudonym_hash"] == _PSEUDONYM_HASH
+        assert_fields_absent(routed[LoggingStreams.PUBLIC_INSPECT], "result_count")
 
-    # APP keeps ura_number + resource_ura + endpoint (endpoint comes from context)
-    assert app_msg["ura_number"] == "12345678"
-    assert app_msg["resource_ura"] == "87654321"
-    assert app_msg["endpoint"] == "/token"
+    def test_app_receives_the_pseudonym_hash_but_not_the_organization(self, routed: Routed) -> None:
+        message = routed[LoggingStreams.APP][0]
+        assert message["ura_number"] == _URA
+        assert message["pseudonym_hash"] == _PSEUDONYM_HASH
+        assert_fields_absent(routed[LoggingStreams.APP], "result_count", "organization")
 
-    # SIEM keeps ura_number + resource_ura, but NOT endpoint
-    assert siem_msg["ura_number"] == "12345678"
-    assert siem_msg["resource_ura"] == "87654321"
-    assert "endpoint" not in siem_msg
-
-    # REFERRAL_ACCESS_DENIED is not routed to PUB (stroom 1)
-    assert pub_buf.getvalue() == ""
-
-
-def test_localization_success_routes_fields_per_stream(
-    streams: tuple[logging.Logger, io.StringIO, io.StringIO, io.StringIO],
-) -> None:
-    logger, pub_buf, app_buf, siem_buf = streams
-    Log.event(
-        logger,
-        Log.LOCALIZATION_SUCCESS,
-        "localized",
-        organization="some_name",
-        ura_number="12345678",
-        pseudonym_hash="abcd1234abcd1234",
-        result_count=3,
-    )
-
-    pub_msg = _messages(pub_buf)[0]
-    app_msg = _messages(app_buf)[0]
-    siem_msg = _messages(siem_buf)[0]
-
-    # PUB keeps organization + ura_number + pseudonym_hash
-    assert pub_msg["organization"] == "some_name"
-    assert pub_msg["ura_number"] == "12345678"
-    assert pub_msg["pseudonym_hash"] == "abcd1234abcd1234"
-    assert "result_count" not in pub_msg
-
-    # APP keeps ura_number + pseudonym_hash, drops result_count and organization
-    assert app_msg["ura_number"] == "12345678"
-    assert app_msg["pseudonym_hash"] == "abcd1234abcd1234"
-    assert "result_count" not in app_msg
-    assert "organization" not in app_msg
-
-    # SIEM keeps ura_number + result_count, drops the pseudonym hash and organization
-    assert siem_msg["ura_number"] == "12345678"
-    assert siem_msg["result_count"] == 3
-    assert "pseudonym_hash" not in siem_msg
-    assert "organization" not in siem_msg
+    def test_the_pseudonym_hash_never_reaches_siem(self, routed: Routed) -> None:
+        message = routed[LoggingStreams.SIEM][0]
+        assert message["ura_number"] == _URA
+        assert message["result_count"] == 3
+        assert_fields_absent(routed[LoggingStreams.SIEM], "pseudonym_hash", "organization")
 
 
-def test_access_request_goes_to_app_only(
-    streams: tuple[logging.Logger, io.StringIO, io.StringIO, io.StringIO],
-) -> None:
-    logger, pub_buf, app_buf, siem_buf = streams
-    Log.event(logger, Log.ACCESS_REQUEST, "access", status_code=200, duration_ms=5)
+class TestBulkDeletion:
+    def test_all_ura_referrals_deleted_reaches_all_three_streams(self, route: Any) -> None:
+        routed: Routed = route(
+            Log.ALL_URA_REFERRALS_DELETED,
+            "all referrals deleted",
+            organization=_ORGANIZATION,
+            ura_number=_URA,
+            deleted_count=42,
+        )
 
-    app_msg = _messages(app_buf)[0]
-    assert app_msg["endpoint"] == "/token"
-    assert app_msg["method"] == "POST"
-    # off-spec extras are not forwarded to the stream
-    assert "status_code" not in app_msg
-    assert "duration_ms" not in app_msg
-
-    # ACCESS_REQUEST is APP-only (stroom 1 and stroom 3 == "-")
-    assert pub_buf.getvalue() == ""
-    assert siem_buf.getvalue() == ""
+        for stream in LoggingStreams:
+            assert routed[stream][0]["deleted_count"] == 42
+        assert_fields_absent(routed[LoggingStreams.APP], "organization")
+        assert_fields_absent(routed[LoggingStreams.SIEM], "organization")
 
 
-def test_off_spec_extras_dropped_from_all_streams(
-    streams: tuple[logging.Logger, io.StringIO, io.StringIO, io.StringIO],
-) -> None:
-    logger, pub_buf, app_buf, siem_buf = streams
-    Log.event(
-        logger,
-        Log.REFERRAL_DELETED,
-        "deleted",
-        organization="some_name",
-        ura_number="12345678",
-        pseudonym_hash="abcd1234abcd1234",
-        oin="00000001000000000001",
-    )
+class TestAccessRequest:
+    def test_reaches_the_app_stream_only(self, route: Any) -> None:
+        routed: Routed = route(Log.ACCESS_REQUEST, "access", status_code=200, duration_ms=5)
 
-    pub_msg = _messages(pub_buf)[0]
-    app_msg = _messages(app_buf)[0]
+        message = routed[LoggingStreams.APP][0]
+        assert message["endpoint"] == "/token"
+        assert message["method"] == "POST"
+        assert message["status_code"] == 200
+        assert message["duration_ms"] == 5
 
-    # PUB keeps organization + ura_number + pseudonym_hash; off-spec `oin` dropped
-    assert pub_msg["organization"] == "some_name"
-    assert pub_msg["ura_number"] == "12345678"
-    assert pub_msg["pseudonym_hash"] == "abcd1234abcd1234"
-    assert "oin" not in pub_msg
-
-    # APP keeps ura_number only; pseudonym_hash and off-spec `oin` dropped
-    assert app_msg["ura_number"] == "12345678"
-    assert "pseudonym_hash" not in app_msg
-    assert "oin" not in app_msg
+        assert routed[LoggingStreams.PUBLIC_INSPECT] == []
+        assert routed[LoggingStreams.SIEM] == []

@@ -1,6 +1,7 @@
 import logging
 from typing import Annotated, Any
 
+import gfmodules.logging as gflog
 from fastapi import APIRouter, Body, Depends
 
 from app.dependencies import (
@@ -32,22 +33,23 @@ def localize(
 
     ura_number = str(ctx.claims.ura_number)
     if results:
-        Log.event(
+        gflog.emit(
             logger,
             Log.LOCALIZATION_SUCCESS,
             "Localization succeeded",
-            organization=ctx.claims.organization_name,
-            ura_number=ura_number,
-            pseudonym_hash=str(resolved.response),
-            result_count=len(results),
+            fields={
+                "organization": ctx.claims.organization_name,
+                "ura_number": ura_number,
+                "pseudonym_hash": str(resolved.response),
+                "result_count": len(results),
+            },
         )
     else:
-        Log.event(
+        gflog.emit(
             logger,
             Log.LOCALIZATION_NO_MATCH,
             "Localization returned no match",
-            ura_number=ura_number,
-            result_count=0,
+            fields={"ura_number": ura_number, "result_count": 0},
         )
 
     return [Registration.from_entity(r) for r in results]

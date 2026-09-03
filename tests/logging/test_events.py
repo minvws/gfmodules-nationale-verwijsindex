@@ -1,84 +1,108 @@
-import json
 import logging
 
+import gfmodules.logging as gflog
 import pytest
+from gfmodules.logging import DefaultEventCatalogue, LoggingStreams
+from gfmodules.logging.events import declared_events
+from gfmodules.logging.testing import assert_catalogue_complete, assert_event_emitted, capture_records
 
-from app.logging.events import Log, NVIEvent
-from app.logging.filters import LoggingStreams
-from app.logging.formatter import JsonFormatter
+from app.logging.events import Log
 
-
-def test_log_event_attaches_event_id_and_streams(caplog: pytest.LogCaptureFixture) -> None:
-    logger = logging.getLogger("app.test_events")
-    logger.setLevel(logging.DEBUG)
-    with caplog.at_level(logging.DEBUG, logger="app.test_events"):
-        Log.event(logger, Log.SYS_APP_STARTED, "started", version="1.0")
-
-    record = caplog.records[-1]
-    assert record.event_id == Log.SYS_APP_STARTED.event_id  # type: ignore
-    assert LoggingStreams.APP in record.stream  # type: ignore
-    assert record.version == "1.0"  # type: ignore
-    assert record.levelno == logging.INFO
+_APP = LoggingStreams.APP
+_SIEM = LoggingStreams.SIEM
+_PUB = LoggingStreams.PUBLIC_INSPECT
 
 
-@pytest.mark.parametrize(
-    "event,expected_level",
-    [
-        (Log.SYS_APP_STARTED, logging.INFO),
-        (Log.HEALTH_UNHEALTHY, logging.ERROR),
-        (Log.SYS_UNHANDLED_EXCEPTION, logging.ERROR),
-    ],
-)
-def test_log_event_uses_event_level(caplog: pytest.LogCaptureFixture, event: object, expected_level: int) -> None:
-    logger = logging.getLogger("app.test_events_levels")
-    logger.setLevel(logging.DEBUG)
-    with caplog.at_level(logging.DEBUG, logger="app.test_events_levels"):
-        Log.event(logger, event, "msg")  # type: ignore[arg-type]
-    assert caplog.records[-1].levelno == expected_level
+class TestCatalogue:
+    def test_defines_every_required_event(self) -> None:
+        assert_catalogue_complete(Log)
 
-
-def test_log_event_attaches_field_streams_for_routed_events(caplog: pytest.LogCaptureFixture) -> None:
-    logger = logging.getLogger("app.test_events_routing")
-    logger.setLevel(logging.DEBUG)
-    with caplog.at_level(logging.DEBUG, logger="app.test_events_routing"):
-        Log.event(logger, Log.REGISTERED_REFERRAL, "registered", ura_number="12345678")
-
-    record = caplog.records[-1]
-    field_streams = record.field_streams  # type: ignore[attr-defined]
-    assert field_streams[LoggingStreams.PUBLIC_INSPECT] == ("organization", "ura_number", "pseudonym_hash")
-    assert field_streams[LoggingStreams.APP] == ("ura_number",)
-    assert LoggingStreams.SIEM not in field_streams
-
-
-def test_log_event_omits_field_streams_for_plain_events(caplog: pytest.LogCaptureFixture) -> None:
-    plain_event = NVIEvent("000000", logging.INFO, (LoggingStreams.APP,))
-    logger = logging.getLogger("app.test_events_plain")
-    logger.setLevel(logging.DEBUG)
-    with caplog.at_level(logging.DEBUG, logger="app.test_events_plain"):
-        Log.event(logger, plain_event, "started")
-
-    assert not hasattr(caplog.records[-1], "field_streams")
-
-
-def test_unhandled_exception_type_survives_app_routing() -> None:
-    record = logging.LogRecord(
-        name="app", level=logging.ERROR, pathname=__file__, lineno=1, msg="fail", args=(), exc_info=None
+    @pytest.mark.parametrize(
+        "name,event_id",
+        [
+            ("HEALTH_UNHEALTHY", "100600"),
+            ("SYS_APP_STARTED", "100601"),
+            ("SYS_APP_STOPPED", "100602"),
+            ("SYS_APP_CRASHED", "100602"),
+            ("DB_CONNECTION_FAILED", "100603"),
+            ("SYS_UNHANDLED_EXCEPTION", "100604"),
+            ("DB_SCHEMA_ERROR", "100605"),
+            ("SYS_MISSING_CORRELATION_ID", "100606"),
+            ("ACCESS_REQUEST", "094500"),
+            ("REGISTERED_REFERRAL", "900400"),
+            ("IDEMPOTENT_REGISTRATION", "900401"),
+            ("REFERRAL_SEARCHED_ON_ID", "900402"),
+            ("REFERRALS_QUERIED", "900403"),
+            ("REFERRAL_REGISTRATION_FAILED", "900404"),
+            ("REFERRAL_ACCESS_DENIED", "900405"),
+            ("REFERRAL_DELETED", "900500"),
+            ("ALL_PATIENT_REFERRALS_DELETED", "900501"),
+            ("ALL_URA_REFERRALS_DELETED", "900503"),
+            ("LOCALIZATION_SUCCESS", "900600"),
+            ("LOCALIZATION_FAILED", "900601"),
+            ("LOCALIZATION_ERROR", "900601"),
+            ("LOCALIZATION_NO_MATCH", "900602"),
+        ],
     )
-    record.event_id = Log.SYS_UNHANDLED_EXCEPTION.event_id
-    record.field_streams = Log.SYS_UNHANDLED_EXCEPTION.fields
-    record.exception_type = "RuntimeError"
+    def test_carries_the_event_id_the_spec_assigns(self, name: str, event_id: str) -> None:
+        assert getattr(Log, name).event_id == event_id
 
-    message = json.loads(JsonFormatter(stream=LoggingStreams.APP).format(record))["message"]
-    assert message["exception_type"] == "RuntimeError"
+    def test_every_declared_event_routes_at_least_one_stream(self) -> None:
+        for name, event in declared_events(Log):
+            assert event.streams, f"{name} declares no stream"
+
+    def test_every_allow_list_names_a_stream_the_event_routes(self) -> None:
+        for name, event in declared_events(Log):
+            unrouted = set(event.fields) - set(event.streams)
+            assert not unrouted, f"{name} allow-lists fields for streams it does not route: {unrouted}"
 
 
-def test_log_event_includes_exc_info(caplog: pytest.LogCaptureFixture) -> None:
-    logger = logging.getLogger("app.test_events_exc")
-    logger.setLevel(logging.DEBUG)
-    try:
-        raise ValueError("boom")
-    except ValueError as e:
-        with caplog.at_level(logging.DEBUG, logger="app.test_events_exc"):
-            Log.event(logger, Log.SYS_UNHANDLED_EXCEPTION, "fail", exc_info=e)
+class TestOverriddenSystemEvents:
+    def test_app_started_reports_whether_the_crypto_service_api_is_enabled(self) -> None:
+        assert "crypto_service_api_enabled" in Log.SYS_APP_STARTED.fields[_APP]
+        assert "crypto_service_api_enabled" not in DefaultEventCatalogue.SYS_APP_STARTED.fields[_APP]
 
-    assert caplog.records[-1].exc_info is not None
+
+class TestInheritedSystemEvents:
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "SYS_APP_STOPPED",
+            "SYS_APP_CRASHED",
+            "SYS_UNHANDLED_EXCEPTION",
+            "SYS_MISSING_CORRELATION_ID",
+            "ACCESS_REQUEST",
+        ],
+    )
+    def test_keeps_the_shared_routing(self, name: str) -> None:
+        event = getattr(Log, name)
+        default = getattr(DefaultEventCatalogue, name)
+
+        assert (event.level, event.streams, event.fields) == (default.level, default.streams, default.fields)
+
+    def test_access_request_carries_the_status_and_duration_the_middleware_emits(self) -> None:
+        assert "status_code" in Log.ACCESS_REQUEST.fields[_APP]
+        assert "duration_ms" in Log.ACCESS_REQUEST.fields[_APP]
+
+
+class TestEmitting:
+    def test_stamps_the_event_id_level_and_fields_on_the_record(self) -> None:
+        logger = logging.getLogger("app.test_events")
+        with capture_records("app.test_events") as records:
+            gflog.emit(logger, Log.REGISTERED_REFERRAL, "registered", fields={"ura_number": "12345678"})
+
+        entry = assert_event_emitted(records, Log.REGISTERED_REFERRAL, ura_number="12345678")
+        assert entry.level == "INFO"
+        assert entry.description == "registered"
+
+    def test_carries_the_exception_when_one_is_passed(self) -> None:
+        logger = logging.getLogger("app.test_events")
+        try:
+            raise ValueError("boom")
+        except ValueError as exc:
+            with capture_records("app.test_events") as records:
+                gflog.emit(
+                    logger, Log.SYS_UNHANDLED_EXCEPTION, "failed", fields={"exception_type": "ValueError"}, exc_info=exc
+                )
+
+        assert records.entries[-1].record.exc_info is not None

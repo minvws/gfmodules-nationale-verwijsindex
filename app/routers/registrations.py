@@ -1,6 +1,7 @@
 import logging
 from typing import Annotated, Any
 
+import gfmodules.logging as gflog
 from fastapi import APIRouter, Body, Depends, Query, Response
 
 from app.dependencies import (
@@ -37,12 +38,11 @@ def get_registration(
 
     results = referral_service.get_many(ura_number=ctx.claims.ura_number, encrypted_pseudonym=resolved.encrypted)
 
-    Log.event(
+    gflog.emit(
         logger,
         Log.REFERRALS_QUERIED,
         "Referrals queried",
-        ura_number=str(ctx.claims.ura_number),
-        result_count=len(results),
+        fields={"ura_number": str(ctx.claims.ura_number), "result_count": len(results)},
     )
 
     return RegistrationList.from_entities(results)
@@ -86,14 +86,16 @@ def delete_registration(
     )
 
     if deleted_count > 0:
-        Log.event(
+        gflog.emit(
             logger,
             Log.ALL_PATIENT_REFERRALS_DELETED,
             "All patient referrals deleted",
-            organization=ctx.claims.organization_name,
-            ura_number=str(ctx.claims.ura_number),
-            pseudonym_hash=str(encrypted_pseudonym),
-            deleted_count=deleted_count,
+            fields={
+                "organization": ctx.claims.organization_name,
+                "ura_number": str(ctx.claims.ura_number),
+                "pseudonym_hash": str(encrypted_pseudonym),
+                "deleted_count": deleted_count,
+            },
         )
 
     return Response(status_code=204)

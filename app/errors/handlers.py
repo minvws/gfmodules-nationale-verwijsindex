@@ -1,14 +1,17 @@
 import logging
 from typing import no_type_check
 
+import gfmodules.logging as gflog
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from gfmodules.logging import LogEvent
+from gfmodules.logging.exceptions import log_unhandled_exception
+from gfmodules.logging.middleware import restore_request_context
 
 from app.errors.fhir import FHIRError
 from app.errors.mapping import EXCEPTION_MAP, should_log, spec_for
-from app.logging.events import Log, NVIEvent
-from app.logging.middleware import restore_request_context
+from app.logging.events import Log
 from app.models.fhir.resources.localization_list.request import SUBJECT_IDENTIFIER_PARAM
 from app.models.fhir.resources.operation_outcome.resource import (
     OperationOutcome,
@@ -21,7 +24,7 @@ logger = logging.getLogger(__name__)
 _DENIAL_STATUSES = frozenset({401, 403})
 
 
-def _failure_event_for(request: Request, status_code: int) -> NVIEvent | None:
+def _failure_event_for(request: Request, status_code: int) -> LogEvent | None:
     path = request.url.path
     method = request.method
     if method == "POST" and (path.endswith("/registrations") or path.endswith("/fhir/List")):
@@ -53,18 +56,19 @@ def log_request_failure(request: Request, status_code: int, exc: Exception) -> N
     if event is None:
         return
     auth = getattr(request.state, "auth", None)
-    Log.event(
+    gflog.emit(
         logger,
         event,
-        ("Referral registration failed" if event is Log.REFERRAL_REGISTRATION_FAILED else "Localization failed"),
-        ura_number=str(auth.claims.ura_number) if auth is not None else None,
-        http_status=status_code,
-        error_reason=_summarize_reason(exc),
+        "Referral registration failed" if event is Log.REFERRAL_REGISTRATION_FAILED else "Localization failed",
+        fields={
+            "ura_number": str(auth.claims.ura_number) if auth is not None else None,
+            "http_status": status_code,
+            "error_reason": _summarize_reason(exc),
+        },
     )
 
 
-def _log_rejection(request: Request, status_code: int, exc: Exception) -> None:
-    """Record why a request was rejected."""
+def _log_rejection(status_code: int, exc: Exception) -> None:
     level = logging.WARNING if status_code in _DENIAL_STATUSES else logging.INFO
     logger.log(
         level,
@@ -78,7 +82,7 @@ def _log_rejection(request: Request, status_code: int, exc: Exception) -> None:
 def handle_mapped_exception(request: Request, exc: Exception) -> JSONResponse:
     spec = spec_for(exc)
     status_code = spec.http_status
-    _log_rejection(request, status_code, exc)
+    _log_rejection(status_code, exc)
     if should_log(exc):
         log_request_failure(request, status_code, exc)
 
@@ -123,15 +127,7 @@ def handle_request_validation_exception(req: Request, exc: RequestValidationErro
 @restore_request_context
 def handle_unhandled_exception(req: Request, exc: Exception) -> JSONResponse:
     status_code = 500
-    Log.event(
-        logger,
-        Log.SYS_UNHANDLED_EXCEPTION,
-        "Unhandled exception",
-        exc_info=exc,
-        exception_type=type(exc).__name__,
-        endpoint=req.url.path,
-        method=req.method,
-    )
+    log_unhandled_exception(logger, req, exc)
     log_request_failure(req, status_code, exc)
     if "fhir" in req.url.path:
         fhir_error = FHIRError(

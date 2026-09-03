@@ -4,6 +4,7 @@ import re
 from time import sleep
 from typing import Any, Callable, List, ParamSpec, Tuple, Type, TypeVar
 
+import gfmodules.logging as gflog
 from sqlalchemy import Delete, Engine, Insert, Result
 from sqlalchemy.exc import DatabaseError, DataError, OperationalError, PendingRollbackError
 from sqlalchemy.orm import Session
@@ -197,21 +198,23 @@ class DbSession:
                 self.session.rollback()
             except OperationalError as e:
                 attempt += 1
-                Log.event(
+                gflog.emit(
                     logger,
                     Log.DB_CONNECTION_FAILED,
                     "Database connection failed; retrying operation",
-                    error_type=type(e).__name__,
-                    retry_attempt=attempt,
-                    backoff_seconds=backoff[0] if backoff else 0,
+                    fields={
+                        "error_type": type(e).__name__,
+                        "retry_attempt": attempt,
+                        "backoff_seconds": backoff[0] if backoff else 0,
+                    },
                 )
             except DataError as e:
-                Log.event(
+                gflog.emit(
                     logger,
                     Log.DB_SCHEMA_ERROR,
                     "Database schema error during operation",
+                    fields={**_schema_error_fields(e)},
                     exc_info=e,
-                    **_schema_error_fields(e),
                 )
                 raise
             except DatabaseError:

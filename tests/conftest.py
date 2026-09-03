@@ -1,7 +1,10 @@
 from collections.abc import Generator
 from typing import Any
 
+import gfmodules.logging as gflog
 import pytest
+from gfmodules.logging import ConfigLogging
+from gfmodules.logging.testing import reset_for_tests
 from pydantic import SecretStr
 
 from app.config import ConfigDatabase
@@ -10,6 +13,7 @@ from app.db.models.key_info import KeyInfoEntity
 from app.db.models.referral import ReferralEntity
 from app.db.repository.key_info_repository import KeyInfoRepository
 from app.db.repository.referral_repository import ReferralRepository
+from app.logging.events import Log
 from app.models.fhir.elements import (
     CodeableConcept,
     Coding,
@@ -61,6 +65,21 @@ def make_list_resource(
         source=Reference(identifier=Identifier(system=DEVICE_SYSTEM, value=source_id), type="Device"),
         empty_reason=CodeableConcept(coding=[Coding(system=EMPTY_REASON_SYSTEM, code="withheld")]),
     )
+
+
+@pytest.fixture(autouse=True)
+def logging_catalogue() -> Generator[None, Any, None]:
+    """``strict_fields`` turns a field no stream carries into a test failure."""
+    gflog.configure(
+        config=ConfigLogging(debug_logs_in_console=True, access_logs=True),
+        loglevel="DEBUG",
+        catalogue=Log,
+        strict_fields=True,
+    )
+    try:
+        yield
+    finally:
+        reset_for_tests()
 
 
 @pytest.fixture(autouse=True)
