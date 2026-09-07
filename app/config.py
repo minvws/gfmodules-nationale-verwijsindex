@@ -155,6 +155,16 @@ def get_config(path: str | None = None) -> Config:
             # convert the string to a list of floats
             ini_data["database"]["retry_backoff"] = [float(i) for i in ini_data["database"]["retry_backoff"].split(",")]
 
+        # Convert logging.console_streams to a list of stream names
+        if (
+            "logging" in ini_data
+            and "console_streams" in ini_data["logging"]
+            and isinstance(ini_data["logging"]["console_streams"], str)
+        ):
+            ini_data["logging"]["console_streams"] = [
+                stream.strip() for stream in ini_data["logging"]["console_streams"].split(",")
+            ]
+
         _CONFIG = Config.model_validate(ini_data)
     except ValidationError:
         logger.exception("Configuration validation error")

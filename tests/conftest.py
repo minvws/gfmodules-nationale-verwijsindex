@@ -71,7 +71,7 @@ def make_list_resource(
 def logging_catalogue() -> Generator[None, Any, None]:
     """``strict_fields`` turns a field no stream carries into a test failure."""
     gflog.configure(
-        config=ConfigLogging(debug_logs_in_console=True, access_logs=True),
+        config=ConfigLogging(console_streams=["debug"], access_logs=True),
         loglevel="DEBUG",
         catalogue=Log,
         strict_fields=True,

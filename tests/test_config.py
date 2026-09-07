@@ -23,7 +23,7 @@ def get_test_config() -> Config:
             syslog_path=None,
             application_id="nationale-verwijsindex",
             include_traces=True,
-            debug_logs_in_console=True,
+            console_streams=["debug"],
         ),
         database=ConfigDatabase(
             dsn=SecretStr("sqlite:///:memory:"),
