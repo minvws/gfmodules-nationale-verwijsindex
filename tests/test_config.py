@@ -1,4 +1,3 @@
-from gfmodules.logging import ConfigLogging
 from pydantic import SecretStr
 
 from app.config import (
@@ -7,6 +6,7 @@ from app.config import (
     ConfigAuthorizationHeaders,
     ConfigCryptoServiceApi,
     ConfigDatabase,
+    ConfigLogging,
     ConfigStats,
     ConfigTelemetry,
     ConfigUvicorn,
