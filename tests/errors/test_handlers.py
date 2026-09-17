@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from gfmodules.logging.middleware import RequestContext
 from gfmodules.logging.testing import assert_event_emitted, capture_records
 
 from app.errors import handlers
@@ -253,6 +254,7 @@ class TestUnhandledExceptionHandler:
         request = MagicMock()
         request.url.path = "/boom"
         request.method = "GET"
+        request.state.request_context = RequestContext(values={"endpoint": "/boom", "method": "GET"})
         exc = RuntimeError("explode")
 
         with capture_records(handlers.logger.name) as records:
