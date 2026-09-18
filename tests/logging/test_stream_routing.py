@@ -83,10 +83,10 @@ class TestReferralAccessDenied:
             route(Log.REFERRAL_ACCESS_DENIED, "access denied", ura_number=_URA, resource_ura="87654321"),
         )
 
-    def test_app_receives_the_endpoint_and_siem_does_not(self, routed: Routed) -> None:
+    def test_endpoint_reaches_every_stream(self, routed: Routed) -> None:
         assert routed[LoggingStreams.APP][0]["endpoint"] == "/token"
         assert routed[LoggingStreams.SIEM][0]["resource_ura"] == "87654321"
-        assert_fields_absent(routed[LoggingStreams.SIEM], "endpoint")
+        assert routed[LoggingStreams.SIEM][0]["endpoint"] == "/token"
 
     def test_public_inspect_receives_nothing(self, routed: Routed) -> None:
         assert routed[LoggingStreams.PUBLIC_INSPECT] == []

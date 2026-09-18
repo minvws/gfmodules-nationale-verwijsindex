@@ -49,8 +49,6 @@ class BundleService:
         if isinstance(resolved_url, BundleEntry):
             return resolved_url
 
-        endpoint = f"{method} {entry.request.url}"
-
         required_scope = self.required_scope(method, resolved_url)
         if required_scope is not None and required_scope not in ctx.scope:
             error: Exception = UnauthorizedScopeError(ctx.scope, required_scope)
@@ -58,7 +56,7 @@ class BundleService:
                 logger,
                 Log.REFERRAL_ACCESS_DENIED,
                 "Bundle entry denied: missing scope",
-                fields={"ura_number": str(authenticated_ura), "endpoint": endpoint},
+                fields={"ura_number": str(authenticated_ura)},
             )
             return BundleEntry(response=EntryResponse.make_forbidden_respone(msg=f"Bundle.entry.{index}: {error}"))
 
@@ -68,7 +66,7 @@ class BundleService:
                 logger,
                 Log.REFERRAL_ACCESS_DENIED,
                 "Bundle entry denied: not a managing request",
-                fields={"ura_number": str(authenticated_ura), "endpoint": endpoint},
+                fields={"ura_number": str(authenticated_ura)},
             )
             return BundleEntry(response=EntryResponse.make_forbidden_respone(msg=f"Bundle.entry.{index}: {error}"))
 
@@ -86,7 +84,7 @@ class BundleService:
                 return parsed
             params = parsed
 
-        denied = self._deny_mismatched_source(ctx, resource, params, index, endpoint)
+        denied = self._deny_mismatched_source(ctx, resource, params, index)
         if denied is not None:
             return denied
 
@@ -230,7 +228,6 @@ class BundleService:
         resource: LocalizationList | None,
         params: LocalizationListParams | None,
         index: int,
-        endpoint: str,
     ) -> BundleEntry[Any] | None:
         """Reject an entry naming a source other than the caller's, mirroring the standalone routes.
 
@@ -256,7 +253,7 @@ class BundleService:
                 logger,
                 Log.REFERRAL_ACCESS_DENIED,
                 "Bundle entry denied: source does not match the authenticated source",
-                fields={"ura_number": str(ctx.claims.ura_number), "endpoint": endpoint},
+                fields={"ura_number": str(ctx.claims.ura_number)},
             )
             return BundleEntry(response=EntryResponse.make_forbidden_respone(msg=f"Bundle.entry.{index}: {error}"))
 

@@ -72,7 +72,7 @@ class Log(_Base):
         logging.WARNING,
         (_APP, _SIEM),
         {
-            _APP: ("ura_number", "endpoint", "http_status", "error_reason"),
+            _APP: ("ura_number", "http_status", "error_reason"),
             _SIEM: ("ura_number", "http_status", "error_reason"),
         },
     )
@@ -80,7 +80,7 @@ class Log(_Base):
         "900405",
         logging.WARNING,
         (_APP, _SIEM),
-        {_APP: ("ura_number", "resource_ura", "endpoint"), _SIEM: ("ura_number", "resource_ura")},
+        {_APP: ("ura_number", "resource_ura"), _SIEM: ("ura_number", "resource_ura")},
     )
 
     REFERRAL_DELETED = LogEvent(  # NVI-DEL-001
