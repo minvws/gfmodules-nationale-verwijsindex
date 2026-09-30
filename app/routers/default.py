@@ -3,6 +3,10 @@ import logging
 from pathlib import Path
 
 from fastapi import APIRouter, Response
+from fastapi.responses import JSONResponse
+
+from app.config import get_config
+from app.features import enabled_features
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -64,7 +68,10 @@ def index() -> Response:
 @router.get(
     "/version.json",
     summary="Get Version Info",
-    description="Retrieve detailed version and build information in JSON format.",
+    description=(
+        "Retrieve detailed version and build information in JSON format, extended with the features "
+        "enabled by the configuration of this environment."
+    ),
     response_class=Response,
     responses={
         200: {
@@ -74,6 +81,14 @@ def index() -> Response:
                     "example": {
                         "version": "1.0.0",
                         "git_ref": "abc123def456",
+                        "features": [
+                            {
+                                "id": "localization",
+                                "title": "Localization",
+                                "description": "Localize the care providers that hold data about a patient, "
+                                "using an OPRF pseudonym",
+                            }
+                        ],
                     }
                 }
             },
@@ -88,9 +103,10 @@ def index() -> Response:
 def version_json() -> Response:
     try:
         with open(Path(__file__).parent.parent.parent / "version.json", "r") as file:
-            content = file.read()
-    except FileNotFoundError as e:
+            content = json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
         logger.info("Version info could not be loaded: %s" % e)
         return Response(status_code=404, content="Version info could not be loaded.", media_type="text/plain")
 
-    return Response(content, media_type="application/json")
+    content["features"] = [feature.model_dump() for feature in enabled_features(get_config())]
+    return JSONResponse(content)
