@@ -1,4 +1,5 @@
-from typing import Any, List, Sequence
+from collections.abc import Sequence
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import and_, exists, select
@@ -32,7 +33,7 @@ class KeyInfoRepository(RepositoryBase):
             raise exc
 
     def find_many(self, mechanism: str | None = None) -> Sequence[KeyInfoEntity]:
-        conditions: List[Any] = [KeyInfoEntity.deleted_at.is_(None)]
+        conditions: list[Any] = [KeyInfoEntity.deleted_at.is_(None)]
         stmt = select(KeyInfoEntity)
         if mechanism:
             conditions.append(KeyInfoEntity.mechanism == mechanism)
@@ -46,7 +47,7 @@ class KeyInfoRepository(RepositoryBase):
         return self.db_session.execute(stmt).scalars().all()
 
     def exists(self, label: str | None = None, id: UUID | None = None) -> bool:
-        conditions: List[Any] = [KeyInfoEntity.deleted_at.is_(None)]
+        conditions: list[Any] = [KeyInfoEntity.deleted_at.is_(None)]
         if label:
             conditions.append(KeyInfoEntity.label == label)
 

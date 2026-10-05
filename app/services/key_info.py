@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime
-from typing import List
 
 from app.db.db import Database
 from app.db.models.key_info import KeyInfoEntity
@@ -39,7 +38,7 @@ class KeyInfoService:
 
             return active_key_info[0]
 
-    def get_many(self, mechanism: str | None = None) -> List[KeyInfoEntity]:
+    def get_many(self, mechanism: str | None = None) -> list[KeyInfoEntity]:
         with self.database.get_db_session() as session:
             repo = session.get_repository(KeyInfoRepository)
             return list(repo.find_many(mechanism))
@@ -82,7 +81,7 @@ class KeyInfoServiceMock(KeyInfoService):
         logger.info("Get mock key from mock service")
         return KeyInfoEntity(label="mock", mechanism="mock")
 
-    def get_many(self, mechanism: str | None = None) -> List[KeyInfoEntity]:
+    def get_many(self, mechanism: str | None = None) -> list[KeyInfoEntity]:
         logger.info("Get mock key from mock service")
         return [KeyInfoEntity(label="mock", mechanism=mechanism if mechanism else "mock")]
 
@@ -92,4 +91,3 @@ class KeyInfoServiceMock(KeyInfoService):
 
     def delete_one(self, label: str) -> None:
         logger.info("Delete key from mock service")
-        pass

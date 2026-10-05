@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, cast
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
@@ -36,7 +36,7 @@ class KeyInfoEntity(Base):
     mechanism: Mapped[str] = mapped_column("mechanism", String)
     active: Mapped[bool] = mapped_column("active", Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column("created_at", TIMESTAMP, default=datetime.now)
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(
+    deleted_at: Mapped[datetime | None] = mapped_column(
         "deleted_at",
         TIMESTAMP,
     )

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, List, Self
+from typing import Any, Self
 
 from pydantic import model_validator
 
@@ -51,7 +51,7 @@ class Coding(FhirBaseModel):
 
 
 class CodeableConcept(FhirBaseModel):
-    coding: List[Coding]
+    coding: list[Coding]
     text: str | None = None
 
 

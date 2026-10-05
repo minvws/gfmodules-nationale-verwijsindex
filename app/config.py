@@ -2,7 +2,7 @@ import configparser
 import logging
 import os
 from enum import Enum
-from typing import Any, List
+from typing import Any
 
 from gfmodules.logging import ConfigLogging as GFConfigLogging
 from gfmodules.logging.ini import split_comma_separated
@@ -82,11 +82,11 @@ class ConfigStats(BaseModel):
 
 
 class ConfigAuthorizationHeaders(BaseModel):
-    expected_audiences: List[str]
+    expected_audiences: list[str]
 
     @field_validator("expected_audiences", mode="before")
     @classmethod
-    def validate_aud(cls, data: Any) -> List[str]:
+    def validate_aud(cls, data: Any) -> list[str]:
         if isinstance(data, str):
             return data.split()
 

@@ -1,4 +1,5 @@
-from typing import Annotated, Callable
+from collections.abc import Callable
+from typing import Annotated
 
 from fastapi import Body, Depends, Query, Request
 
@@ -36,7 +37,7 @@ def _require_managing_request(ctx: AuthContext) -> AuthContext:
 def require_managing_source(ctx: AuthContext = Depends(get_auth_context)) -> str:
     """The source the caller is authenticated as, for operations that must have one."""
     source_id = _require_managing_request(ctx).claims.source_id
-    assert source_id is not None  # noqa: S101 - guaranteed by _require_managing_request
+    assert source_id is not None
     return source_id
 
 

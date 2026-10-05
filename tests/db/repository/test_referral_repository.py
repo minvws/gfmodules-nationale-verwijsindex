@@ -209,9 +209,8 @@ def test_delete_one_should_succeed(
 def test_delete_one_should_raise_exception_when_does_not_exist(
     referral_repository: ReferralRepository, mock_referral_entity: ReferralEntity
 ) -> None:
-    with referral_repository.db_session:
-        with pytest.raises(SQLAlchemyError):
-            referral_repository.delete_one(mock_referral_entity)
+    with referral_repository.db_session, pytest.raises(SQLAlchemyError):
+        referral_repository.delete_one(mock_referral_entity)
 
 
 def test_delete_with_only_ura_number_should_remove_all_recordss(
@@ -293,9 +292,8 @@ def test_delete_should_raise_exception_when_connection_to_db_is_down(
         )
     )
     referral_repository.db_session = db.get_db_session()
-    with referral_repository.db_session:
-        with pytest.raises(SQLAlchemyError):
-            referral_repository.delete(ura_number="123")
+    with referral_repository.db_session, pytest.raises(SQLAlchemyError):
+        referral_repository.delete(ura_number="123")
 
 
 def test_exists_should_return_true_if_record_is_there(

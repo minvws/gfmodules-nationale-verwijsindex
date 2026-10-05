@@ -1,8 +1,9 @@
 import logging
 import random
 import re
+from collections.abc import Callable
 from time import sleep
-from typing import Any, Callable, List, ParamSpec, Tuple, Type, TypeVar
+from typing import Any, ParamSpec, TypeVar
 
 import gfmodules.logging as gflog
 from sqlalchemy import Delete, Engine, Insert, Result
@@ -88,14 +89,14 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 P = ParamSpec("P")
-R = TypeVar("R", bound=Tuple[Any, ...])
+R = TypeVar("R", bound=tuple[Any, ...])
 
 
 class DbSession:
     _engine: Engine
-    _retry_backoff: List[float]
+    _retry_backoff: list[float]
 
-    def __init__(self, engine: Engine, retry_backoff: List[float]) -> None:
+    def __init__(self, engine: Engine, retry_backoff: list[float]) -> None:
         self._engine = engine
         self._retry_backoff = retry_backoff
 
@@ -113,7 +114,7 @@ class DbSession:
         self.session.close()
 
     def get_repository(
-        self, repository_class: Type["respository_base.TRepositoryBase"]
+        self, repository_class: type["respository_base.TRepositoryBase"]
     ) -> "respository_base.TRepositoryBase":
         """
         Returns an instantiated repository for the given model class

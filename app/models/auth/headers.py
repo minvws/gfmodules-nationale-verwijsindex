@@ -1,5 +1,5 @@
 import logging
-from typing import Annotated, Any, Dict, Self
+from typing import Annotated, Any, Self
 
 from fastapi import Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -57,7 +57,7 @@ class AuthHeaders(BaseModel):
     @classmethod
     def from_request(cls, req: Request) -> Self:
         headers = req.headers
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         # A header is optional exactly when its field declares a default, so this cannot
         # drift out of step with the field definitions above.
         for name, field in cls.model_fields.items():

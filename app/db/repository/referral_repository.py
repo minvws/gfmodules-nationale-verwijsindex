@@ -1,4 +1,4 @@
-from typing import Sequence
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import and_, delete, exists, select
@@ -114,10 +114,10 @@ class ReferralRepository(RepositoryBase):
     ) -> bool:
         conditions = [ReferralEntity.ura_number == ura_number]
         if pseudonym:
-            conditions.append((ReferralEntity.pseudonym == pseudonym))
+            conditions.append(ReferralEntity.pseudonym == pseudonym)
 
         if source:
-            conditions.append((ReferralEntity.source == source))
+            conditions.append(ReferralEntity.source == source)
 
         stmt = select(exists().where(and_(*conditions)))
 

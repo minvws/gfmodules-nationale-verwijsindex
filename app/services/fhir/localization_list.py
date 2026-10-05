@@ -1,5 +1,4 @@
 import logging
-from typing import Tuple
 from uuid import UUID
 
 import gfmodules.logging as gflog
@@ -148,7 +147,7 @@ class LocalizationListService:
         authenticated_ura: UraNumber,
         source: str,
         organization_name: str,
-    ) -> Tuple[OperationOutcome, int]:
+    ) -> tuple[OperationOutcome, int]:
         target = self.referral_service.get_by_id(id)
         affected_rows = self.referral_service.delete_many(ura_number=authenticated_ura, source=source, id=id)
         if affected_rows > 0:
@@ -178,7 +177,7 @@ class LocalizationListService:
         authenticated_ura: UraNumber,
         source: str,
         organization_name: str,
-    ) -> Tuple[OperationOutcome, int]:
+    ) -> tuple[OperationOutcome, int]:
         ura_number = authenticated_ura
 
         resolved: ResolvedPseudonym | None = None

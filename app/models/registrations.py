@@ -1,5 +1,6 @@
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Any, List, Self, Sequence
+from typing import Any, Self
 
 from pydantic import BaseModel, field_validator
 
@@ -45,7 +46,7 @@ class Registration(BaseModel):
 
 
 class RegistrationList(BaseModel):
-    registrations: List[Registration]
+    registrations: list[Registration]
     total: int
 
     @classmethod
