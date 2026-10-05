@@ -218,7 +218,7 @@ class TestRequestValidationHandler:
 
         localization = [r for r in caplog.records if getattr(r, "event_id", None) == Log.LOCALIZATION_FAILED.event_id]
         assert localization, "expected a localization failure event"
-        assert localization[0].error_reason == "query.required: Field required"
+        assert localization[0].error_reason == "query.required: Field required"  # type: ignore[attr-defined]
 
 
 class TestUnhandledExceptionHandler:

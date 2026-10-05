@@ -3,7 +3,8 @@ import random
 import re
 from collections.abc import Callable
 from time import sleep
-from typing import Any, ParamSpec, TypeVar
+from types import TracebackType
+from typing import Any, ParamSpec, Self, TypeVar
 
 import gfmodules.logging as gflog
 from sqlalchemy import Delete, Engine, Insert, Result
@@ -100,22 +101,27 @@ class DbSession:
         self._engine = engine
         self._retry_backoff = retry_backoff
 
-    def __enter__(self) -> "DbSession":
+    def __enter__(self) -> Self:
         """
         Create a new session when entering the context manager
         """
         self.session = Session(self._engine, expire_on_commit=False)
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """
         Close the session when exiting the context manager
         """
         self.session.close()
 
     def get_repository(
-        self, repository_class: type["respository_base.TRepositoryBase"]
-    ) -> "respository_base.TRepositoryBase":
+        self, repository_class: type["respository_base.TRepositoryBase_co"]
+    ) -> "respository_base.TRepositoryBase_co":
         """
         Returns an instantiated repository for the given model class
         """

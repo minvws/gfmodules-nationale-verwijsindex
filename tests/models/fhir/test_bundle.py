@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from app.models.fhir.bundle import Bundle, BundleEntry, EntryRequestDto
@@ -17,7 +17,7 @@ from app.models.ura import UraNumber
 
 
 def test_serialize_should_succeed(ura_number: UraNumber) -> None:
-    timestamp = datetime.now()
+    timestamp = datetime.now(UTC)
     resource_id = uuid4()
 
     expected = {
@@ -90,7 +90,7 @@ def test_serialize_should_succeed(ura_number: UraNumber) -> None:
 
 
 def test_deserialize_should_succeed(ura_number: UraNumber) -> None:
-    timestamp = datetime.now()
+    timestamp = datetime.now(UTC)
     resource_id = uuid4()
 
     data = {

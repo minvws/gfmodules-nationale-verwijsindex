@@ -1,4 +1,5 @@
 import logging
+from typing import Annotated
 
 from fastapi import Depends
 from starlette.requests import Request
@@ -26,7 +27,7 @@ class OAuthError(Exception):
 
 def get_auth_ctx(
     request: Request,
-    auth_headers_service: AuthHeaderService = Depends(dependencies.get_auth_header_service),
+    auth_headers_service: Annotated[AuthHeaderService, Depends(dependencies.get_auth_header_service)],
 ) -> AuthContext:
     try:
         auth_headers = AuthHeaders.from_request(request)

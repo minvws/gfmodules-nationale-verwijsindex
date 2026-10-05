@@ -27,7 +27,7 @@ _DENIAL_STATUSES = frozenset({401, 403})
 def _failure_event_for(request: Request, status_code: int) -> LogEvent | None:
     path = request.url.path
     method = request.method
-    if method == "POST" and (path.endswith("/registrations") or path.endswith("/fhir/List")):
+    if method == "POST" and path.endswith(("/registrations", "/fhir/List")):
         return Log.REFERRAL_REGISTRATION_FAILED
     localize_failed_rest = method == "POST" and path.endswith("/localize")
     localize_failed_fhir = (

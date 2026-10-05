@@ -74,17 +74,17 @@ class ReferralRepository(RepositoryBase):
             self.db_session.add(referral_entity)
             self.db_session.commit()
             return referral_entity
-        except SQLAlchemyError as exc:
+        except SQLAlchemyError:
             self.db_session.rollback()
-            raise exc
+            raise
 
     def delete_one(self, referral_entity: ReferralEntity) -> None:
         try:
             self.db_session.delete(referral_entity)
             self.db_session.commit()
-        except SQLAlchemyError as exc:
+        except SQLAlchemyError:
             self.db_session.rollback()
-            raise exc
+            raise
 
     def delete(
         self,
@@ -102,9 +102,9 @@ class ReferralRepository(RepositoryBase):
 
             self.db_session.delete_stmt(stmt)
             self.db_session.commit()
-        except SQLAlchemyError as exc:
+        except SQLAlchemyError:
             self.db_session.rollback()
-            raise exc
+            raise
 
     def exists(
         self,

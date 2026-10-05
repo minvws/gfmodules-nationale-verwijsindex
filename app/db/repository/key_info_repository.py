@@ -28,9 +28,9 @@ class KeyInfoRepository(RepositoryBase):
             self.db_session.add(key_info)
             self.db_session.commit()
             return key_info
-        except SQLAlchemyError as exc:
+        except SQLAlchemyError:
             self.db_session.rollback()
-            raise exc
+            raise
 
     def find_many(self, mechanism: str | None = None) -> Sequence[KeyInfoEntity]:
         conditions: list[Any] = [KeyInfoEntity.deleted_at.is_(None)]

@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.db.db import Database
 from app.db.models.key_info import KeyInfoEntity
@@ -11,7 +11,7 @@ from app.services.exceptions import (
     NotFoundError,
 )
 
-logger = logging.Logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class KeyInfoService:
@@ -64,7 +64,7 @@ class KeyInfoService:
             if target.has_referrals:
                 raise ForbiddenError("Key label has referrals associated with it")
 
-            target.deleted_at = datetime.now()
+            target.deleted_at = datetime.now(UTC)
             session.add(target)
             session.commit()
 

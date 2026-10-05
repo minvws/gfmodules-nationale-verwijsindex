@@ -181,6 +181,7 @@ class BundleService:
         try:
             return action()
         except Exception as exc:
+            logger.exception("Bundle entry action failed")
             status_code = spec_for(exc).http_status
             if failure_event is not None:
                 gflog.emit(
@@ -324,10 +325,7 @@ class BundleService:
 
     @staticmethod
     def validate_localization_bundle_structure(bundle: Bundle[Any]) -> bool:
-        if len(bundle.entry) == 0 or bundle.entry is None:
-            return False
-
-        return True
+        return len(bundle.entry) != 0 and bundle.entry is not None
 
     def resolve_request_url(self, url: str, index: int) -> EntryRequestDto | BundleEntry[LocalizationList]:
         try:

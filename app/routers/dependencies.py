@@ -20,7 +20,7 @@ def get_auth_context(request: Request) -> AuthContext:
 
 
 def require_scope(scope: AuthorizationScope) -> Callable[..., AuthContext]:
-    def dependency(ctx: AuthContext = Depends(get_auth_context)) -> AuthContext:
+    def dependency(ctx: Annotated[AuthContext, Depends(get_auth_context)]) -> AuthContext:
         if scope not in ctx.scope:
             raise UnauthorizedScopeError(scopes=ctx.scope, required_scope=scope)
         return ctx
@@ -34,7 +34,7 @@ def _require_managing_request(ctx: AuthContext) -> AuthContext:
     return ctx
 
 
-def require_managing_source(ctx: AuthContext = Depends(get_auth_context)) -> str:
+def require_managing_source(ctx: Annotated[AuthContext, Depends(get_auth_context)]) -> str:
     """The source the caller is authenticated as, for operations that must have one."""
     source_id = _require_managing_request(ctx).claims.source_id
     assert source_id is not None
@@ -43,7 +43,7 @@ def require_managing_source(ctx: AuthContext = Depends(get_auth_context)) -> str
 
 def require_scope_for_localization_query(
     params: Annotated[LocalizationListParams, Query()],
-    ctx: AuthContext = Depends(get_auth_context),
+    ctx: Annotated[AuthContext, Depends(get_auth_context)],
 ) -> AuthContext:
     """Require LOCALIZE scope for localization queries, READ scope for other queries."""
     required_scope = AuthorizationScope.LOCALIZE if params.is_localize_params() else AuthorizationScope.READ
@@ -58,13 +58,13 @@ def require_source_matches_body(
     # tree by name, so renaming either side turns one body into two embedded fields and
     # every request fails with 422 - a runtime break that mypy cannot see.
     data: Annotated[LocalizationList, Body(media_type="application/fhir+json")],
-    ctx: AuthContext = Depends(get_auth_context),
+    ctx: Annotated[AuthContext, Depends(get_auth_context)],
 ) -> AuthContext:
     return AuthContextService.assert_source_matches(ctx, data.get_device())
 
 
 def require_source_matches_query(
     params: Annotated[LocalizationListParams, Query()],
-    ctx: AuthContext = Depends(get_auth_context),
+    ctx: Annotated[AuthContext, Depends(get_auth_context)],
 ) -> AuthContext:
     return AuthContextService.assert_source_matches(ctx, params.source)
