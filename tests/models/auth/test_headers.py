@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import Mock
 
 import pytest
@@ -10,7 +10,7 @@ from app.models.ura import UraNumber
 
 
 @pytest.fixture
-def auth_headers_dict(ura_number: UraNumber) -> Dict[str, Any]:
+def auth_headers_dict(ura_number: UraNumber) -> dict[str, Any]:
     return {
         "oin": "oin123",
         "source_id": "source123",
@@ -36,7 +36,7 @@ def auth_headers(ura_number: UraNumber) -> AuthHeaders:
 
 
 @pytest.fixture()
-def header_data(ura_number: UraNumber) -> Dict[str, Any]:
+def header_data(ura_number: UraNumber) -> dict[str, Any]:
     return {
         "x-gf-act-sub": "oin123",
         "x-gf-source-id": "source123",
@@ -48,13 +48,13 @@ def header_data(ura_number: UraNumber) -> Dict[str, Any]:
     }
 
 
-def test_serialize_should_succeed(auth_headers: AuthHeaders, auth_headers_dict: Dict[str, Any]) -> None:
+def test_serialize_should_succeed(auth_headers: AuthHeaders, auth_headers_dict: dict[str, Any]) -> None:
     actual = auth_headers.model_dump()
 
     assert actual == auth_headers_dict
 
 
-def test_serialize_with_alias_should_succeed(auth_headers: AuthHeaders, header_data: Dict[str, Any]) -> None:
+def test_serialize_with_alias_should_succeed(auth_headers: AuthHeaders, header_data: dict[str, Any]) -> None:
     expected = header_data.copy()
     expected["x-gf-scope"] = [AuthorizationScope.READ]
     actual = auth_headers.model_dump(by_alias=True)
@@ -62,13 +62,13 @@ def test_serialize_with_alias_should_succeed(auth_headers: AuthHeaders, header_d
     assert actual == expected
 
 
-def test_deserialize_should_succeed(auth_headers_dict: Dict[str, Any], auth_headers: AuthHeaders) -> None:
+def test_deserialize_should_succeed(auth_headers_dict: dict[str, Any], auth_headers: AuthHeaders) -> None:
     actual = AuthHeaders(**auth_headers_dict)
 
     assert actual == auth_headers
 
 
-def test_deserialize_with_alias_should_succeed(auth_headers: AuthHeaders, header_data: Dict[str, Any]) -> None:
+def test_deserialize_with_alias_should_succeed(auth_headers: AuthHeaders, header_data: dict[str, Any]) -> None:
     data = header_data.copy()
 
     actual = AuthHeaders(**data)
@@ -77,7 +77,7 @@ def test_deserialize_with_alias_should_succeed(auth_headers: AuthHeaders, header
 
 
 def test_deserialize_should_panic_with_invalid_ura(
-    auth_headers_dict: Dict[str, Any],
+    auth_headers_dict: dict[str, Any],
 ) -> None:
     data = auth_headers_dict.copy()
     data["ura"] = "invalid"
@@ -88,7 +88,7 @@ def test_deserialize_should_panic_with_invalid_ura(
     assert "Invalid URA Number in header" in str(exec.value)
 
 
-def test_from_request_should_succeed(header_data: Dict[str, Any], auth_headers: AuthHeaders) -> None:
+def test_from_request_should_succeed(header_data: dict[str, Any], auth_headers: AuthHeaders) -> None:
     mock_request = Mock(spec=Request)
     headers = header_data.copy()
     mock_request.headers = headers
@@ -99,7 +99,7 @@ def test_from_request_should_succeed(header_data: Dict[str, Any], auth_headers: 
 
 
 def test_from_request_should_panic_with_missing_prop(
-    header_data: Dict[str, Any],
+    header_data: dict[str, Any],
 ) -> None:
     data = header_data.copy()
     data.pop("x-gf-sub")
@@ -117,7 +117,7 @@ def test_from_request_should_panic_with_missing_prop(
     ["x-gf-act-sub", "x-gf-sub", "x-gf-audience", "x-gf-scope", "x-gf-cert-type", "x-gf-organization-name"],
 )
 def test_from_request_should_panic_with_any_missing_required_header(
-    header_data: Dict[str, Any],
+    header_data: dict[str, Any],
     header_name: str,
 ) -> None:
     data = header_data.copy()
@@ -132,7 +132,7 @@ def test_from_request_should_panic_with_any_missing_required_header(
 
 
 def test_from_request_should_succeed_without_source_id(
-    header_data: Dict[str, Any],
+    header_data: dict[str, Any],
 ) -> None:
     """source_id is the only optional header; it is the only field declaring a default."""
     data = header_data.copy()
@@ -148,7 +148,7 @@ def test_from_request_should_succeed_without_source_id(
 
 @pytest.mark.parametrize("value", ["nvi:invalid-scope", "prs:oprf", "nvi:read_typo prs:read"])
 def test_from_header_should_panic_without_a_known_scope(
-    header_data: Dict[str, Any],
+    header_data: dict[str, Any],
     value: str,
 ) -> None:
     """A token that grants this service nothing is refused up front, rather than left to
@@ -166,7 +166,7 @@ def test_from_header_should_panic_without_a_known_scope(
 
 @pytest.mark.parametrize("value", ["", " ", "\t", "  \t "])
 def test_from_header_should_panic_with_empty_scope(
-    header_data: Dict[str, Any],
+    header_data: dict[str, Any],
     value: str,
 ) -> None:
     """An empty header used to pass validation and yield an empty scope list."""
@@ -182,7 +182,7 @@ def test_from_header_should_panic_with_empty_scope(
 
 
 def test_from_header_should_accept_multiple_scopes(
-    header_data: Dict[str, Any],
+    header_data: dict[str, Any],
 ) -> None:
     data = header_data.copy()
     data["x-gf-scope"] = "nvi:read nvi:create"
@@ -203,7 +203,7 @@ def test_from_header_should_accept_multiple_scopes(
     ],
 )
 def test_from_header_should_ignore_unknown_scopes_alongside_a_known_one(
-    header_data: Dict[str, Any],
+    header_data: dict[str, Any],
     value: str,
     expected: list[AuthorizationScope],
 ) -> None:

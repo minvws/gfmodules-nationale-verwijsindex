@@ -1,4 +1,4 @@
-from typing import List, Literal
+from typing import Literal
 
 from pydantic import ConfigDict
 from pydantic.alias_generators import to_camel
@@ -30,7 +30,7 @@ class ReferenceExtension(Extension):
 class LocalizationList(DomainResource):
     resource_type: Literal["List"] = "List"
 
-    extension: List[ReferenceExtension]
+    extension: list[ReferenceExtension]
     status: Literal["current", "retired", "entered-in-error"]
     mode: Literal["working", "snapshot", "changes"]
     subject: Reference | None = None

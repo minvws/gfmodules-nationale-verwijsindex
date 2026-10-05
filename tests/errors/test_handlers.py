@@ -42,11 +42,11 @@ def _client() -> TestClient:
     app.get("/fhir/List")(boom)
 
     @app.get("/fhir/validated")
-    def validated(required: int) -> None:  # noqa: ARG001 - forces a RequestValidationError
+    def validated(required: int) -> None:
         return None
 
     @app.get("/rest/validated")
-    def rest_validated(required: int) -> None:  # noqa: ARG001
+    def rest_validated(required: int) -> None:
         return None
 
     return TestClient(app, raise_server_exceptions=False)
@@ -210,7 +210,7 @@ class TestRequestValidationHandler:
         register_exceptions(app)
 
         @app.post("/localize")
-        def localize(required: int) -> None:  # noqa: ARG001 - forces a RequestValidationError
+        def localize(required: int) -> None:
             return None
 
         with caplog.at_level(logging.WARNING):
@@ -218,7 +218,7 @@ class TestRequestValidationHandler:
 
         localization = [r for r in caplog.records if getattr(r, "event_id", None) == Log.LOCALIZATION_FAILED.event_id]
         assert localization, "expected a localization failure event"
-        assert getattr(localization[0], "error_reason") == "query.required: Field required"
+        assert localization[0].error_reason == "query.required: Field required"  # type: ignore[attr-defined]
 
 
 class TestUnhandledExceptionHandler:

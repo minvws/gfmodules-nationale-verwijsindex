@@ -1,5 +1,6 @@
 import logging
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import gfmodules.logging as gflog
 from gfmodules.logging import LogEvent
@@ -104,7 +105,7 @@ class BundleService:
                     )
 
                 query_params = params
-                assert query_params is not None  # noqa: S101 - parsed above for every id-less GET
+                assert query_params is not None
                 return self._entry_result(
                     index,
                     authenticated_ura,
@@ -120,7 +121,7 @@ class BundleService:
 
             case "POST":
                 post_resource = resource
-                assert post_resource is not None  # noqa: S101 - validated above for every POST
+                assert post_resource is not None
                 return self._entry_result(
                     index,
                     authenticated_ura,
@@ -136,7 +137,7 @@ class BundleService:
 
             case "DELETE":
                 managing_source = ctx.claims.source_id
-                assert managing_source is not None  # noqa: S101 - guaranteed by the managing-request guard above
+                assert managing_source is not None
 
                 if resolved_url.id:
                     resource_id = resolved_url.id
@@ -149,7 +150,7 @@ class BundleService:
                     )
 
                 delete_params = params
-                assert delete_params is not None  # noqa: S101 - parsed above for every id-less DELETE
+                assert delete_params is not None
                 return self._entry_result(
                     index,
                     authenticated_ura,
@@ -180,6 +181,7 @@ class BundleService:
         try:
             return action()
         except Exception as exc:
+            logger.exception("Bundle entry action failed")
             status_code = spec_for(exc).http_status
             if failure_event is not None:
                 gflog.emit(
@@ -323,10 +325,7 @@ class BundleService:
 
     @staticmethod
     def validate_localization_bundle_structure(bundle: Bundle[Any]) -> bool:
-        if len(bundle.entry) == 0 or bundle.entry is None:
-            return False
-
-        return True
+        return len(bundle.entry) != 0 and bundle.entry is not None
 
     def resolve_request_url(self, url: str, index: int) -> EntryRequestDto | BundleEntry[LocalizationList]:
         try:

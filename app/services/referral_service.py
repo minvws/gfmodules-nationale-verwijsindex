@@ -1,5 +1,5 @@
 import logging
-from typing import Sequence
+from collections.abc import Sequence
 from uuid import UUID
 
 import gfmodules.logging as gflog

@@ -1,8 +1,10 @@
 import logging
 import random
 import re
+from collections.abc import Callable
 from time import sleep
-from typing import Any, Callable, List, ParamSpec, Tuple, Type, TypeVar
+from types import TracebackType
+from typing import Any, ParamSpec, Self, TypeVar
 
 import gfmodules.logging as gflog
 from sqlalchemy import Delete, Engine, Insert, Result
@@ -88,33 +90,38 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 P = ParamSpec("P")
-R = TypeVar("R", bound=Tuple[Any, ...])
+R = TypeVar("R", bound=tuple[Any, ...])
 
 
 class DbSession:
     _engine: Engine
-    _retry_backoff: List[float]
+    _retry_backoff: list[float]
 
-    def __init__(self, engine: Engine, retry_backoff: List[float]) -> None:
+    def __init__(self, engine: Engine, retry_backoff: list[float]) -> None:
         self._engine = engine
         self._retry_backoff = retry_backoff
 
-    def __enter__(self) -> "DbSession":
+    def __enter__(self) -> Self:
         """
         Create a new session when entering the context manager
         """
         self.session = Session(self._engine, expire_on_commit=False)
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """
         Close the session when exiting the context manager
         """
         self.session.close()
 
     def get_repository(
-        self, repository_class: Type["respository_base.TRepositoryBase"]
-    ) -> "respository_base.TRepositoryBase":
+        self, repository_class: type["respository_base.TRepositoryBase_co"]
+    ) -> "respository_base.TRepositoryBase_co":
         """
         Returns an instantiated repository for the given model class
         """

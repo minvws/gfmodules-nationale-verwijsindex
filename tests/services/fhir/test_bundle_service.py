@@ -1,4 +1,4 @@
-from typing import Any, List, Literal
+from typing import Any, Literal
 from uuid import uuid4
 
 import pytest
@@ -36,7 +36,7 @@ class LocalizationListServiceSpy:
     """
 
     def __init__(self) -> None:
-        self.calls: List[str] = []
+        self.calls: list[str] = []
         self.delete_error: Exception | None = None
         self.delete_by_query_error: Exception | None = None
 
@@ -82,7 +82,7 @@ def make_entry(method: HttpMethod, url: str, resource: LocalizationList | None =
     return BundleEntry(request=EntryRequest(method=method, url=url), resource=resource)
 
 
-def make_ctx(scopes: List[AuthorizationScope], source_id: str | None = TEST_SOURCE_ID) -> AuthContext:
+def make_ctx(scopes: list[AuthorizationScope], source_id: str | None = TEST_SOURCE_ID) -> AuthContext:
     return AuthContext(
         claims=AuthenticationClaims(
             ura_number=TEST_URA,
@@ -97,7 +97,7 @@ def make_ctx(scopes: List[AuthorizationScope], source_id: str | None = TEST_SOUR
 def process(
     bundle_service: BundleService,
     entry: BundleEntry[Any],
-    scopes: List[AuthorizationScope],
+    scopes: list[AuthorizationScope],
     index: int = 0,
     source_id: str | None = TEST_SOURCE_ID,
 ) -> BundleEntry[Any]:
@@ -222,7 +222,7 @@ class TestRequiredScope:
         bundle_service: BundleService,
         service: LocalizationListServiceSpy,
     ) -> None:
-        entries: List[tuple[HttpMethod, str]] = [
+        entries: list[tuple[HttpMethod, str]] = [
             ("POST", "List"),
             ("GET", ID_URL),
             ("GET", QUERY_URL),

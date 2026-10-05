@@ -1,6 +1,7 @@
 import logging
 
 from sqlalchemy import StaticPool, create_engine, text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.config import ConfigDatabase
@@ -56,7 +57,7 @@ class Database:
             with Session(self.engine) as session:
                 session.execute(text("SELECT 1"))
             return True
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.info("Database is not healthy: %s", e)
             return False
 

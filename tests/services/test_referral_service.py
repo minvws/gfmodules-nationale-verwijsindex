@@ -1,4 +1,3 @@
-from typing import List
 from uuid import UUID, uuid4
 
 import pytest
@@ -14,8 +13,8 @@ from app.services.referral_service import ReferralService
 
 
 def assert_eq(
-    expected: ReferralEntity | List[ReferralEntity],
-    actual: ReferralEntity | List[ReferralEntity],
+    expected: ReferralEntity | list[ReferralEntity],
+    actual: ReferralEntity | list[ReferralEntity],
 ) -> None:
     """
     Helper function to compare equality between objects.

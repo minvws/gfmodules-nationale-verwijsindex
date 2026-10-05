@@ -7,6 +7,7 @@ from app.db.models.key_info import KeyInfoEntity
 from app.db.models.referral import ReferralEntity
 from app.db.repository.key_info_repository import KeyInfoRepository
 from app.db.repository.referral_repository import ReferralRepository
+from app.services.exceptions import KeyInfoPropertyError
 
 
 def test_find_one_should_succeed(key_info_repository: KeyInfoRepository, mock_key_info: KeyInfoEntity) -> None:
@@ -34,7 +35,7 @@ def test_find_should_return_none_with_soft_delete(
     key_info_repository: KeyInfoRepository, mock_key_info: KeyInfoEntity
 ) -> None:
     with key_info_repository.db_session:
-        mock_key_info.deleted_at = datetime.datetime.now()
+        mock_key_info.deleted_at = datetime.datetime.now(datetime.UTC)
         data = key_info_repository.add_one(mock_key_info)
 
         actual = key_info_repository.find_one(mock_key_info.label)
@@ -103,7 +104,7 @@ def test_find_many_should_ignore_soft_deleted_keys(
         mock_2 = KeyInfoEntity(
             label="label-2",
             mechanism=mock_key_info.mechanism,
-            deleted_at=datetime.datetime.now(),
+            deleted_at=datetime.datetime.now(datetime.UTC),
         )
 
         key_info_repository.add_one(mock_key_info)
@@ -177,5 +178,5 @@ def test_has_referrals_should_succeed_inside_session(
 def test_has_referrals_should_raise_outside_session(
     mock_key_info: KeyInfoEntity,
 ) -> None:
-    with pytest.raises(Exception):
-        mock_key_info.has_referrals
+    with pytest.raises(KeyInfoPropertyError):
+        _ = mock_key_info.has_referrals

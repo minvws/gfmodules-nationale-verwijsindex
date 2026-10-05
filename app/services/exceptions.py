@@ -1,5 +1,3 @@
-from typing import List
-
 from app.models.auth.data import AuthorizationScope
 
 
@@ -35,7 +33,7 @@ class UnauthorizedError(Exception):
 
 
 class UnauthorizedScopeError(UnauthorizedError):
-    def __init__(self, scopes: List[AuthorizationScope], required_scope: AuthorizationScope) -> None:
+    def __init__(self, scopes: list[AuthorizationScope], required_scope: AuthorizationScope) -> None:
         values = ", ".join([s.value for s in scopes])
         error_msg = f"{values} not authorized for requested action. required scope: `{required_scope.value}`"
         super().__init__(error_msg)

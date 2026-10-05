@@ -1,4 +1,4 @@
-from typing import Sequence
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import and_, delete, exists, select
@@ -74,17 +74,17 @@ class ReferralRepository(RepositoryBase):
             self.db_session.add(referral_entity)
             self.db_session.commit()
             return referral_entity
-        except SQLAlchemyError as exc:
+        except SQLAlchemyError:
             self.db_session.rollback()
-            raise exc
+            raise
 
     def delete_one(self, referral_entity: ReferralEntity) -> None:
         try:
             self.db_session.delete(referral_entity)
             self.db_session.commit()
-        except SQLAlchemyError as exc:
+        except SQLAlchemyError:
             self.db_session.rollback()
-            raise exc
+            raise
 
     def delete(
         self,
@@ -102,9 +102,9 @@ class ReferralRepository(RepositoryBase):
 
             self.db_session.delete_stmt(stmt)
             self.db_session.commit()
-        except SQLAlchemyError as exc:
+        except SQLAlchemyError:
             self.db_session.rollback()
-            raise exc
+            raise
 
     def exists(
         self,
@@ -114,10 +114,10 @@ class ReferralRepository(RepositoryBase):
     ) -> bool:
         conditions = [ReferralEntity.ura_number == ura_number]
         if pseudonym:
-            conditions.append((ReferralEntity.pseudonym == pseudonym))
+            conditions.append(ReferralEntity.pseudonym == pseudonym)
 
         if source:
-            conditions.append((ReferralEntity.source == source))
+            conditions.append(ReferralEntity.source == source)
 
         stmt = select(exists().where(and_(*conditions)))
 

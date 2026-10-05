@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, Generic, List, Literal, Self, TypeVar
+from typing import Generic, Literal, Self, TypeVar
 from urllib.parse import parse_qs, urlparse
 from uuid import UUID
 
@@ -14,7 +14,7 @@ T = TypeVar("T", bound=DomainResource)
 class EntryRequestDto(BaseModel):
     resource: str | None = None
     id: UUID | None = None
-    params: Dict[str, str] | None = None
+    params: dict[str, str] | None = None
 
     @classmethod
     def from_url(cls, url: str) -> Self:
@@ -91,4 +91,4 @@ class Bundle(DomainResource, Generic[T]):
     type: Literal["searchset", "transaction"] = "searchset"
     timestamp: datetime | None = Field(default=None)
     total: int | None = None
-    entry: List[BundleEntry[T]]
+    entry: list[BundleEntry[T]]

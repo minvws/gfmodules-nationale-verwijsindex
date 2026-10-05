@@ -1,5 +1,5 @@
 import logging
-from typing import Any, List, Self
+from typing import Any, Self
 
 from pydantic import model_validator
 
@@ -20,13 +20,13 @@ class Coding(FhirBaseModel):
             raise ValueError("Coding.code is required")
         code = value["code"]
         if not isinstance(code, str):
-            raise ValueError("Coding.code must be of type `String`")
+            raise TypeError("Coding.code must be of type `String`")
 
         if "system" not in value:
             raise ValueError("Coding.system is required")
         system = value["system"]
         if not isinstance(system, str):
-            raise ValueError("Coding.system must be of type String")
+            raise TypeError("Coding.system must be of type String")
 
         if "display" in value:
             display = value["display"]
@@ -51,7 +51,7 @@ class Coding(FhirBaseModel):
 
 
 class CodeableConcept(FhirBaseModel):
-    coding: List[Coding]
+    coding: list[Coding]
     text: str | None = None
 
 
