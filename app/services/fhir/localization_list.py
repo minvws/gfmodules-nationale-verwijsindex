@@ -35,7 +35,8 @@ class LocalizationListService:
         data: LocalizationList,
         authenticated_ura: UraNumber,
         organization_name: str,
-    ) -> LocalizationList:
+    ) -> tuple[LocalizationList, bool]:
+        """Returns the stored List and whether it was created by this call."""
         ura_number = data.get_ura()
         device = data.get_device()
 
@@ -50,7 +51,7 @@ class LocalizationListService:
 
         resolved = self._pseudonym_resolver.resolve_token(data.get_encoded_pseudonym())
 
-        new_referral, _ = self.referral_service.add_one(
+        referral, created = self.referral_service.add_one(
             ura_number=ura_number,
             encrypted_pseudonym=resolved.encrypted,
             source=device,
@@ -58,7 +59,7 @@ class LocalizationListService:
             key_id=resolved.key_id,
         )
 
-        return LocalizationList.from_referral(new_referral)
+        return LocalizationList.from_referral(referral), created
 
     def get(self, id: UUID, authenticated_ura: UraNumber, organization_name: str) -> LocalizationList:
         referral = self.referral_service.get_by_id(id)
