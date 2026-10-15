@@ -51,7 +51,7 @@ def test_add_one_should_succeed(
     ura_number: UraNumber,
 ) -> None:
     key_info = key_info_service.add_one("some-label", "AES_CBC")
-    expected = referral_service.add_one(
+    expected, _ = referral_service.add_one(
         encrypted_pseudonym=EncryptedPseudonym("ps-1", "123"),
         ura_number=ura_number,
         source="SomeDevice",
@@ -71,7 +71,7 @@ def test_add_referral_is_idempotent_for_duplicates(
 ) -> None:
     key_info = key_info_service.add_one("label-1", "AES_CBC")
     patient = EncryptedPseudonym("ps-1", "123")
-    first = referral_service.add_one(
+    first, first_created = referral_service.add_one(
         encrypted_pseudonym=patient,
         ura_number=ura_number,
         source="SomeDevice",
@@ -79,7 +79,7 @@ def test_add_referral_is_idempotent_for_duplicates(
         key_id=key_info.id,
     )
 
-    second = referral_service.add_one(
+    second, second_created = referral_service.add_one(
         encrypted_pseudonym=patient,
         ura_number=ura_number,
         source="SomeDevice",
@@ -87,6 +87,8 @@ def test_add_referral_is_idempotent_for_duplicates(
         key_id=key_info.id,
     )
 
+    assert first_created is True
+    assert second_created is False
     assert second.id == first.id
     assert len(referral_service.get_many(ura_number=ura_number)) == 1
 
@@ -98,7 +100,7 @@ def test_delete_one_should_succeed(
 ) -> None:
     key_info = key_info_service.add_one("label-1", "AES_CBC")
     patient = EncryptedPseudonym("ps-1", "123")
-    data = referral_service.add_one(
+    data, _ = referral_service.add_one(
         encrypted_pseudonym=patient,
         ura_number=ura_number,
         source="SomeDevice",
@@ -142,7 +144,7 @@ def test_delete_by_id_should_succeed(
 
     key_info = key_info_service.add_one("label-1", "AES_CBC")
     patient = EncryptedPseudonym("ps-1", "123")
-    patient_reference = referral_service.add_one(
+    patient_reference, _ = referral_service.add_one(
         encrypted_pseudonym=patient,
         ura_number=ura_number,
         source="SomeDevice",
@@ -175,7 +177,7 @@ def test_get_one_should_succeed(
     key_info = key_info_service.add_one("label-1", "AES_CBC")
     pseudonym = EncryptedPseudonym("ps-1", "123")
 
-    expected = referral_service.add_one(
+    expected, _ = referral_service.add_one(
         encrypted_pseudonym=pseudonym,
         ura_number=ura_number,
         source="SomeDevice",

@@ -50,7 +50,7 @@ class LocalizationListService:
 
         resolved = self._pseudonym_resolver.resolve_token(data.get_encoded_pseudonym())
 
-        new_referral = self.referral_service.add_one(
+        new_referral, _ = self.referral_service.add_one(
             ura_number=ura_number,
             encrypted_pseudonym=resolved.encrypted,
             source=device,

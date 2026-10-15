@@ -50,7 +50,7 @@ class TestCreateRegistration:
         second = source_client.post("/registrations", json=payload)
 
         assert first.status_code == 201
-        assert second.status_code == 201
+        assert second.status_code == 200
         assert second.json()["created_at"] == first.json()["created_at"]
 
     def test_creates_returns_503_when_no_key_registerd(self, source_client: TestClient) -> None:
