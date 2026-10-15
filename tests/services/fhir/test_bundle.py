@@ -68,9 +68,28 @@ def test_post_returns_the_stored_resource(bundle_service: BundleService, key_inf
     result = _process(bundle_service, entry, index=0)
 
     assert result.response is not None
-    assert result.response.status == "200"
+    assert result.response.status == "201"
     assert result.resource is not None
     assert result.resource.id is not None
+
+
+def test_post_of_an_existing_resource_returns_200(
+    bundle_service: BundleService, key_info_service: KeyInfoService
+) -> None:
+    key_info_service.add_one("nvi-label", "AES_CBC")
+    entry: BundleEntry[LocalizationList] = BundleEntry(
+        request=EntryRequest(method="POST", url="List"),
+        resource=make_list_resource(ura=str(AUTH_URA)),
+    )
+
+    first = _process(bundle_service, entry, index=0)
+    second = _process(bundle_service, entry, index=1)
+
+    assert second.response is not None
+    assert second.response.status == "200"
+    assert first.resource is not None
+    assert second.resource is not None
+    assert second.resource.id == first.resource.id
 
 
 def test_get_by_missing_id_maps_not_found_to_404(bundle_service: BundleService) -> None:

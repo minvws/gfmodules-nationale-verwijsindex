@@ -2,7 +2,7 @@ import logging
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends
+from fastapi import APIRouter, Body, Depends, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.params import Query
 
@@ -85,6 +85,10 @@ _LIST_EXAMPLE = {
     description="Create a new List resource. The code parameter for data domain is deprecated and ignored by this router.",
     response_class=FHIRJSONResponse,
     responses={
+        200: {
+            "description": "The List resource already existed and is returned unchanged",
+            "content": {"application/fhir+json": {"example": _LIST_EXAMPLE}},
+        },
         201: {
             "description": "A List resource created",
             "content": {"application/fhir+json": {"example": _LIST_EXAMPLE}},
@@ -102,12 +106,16 @@ def create(
             examples=[_LIST_EXAMPLE],
         ),
     ],
+    response: Response,
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
     ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.CREATE))],
     _source_match: Annotated[AuthContext, Depends(require_source_matches_body)],
 ) -> Any:
     authorized_ura: UraNumber = ctx.claims.ura_number
-    return service.create(data, authorized_ura, organization_name=ctx.claims.organization_name)
+    resource, created = service.create(data, authorized_ura, organization_name=ctx.claims.organization_name)
+    if not created:
+        response.status_code = 200
+    return resource
 
 
 @router.get(
