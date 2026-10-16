@@ -125,12 +125,7 @@ class BundleService:
                 return self._entry_result(
                     index,
                     authenticated_ura,
-                    lambda: BundleEntry(
-                        resource=self.localizaton_list_service.create(
-                            post_resource, authenticated_ura, organization_name=organization_name
-                        ),
-                        response=EntryResponse.make_good_response(msg="Resource has been created successfully"),
-                    ),
+                    lambda: self._create_entry(post_resource, authenticated_ura, organization_name),
                     failure_event=Log.REFERRAL_REGISTRATION_FAILED,
                     failure_msg="Referral registration failed",
                 )
@@ -196,6 +191,18 @@ class BundleService:
                     status=str(status_code),
                 )
             )
+
+    def _create_entry(
+        self, resource: LocalizationList, authenticated_ura: UraNumber, organization_name: str
+    ) -> BundleEntry[Any]:
+        stored, created = self.localizaton_list_service.create(
+            resource, authenticated_ura, organization_name=organization_name
+        )
+        if created:
+            response = EntryResponse.make_good_response(msg="Resource has been created successfully", status="201")
+        else:
+            response = EntryResponse.make_good_response(msg="Resource already exists")
+        return BundleEntry(resource=stored, response=response)
 
     def _delete_by_id_entry(
         self, resource_id: Any, authenticated_ura: UraNumber, source: str, organization_name: str

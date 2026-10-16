@@ -37,7 +37,7 @@ def _event_ids(caplog: pytest.LogCaptureFixture) -> list[str]:
 
 class TestCreate:
     def test_stores_and_returns_the_resource(self, service: LocalizationListService) -> None:
-        result = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        result, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
 
         assert result.id is not None
 
@@ -52,15 +52,20 @@ class TestCreate:
         assert Log.REFERRAL_ACCESS_DENIED.event_id in _event_ids(caplog)
 
     def test_is_idempotent(self, service: LocalizationListService) -> None:
-        first = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
-        second = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        first, first_created = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        second, second_created = service.create(
+            make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org"
+        )
+
+        assert first_created is True
+        assert second_created is False
 
         assert second.id == first.id
 
 
 class TestGet:
     def test_returns_the_stored_resource(self, service: LocalizationListService) -> None:
-        created = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        created, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
         assert isinstance(created.id, UUID)
 
         assert service.get(created.id, AUTH_URA, organization_name="Org").id == created.id
@@ -68,7 +73,7 @@ class TestGet:
     def test_hides_another_uras_resource_behind_not_found(
         self, service: LocalizationListService, caplog: pytest.LogCaptureFixture
     ) -> None:
-        created = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        created, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
         assert isinstance(created.id, UUID)
 
         with caplog.at_level(logging.INFO), pytest.raises(NotFoundError):
@@ -122,7 +127,7 @@ class TestQuery:
 
 class TestDelete:
     def test_deletes_and_reports_200(self, service: LocalizationListService) -> None:
-        created = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        created, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
         assert isinstance(created.id, UUID)
 
         _, status = service.delete(created.id, AUTH_URA, AUTH_SOURCE, organization_name="Org")
@@ -130,7 +135,7 @@ class TestDelete:
         assert status == 200
 
     def test_reports_404_when_nothing_was_deleted(self, service: LocalizationListService) -> None:
-        created = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        created, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
         assert isinstance(created.id, UUID)
 
         outcome, status = service.delete(created.id, OTHER_URA, AUTH_SOURCE, organization_name="Other")
@@ -139,7 +144,7 @@ class TestDelete:
         assert outcome.issue[0].code == "warning"
 
     def test_hides_another_sources_resource_behind_404(self, service: LocalizationListService) -> None:
-        created = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        created, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
         assert isinstance(created.id, UUID)
 
         outcome, status = service.delete(created.id, AUTH_URA, OTHER_SOURCE, organization_name="Org")

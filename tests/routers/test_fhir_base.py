@@ -39,7 +39,7 @@ class TestRegisterBundle:
 
         assert response.status_code == 200
         entry = response.json()["entry"][0]
-        assert entry["response"]["status"] == "200"
+        assert entry["response"]["status"] == "201"
         assert entry["resource"]["id"] is not None
 
     def test_rejects_an_empty_bundle(self, client: TestClient) -> None:
@@ -58,7 +58,7 @@ class TestRegisterBundle:
 
         assert response.status_code == 200
         statuses = [e["response"]["status"] for e in response.json()["entry"]]
-        assert statuses == ["200", "403"]
+        assert statuses == ["201", "403"]
 
     def test_processes_a_get_query_entry(self, client: TestClient) -> None:
         client.post("/fhir", json=_bundle(_post_entry()), headers=FHIR_JSON)

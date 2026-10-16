@@ -42,7 +42,7 @@ class LocalizationListServiceSpy:
 
     def create(self, *_args: Any, **_kwargs: Any) -> Any:
         self.calls.append("create")
-        return None
+        return None, True
 
     def get(self, *_args: Any, **_kwargs: Any) -> Any:
         self.calls.append("get")

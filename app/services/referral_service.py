@@ -38,7 +38,12 @@ class ReferralService:
         source: str,
         organization_name: str,
         key_id: UUID,
-    ) -> ReferralEntity:
+    ) -> tuple[ReferralEntity, bool]:
+        """
+        Store a referral, or return the stored one when it already exists.
+
+        Returns the referral and whether it was created by this call.
+        """
         with self.database.get_db_session() as session:
             referral_repository = session.get_repository(ReferralRepository)
 
@@ -54,7 +59,7 @@ class ReferralService:
                     "Idempotent referral registration",
                     fields={"ura_number": str(ura_number)},
                 )
-                return existing
+                return existing, False
 
             new_referral: ReferralEntity = referral_repository.add_one(
                 ReferralEntity(
@@ -75,7 +80,7 @@ class ReferralService:
                     "pseudonym_hash": str(encrypted_pseudonym),
                 },
             )
-            return new_referral
+            return new_referral, True
 
     def get_one(
         self,

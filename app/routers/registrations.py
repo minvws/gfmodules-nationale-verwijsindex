@@ -48,9 +48,14 @@ def get_registration(
     return RegistrationList.from_entities(results)
 
 
-@router.post("", status_code=201)
+@router.post(
+    "",
+    status_code=201,
+    responses={200: {"description": "The registration already existed and is returned unchanged"}},
+)
 def add_registration(
     data: Annotated[CreateRegistrationRequest, Body()],
+    response: Response,
     referral_service: Annotated[ReferralService, Depends(get_referral_service)],
     pseudonym_resolver: Annotated[PseudonymResolver, Depends(get_pseudonym_resolver)],
     ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.CREATE))],
@@ -58,14 +63,16 @@ def add_registration(
 ) -> Any:
     resolved = pseudonym_resolver.resolve_jwe(jwe=data.pseudonym, blind_factor=data.oprf_key)
 
-    new_referral = referral_service.add_one(
+    referral, created = referral_service.add_one(
         encrypted_pseudonym=resolved.encrypted,
         ura_number=ctx.claims.ura_number,
         source=source,
         organization_name=ctx.claims.organization_name,
         key_id=resolved.key_id,
     )
-    return Registration.from_entity(new_referral)
+    if not created:
+        response.status_code = 200
+    return Registration.from_entity(referral)
 
 
 @router.delete("")

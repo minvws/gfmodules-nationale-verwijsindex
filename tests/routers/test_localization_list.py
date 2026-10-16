@@ -56,7 +56,7 @@ class TestCreate:
         second = client.post("/fhir/List", json=_body(), headers=FHIR_JSON)
 
         assert first.status_code == 201
-        assert second.status_code == 201
+        assert second.status_code == 200
         # The duplicate returns the stored record rather than creating a second one.
         assert second.json()["id"] == first.json()["id"]
 
