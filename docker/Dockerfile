@@ -96,6 +96,7 @@ COPY --chown=${APP_USER}:${APP_GROUP} app.conf.example /src/
 COPY --chown=${APP_USER}:${APP_GROUP} static /src/static
 COPY --chown=${APP_USER}:${APP_GROUP} sql /src/sql
 COPY --chown=${APP_USER}:${APP_GROUP} tools/migrate_db.sh /src/tools/migrate_db.sh
+COPY --chown=${APP_USER}:${APP_GROUP} tools/migrate_beheer_data.py /src/tools/migrate_beheer_data.py
 
 # version.json is generated from build args so CI workspace artifacts never leak in
 ARG RELEASE_VERSION=dev
