@@ -19,6 +19,7 @@ from app.dependencies import (
     get_pseudonym_resolver,
     get_referral_service,
 )
+from app.metrics import UsageMetrics
 from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.data import AuthorizationScope
 from app.models.ura import UraNumber
@@ -83,8 +84,8 @@ def db() -> Generator[Database, Any, None]:
 
 
 @pytest.fixture()
-def referral_service(db: Database) -> ReferralService:
-    return ReferralService(database=db)
+def referral_service(db: Database, usage_metrics: UsageMetrics) -> ReferralService:
+    return ReferralService(database=db, usage_metrics=usage_metrics)
 
 
 @pytest.fixture()

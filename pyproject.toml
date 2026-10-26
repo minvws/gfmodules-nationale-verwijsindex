@@ -20,11 +20,7 @@ sqlalchemy = "^2.0.46"
 psycopg = { extras = ["binary", "pool"], version = "^3.3.2" }
 opentelemetry-sdk = "^1.45.1"
 opentelemetry-exporter-otlp-proto-grpc = "^1.45.1"
-opentelemetry-instrumentation = "^0.66b1"
-opentelemetry-instrumentation-fastapi = "^0.66b1"
-opentelemetry-instrumentation-requests = "^0.66b1"
 requests = "^2.32.5"
-statsd = "^4.0.1"
 pyopenssl = "^26.0.0"
 gfmodules-python-logging-library = { git = "https://github.com/minvws/gfmodules-python-logging-library", tag = "v0.5.0", extras = ["fastapi"] }
 

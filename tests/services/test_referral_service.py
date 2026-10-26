@@ -1,8 +1,12 @@
+import logging
+from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
+from gfmodules.logging import LogEvent
 
 from app.db.models.referral import ReferralEntity
+from app.logging.events import Log
 from app.models.pseudonym import EncryptedPseudonym
 from app.models.ura import UraNumber
 from app.services.exceptions import (
@@ -10,6 +14,12 @@ from app.services.exceptions import (
 )
 from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
+
+REQUESTING_URA = UraNumber("00000456")
+
+
+def logged_fields(caplog: pytest.LogCaptureFixture, event: LogEvent) -> list[dict[str, Any]]:
+    return [vars(record) for record in caplog.records if getattr(record, "event_id", None) == event.event_id]
 
 
 def assert_eq(
@@ -204,3 +214,45 @@ def test_get_one_should_return_none_when_not_found(referral_service: ReferralSer
     )
 
     assert actual is None
+
+
+def test_localize_logs_success_for_the_requesting_organization(
+    referral_service: ReferralService,
+    key_info_service: KeyInfoService,
+    ura_number: UraNumber,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    key_info = key_info_service.add_one("label-1", "AES_CBC")
+    pseudonym = EncryptedPseudonym("ps-1", "123")
+    referral_service.add_one(
+        encrypted_pseudonym=pseudonym,
+        ura_number=ura_number,
+        source="SomeDevice",
+        organization_name="Test Org",
+        key_id=key_info.id,
+    )
+
+    with caplog.at_level(logging.INFO):
+        referrals = referral_service.localize(pseudonym, REQUESTING_URA, organization_name="Requesting Org")
+
+    (fields,) = logged_fields(caplog, Log.LOCALIZATION_SUCCESS)
+    assert len(referrals) == 1
+    assert fields["organization"] == "Requesting Org"
+    assert fields["ura_number"] == str(REQUESTING_URA)
+    assert fields["pseudonym_hash"] == str(pseudonym)
+    assert fields["result_count"] == 1
+
+
+def test_localize_logs_no_match_for_the_requesting_organization(
+    referral_service: ReferralService,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    with caplog.at_level(logging.INFO):
+        referrals = referral_service.localize(
+            EncryptedPseudonym("ps-1", "123"), REQUESTING_URA, organization_name="Requesting Org"
+        )
+
+    (fields,) = logged_fields(caplog, Log.LOCALIZATION_NO_MATCH)
+    assert len(referrals) == 0
+    assert fields["ura_number"] == str(REQUESTING_URA)
+    assert fields["result_count"] == 0

@@ -90,43 +90,18 @@ class LocalizationListService:
         authenticated_ura: UraNumber,
         organization_name: str,
     ) -> Bundle[LocalizationList]:
-        ura_number: UraNumber | None = None
-
-        is_localize = params.is_localize_params()
-        if params.empty() or is_localize is False:
-            ura_number = authenticated_ura
-
         resolved: ResolvedPseudonym | None = None
         if params.subject:
             resolved = self._pseudonym_resolver.resolve_token(params.subject)
 
-        referrals = self.referral_service.get_many(
-            encrypted_pseudonym=(resolved.encrypted if resolved else None),
-            source=params.source,
-            ura_number=ura_number,
-        )
-
-        if is_localize:
-            if referrals:
-                gflog.emit(
-                    logger,
-                    Log.LOCALIZATION_SUCCESS,
-                    "Localization succeeded",
-                    fields={
-                        "organization": organization_name,
-                        "ura_number": str(authenticated_ura),
-                        "pseudonym_hash": str(resolved.response) if resolved else None,
-                        "result_count": len(referrals),
-                    },
-                )
-            else:
-                gflog.emit(
-                    logger,
-                    Log.LOCALIZATION_NO_MATCH,
-                    "Localization returned no match",
-                    fields={"ura_number": str(authenticated_ura), "result_count": 0},
-                )
+        if params.is_localize_params() and resolved is not None:
+            referrals = self.referral_service.localize(resolved.encrypted, authenticated_ura, organization_name)
         else:
+            referrals = self.referral_service.get_many(
+                encrypted_pseudonym=(resolved.encrypted if resolved else None),
+                source=params.source,
+                ura_number=authenticated_ura,
+            )
             gflog.emit(
                 logger,
                 Log.REFERRALS_QUERIED,

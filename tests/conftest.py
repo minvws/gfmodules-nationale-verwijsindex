@@ -1,10 +1,12 @@
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from typing import Any
 
 import gfmodules.logging as gflog
 import pytest
 from gfmodules.logging import ConfigLogging
 from gfmodules.logging.testing import reset_for_tests
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import DataPointT, InMemoryMetricReader, NumberDataPoint
 from pydantic import SecretStr
 
 from app.config import ConfigDatabase
@@ -14,6 +16,7 @@ from app.db.models.referral import ReferralEntity
 from app.db.repository.key_info_repository import KeyInfoRepository
 from app.db.repository.referral_repository import ReferralRepository
 from app.logging.events import Log
+from app.metrics import UsageMetrics
 from app.models.fhir.elements import (
     CodeableConcept,
     Coding,
@@ -41,6 +44,9 @@ from tests.test_config import get_test_config
 # A url-safe base64 token decoding to {"evaluated_output": "JWE", "blind_factor": "BF"},
 # which is the shape `decode_url_safe_token` expects of List.subject.
 TEST_PSEUDONYM_TOKEN = "eyJldmFsdWF0ZWRfb3V0cHV0IjogIkpXRSIsICJibGluZF9mYWN0b3IiOiAiQkYifQ"
+
+type MetricPoints = Callable[[str], list[DataPointT]]
+type CounterValue = Callable[[str, dict[str, str]], int]
 
 
 def make_list_resource(
@@ -135,8 +141,53 @@ def mock_referral_entity() -> ReferralEntity:
 
 
 @pytest.fixture()
-def referral_service(database: Database) -> ReferralService:
-    return ReferralService(database=database)
+def metric_reader() -> InMemoryMetricReader:
+    return InMemoryMetricReader()
+
+
+@pytest.fixture
+def meter_provider(metric_reader: InMemoryMetricReader) -> MeterProvider:
+    return MeterProvider(metric_readers=[metric_reader])
+
+
+@pytest.fixture
+def metric_points(metric_reader: InMemoryMetricReader) -> MetricPoints:
+    """Look up the data points ``metric_reader`` has collected so far for a metric name."""
+
+    def points(name: str) -> list[DataPointT]:
+        data = metric_reader.get_metrics_data()
+        if data is None:
+            return []
+        return [
+            point
+            for resource_metrics in data.resource_metrics
+            for scope_metrics in resource_metrics.scope_metrics
+            for metric in scope_metrics.metrics
+            if metric.name == name
+            for point in metric.data.data_points
+        ]
+
+    return points
+
+
+@pytest.fixture
+def counter_value(metric_points: MetricPoints) -> CounterValue:
+    """Sum a counter's data points whose attributes exactly match the given attributes."""
+    return lambda name, attributes: sum(
+        int(point.value)
+        for point in metric_points(name)
+        if isinstance(point, NumberDataPoint) and dict(point.attributes or {}) == attributes
+    )
+
+
+@pytest.fixture
+def usage_metrics(meter_provider: MeterProvider) -> UsageMetrics:
+    return UsageMetrics(meter_provider)
+
+
+@pytest.fixture
+def referral_service(database: Database, usage_metrics: UsageMetrics) -> ReferralService:
+    return ReferralService(database=database, usage_metrics=usage_metrics)
 
 
 @pytest.fixture()

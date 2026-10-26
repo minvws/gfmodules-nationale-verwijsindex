@@ -27,7 +27,6 @@ from app.routers.fhir.localization_list import router as fhir_list_router
 from app.routers.health import router as health_router
 from app.routers.localize import router as localization_router
 from app.routers.registrations import router as registrations_router
-from app.stats import StatsdMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -155,9 +154,6 @@ def setup_fastapi() -> FastAPI:
         fastapi.include_router(router, dependencies=[Depends(get_auth_ctx)])
 
     register_exceptions(fastapi)
-
-    if config.stats.enabled:
-        fastapi.add_middleware(StatsdMiddleware, module_name=config.stats.module_name or "default")
 
     fastapi.add_middleware(
         RequestContextMiddleware,

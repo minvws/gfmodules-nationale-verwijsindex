@@ -1,8 +1,10 @@
 import configparser
 import logging
 import os
+import socket
 from enum import Enum
 from typing import Any
+from uuid import uuid4
 
 from gfmodules.logging import ConfigLogging as GFConfigLogging
 from gfmodules.logging.ini import split_comma_separated
@@ -67,18 +69,16 @@ class ConfigUvicorn(BaseModel):
     root_path: str = Field(default="")
 
 
+def process_instance_id() -> str:
+    return f"{socket.gethostname()}-{uuid4().hex[:8]}"
+
+
 class ConfigTelemetry(BaseModel):
-    enabled: bool = Field(default=False)
+    metrics_enabled: bool = Field(default=False)
     endpoint: str | None = None
     service_name: str | None = None
-    tracer_name: str | None = None
-
-
-class ConfigStats(BaseModel):
-    enabled: bool = Field(default=False)
-    host: str | None = None
-    port: int | None = None
-    module_name: str | None = None
+    instance_id: str = Field(default_factory=process_instance_id)
+    metrics_export_interval_ms: int = Field(default=15000, gt=0)
 
 
 class ConfigAuthorizationHeaders(BaseModel):
@@ -106,7 +106,6 @@ class Config(BaseModel):
     database: ConfigDatabase
     crypto_service_api: ConfigCryptoServiceApi
     telemetry: ConfigTelemetry
-    stats: ConfigStats
     uvicorn: ConfigUvicorn
     authorization_headers: ConfigAuthorizationHeaders
 
