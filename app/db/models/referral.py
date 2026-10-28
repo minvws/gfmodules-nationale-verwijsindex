@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from sqlalchemy import TIMESTAMP, ForeignKey, String, UniqueConstraint
+from sqlalchemy import TIMESTAMP, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import Uuid
 
@@ -15,12 +15,9 @@ if TYPE_CHECKING:
 class ReferralEntity(Base):
     __tablename__ = "referrals"
     __table_args__ = (
-        UniqueConstraint(
-            "ura_number",
-            "pseudonym",
-            "source",
-            name="providers_unique_idx",
-        ),
+        Index("referrals_ura_pseudonym_source_key", "ura_number", "pseudonym", "source", unique=True),
+        Index("referrals_pseudonym_idx", "pseudonym"),
+        Index("referrals_ura_created_at_id_idx", "ura_number", "created_at", "id"),
     )
 
     id: Mapped[UUID] = mapped_column("id", Uuid, primary_key=True, default=uuid4)
