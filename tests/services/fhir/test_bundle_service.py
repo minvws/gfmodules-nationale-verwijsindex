@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Literal
 from uuid import uuid4
 
@@ -37,6 +38,7 @@ class LocalizationListServiceSpy:
 
     def __init__(self) -> None:
         self.calls: list[str] = []
+        self.query_error: Exception | None = None
         self.delete_error: Exception | None = None
         self.delete_by_query_error: Exception | None = None
 
@@ -50,13 +52,15 @@ class LocalizationListServiceSpy:
 
     def query(self, *_args: Any, **_kwargs: Any) -> Any:
         self.calls.append("query")
+        if self.query_error is not None:
+            raise self.query_error
         return None
 
     def delete(self, *_args: Any, **_kwargs: Any) -> Any:
         self.calls.append("delete")
         if self.delete_error is not None:
             raise self.delete_error
-        return None, 200
+        return None
 
     def delete_by_query(self, *_args: Any, **_kwargs: Any) -> Any:
         self.calls.append("delete_by_query")
@@ -372,11 +376,10 @@ class TestDeleteErrorMapping:
     """
 
     @pytest.mark.parametrize(
-        ("error", "expected_status"),
+        ("error", "expected_status", "expected_code"),
         [
-            (NotFoundError(), "404"),
-            (UnauthorizedUraError(), "403"),
-            (RuntimeError("boom"), "500"),
+            (NotFoundError(), "404", "not-found"),
+            (UnauthorizedUraError(), "403", "security"),
         ],
     )
     def test_delete_by_id_error_maps_to_entry_status(
@@ -385,6 +388,7 @@ class TestDeleteErrorMapping:
         service: LocalizationListServiceSpy,
         error: Exception,
         expected_status: str,
+        expected_code: str,
     ) -> None:
         service.delete_error = error
 
@@ -393,16 +397,16 @@ class TestDeleteErrorMapping:
         assert result.response is not None
         assert result.response.status == expected_status
         assert result.response.outcome is not None
+        assert result.response.outcome.issue[0].code == expected_code
         message = str(result.response.outcome.model_dump())
         assert "Bundle.entry.1" in message
         assert str(error) in message
 
     @pytest.mark.parametrize(
-        ("error", "expected_status"),
+        ("error", "expected_status", "expected_code"),
         [
-            (NotFoundError(), "404"),
-            (PseudonymError(), "422"),
-            (RuntimeError("boom"), "500"),
+            (NotFoundError(), "404", "not-found"),
+            (PseudonymError(), "422", "invalid"),
         ],
     )
     def test_delete_by_query_error_maps_to_entry_status(
@@ -411,6 +415,7 @@ class TestDeleteErrorMapping:
         service: LocalizationListServiceSpy,
         error: Exception,
         expected_status: str,
+        expected_code: str,
     ) -> None:
         service.delete_by_query_error = error
 
@@ -419,9 +424,102 @@ class TestDeleteErrorMapping:
         assert result.response is not None
         assert result.response.status == expected_status
         assert result.response.outcome is not None
+        assert result.response.outcome.issue[0].code == expected_code
         message = str(result.response.outcome.model_dump())
         assert "Bundle.entry.1" in message
         assert str(error) in message
+
+    def test_unexpected_error_maps_to_500_without_leaking_its_message(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+    ) -> None:
+        service.delete_error = RuntimeError("internal detail that must not leak")
+
+        result = process(bundle_service, make_entry("DELETE", ID_URL), [AuthorizationScope.DELETE], index=1)
+
+        assert result.response is not None
+        assert result.response.status == "500"
+        assert result.response.outcome is not None
+        assert result.response.outcome.issue[0].code == "exception"
+        message = str(result.response.outcome.model_dump())
+        assert "Bundle.entry.1" in message
+        assert "internal detail" not in message
+
+
+def _event_ids(caplog: pytest.LogCaptureFixture) -> list[str]:
+    return [r.event_id for r in caplog.records if hasattr(r, "event_id")]
+
+
+class TestEntryFailureLogging:
+    def test_unexpected_error_is_logged_with_its_traceback(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        service.delete_error = RuntimeError("boom")
+
+        with caplog.at_level(logging.INFO):
+            process(bundle_service, make_entry("DELETE", ID_URL), [AuthorizationScope.DELETE])
+
+        (unexpected,) = [r for r in caplog.records if r.exc_info is not None]
+        assert unexpected.levelno == logging.ERROR
+
+    def test_expected_error_is_logged_without_a_traceback(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        service.delete_error = NotFoundError()
+
+        with caplog.at_level(logging.INFO):
+            process(bundle_service, make_entry("DELETE", ID_URL), [AuthorizationScope.DELETE])
+
+        assert "Record not found" in caplog.text
+        assert all(r.exc_info is None for r in caplog.records)
+        assert all(r.levelno < logging.WARNING for r in caplog.records)
+
+    def test_expected_localization_outcome_logs_no_failure_event(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        service.query_error = NotFoundError()
+
+        with caplog.at_level(logging.INFO):
+            process(bundle_service, make_entry("GET", QUERY_URL), [AuthorizationScope.LOCALIZE])
+
+        assert _event_ids(caplog) == []
+
+    def test_failed_own_query_is_not_a_localization_failure(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        service.query_error = PseudonymError()
+        own_query_url = f"{QUERY_URL}&source:identifier={TEST_SOURCE_ID}"
+
+        with caplog.at_level(logging.INFO):
+            process(bundle_service, make_entry("GET", own_query_url), [AuthorizationScope.READ])
+
+        assert _event_ids(caplog) == []
+
+    def test_failed_delete_by_query_is_not_a_localization_failure(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        service.delete_by_query_error = PseudonymError()
+
+        with caplog.at_level(logging.INFO):
+            process(bundle_service, make_entry("DELETE", QUERY_URL), [AuthorizationScope.DELETE])
+
+        assert _event_ids(caplog) == []
 
 
 class TestSourceMatch:

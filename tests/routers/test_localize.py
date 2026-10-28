@@ -1,7 +1,11 @@
+from unittest.mock import Mock
+
 import pytest
 from fastapi.testclient import TestClient
+from gfmodules.logging.testing import assert_event_emitted, capture_records
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
+from app.logging.events import Log
 from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.data import AuthorizationScope
 from app.models.ura import UraNumber
@@ -99,6 +103,24 @@ class TestLocalize:
         response = localize_client.post("/localize", json={"pseudonym": "pseu", "oprf_key": "k"})
         assert response.status_code == 200
         assert len(response.json()) == 2
+
+    def test_logs_a_failed_localization_with_the_callers_claims(
+        self,
+        localize_client: TestClient,
+        crypto_client: CryptoServiceApiClientMock,
+        key_info_service: KeyInfoService,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        key_info_service.add_one("nvi-label", "AES_CBC")
+        monkeypatch.setattr(crypto_client, "exchange", Mock(side_effect=ValueError("Invalid pseudonym or oprf_key")))
+
+        with capture_records() as records:
+            response = localize_client.post("/localize", json={"pseudonym": "pseu", "oprf_key": "k"})
+
+        assert response.status_code == 400
+        assert_event_emitted(
+            records, Log.LOCALIZATION_FAILED, organization=TEST_ORG_NAME, ura_number=TEST_URA, http_status=400
+        )
 
     def test_requires_localize_scope(
         self,

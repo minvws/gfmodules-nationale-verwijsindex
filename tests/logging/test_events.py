@@ -88,9 +88,9 @@ class TestEmitting:
     def test_stamps_the_event_id_level_and_fields_on_the_record(self) -> None:
         logger = logging.getLogger("app.test_events")
         with capture_records("app.test_events") as records:
-            gflog.emit(logger, Log.REGISTERED_REFERRAL, "registered", fields={"ura_number": "12345678"})
+            gflog.emit(logger, Log.REGISTERED_REFERRAL, "registered", fields={"pseudonym_hash": "abcd1234"})
 
-        entry = assert_event_emitted(records, Log.REGISTERED_REFERRAL, ura_number="12345678")
+        entry = assert_event_emitted(records, Log.REGISTERED_REFERRAL, pseudonym_hash="abcd1234")
         assert entry.level == "INFO"
         assert entry.description == "registered"
 

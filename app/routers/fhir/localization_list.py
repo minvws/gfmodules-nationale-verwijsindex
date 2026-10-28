@@ -112,7 +112,7 @@ def create(
     _source_match: Annotated[AuthContext, Depends(require_source_matches_body)],
 ) -> Any:
     authorized_ura: UraNumber = ctx.claims.ura_number
-    resource, created = service.create(data, authorized_ura, organization_name=ctx.claims.organization_name)
+    resource, created = service.create(data, authorized_ura)
     if not created:
         response.status_code = 200
     return resource
@@ -142,7 +142,7 @@ def get(
     ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.READ))],
 ) -> Any:
     authorized_ura = ctx.claims.ura_number
-    return service.get(id, authorized_ura, organization_name=ctx.claims.organization_name)
+    return service.get(id, authorized_ura)
 
 
 @router.get(
@@ -182,7 +182,7 @@ def query(
     _source_match: Annotated[AuthContext, Depends(require_source_matches_query)],
 ) -> Any:
     authorized_ura = ctx.claims.ura_number
-    return service.query(params, authorized_ura, organization_name=ctx.claims.organization_name)
+    return service.query(params, authorized_ura)
 
 
 @router.delete(
@@ -208,11 +208,8 @@ def delete(
     source: Annotated[str, Depends(require_managing_source)],
 ) -> Any:
     authorized_ura = ctx.claims.ura_number
-    outcome, status_code = service.delete(id, authorized_ura, source, organization_name=ctx.claims.organization_name)
-    return FHIRJSONResponse(
-        status_code=status_code,
-        content=jsonable_encoder(outcome.model_dump(exclude_none=True)),
-    )
+    outcome = service.delete(id, authorized_ura, source)
+    return FHIRJSONResponse(content=jsonable_encoder(outcome.model_dump(exclude_none=True)))
 
 
 @router.delete(
@@ -239,9 +236,7 @@ def delete_for_query(
     _source_match: Annotated[AuthContext, Depends(require_source_matches_query)],
 ) -> Any:
     authenticated_ura = ctx.claims.ura_number
-    outcome, status_code = service.delete_by_query(
-        params, authenticated_ura, source, organization_name=ctx.claims.organization_name
-    )
+    outcome, status_code = service.delete_by_query(params, authenticated_ura, source)
 
     return FHIRJSONResponse(
         status_code=status_code,

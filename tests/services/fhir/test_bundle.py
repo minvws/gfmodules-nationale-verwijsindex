@@ -4,7 +4,6 @@ from uuid import uuid4
 
 import pytest
 
-from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.logging.events import Log
 from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.data import AuthorizationScope
@@ -15,7 +14,7 @@ from app.models.ura import UraNumber
 from app.services.fhir.bundle import BundleService
 from app.services.fhir.localization_list import LocalizationListService
 from app.services.key_info import KeyInfoService
-from app.services.pseudonym_resolver import PseudonymResolver
+from app.services.pseudonym_referral_service import PseudonymReferralService
 from app.services.referral_service import ReferralService
 from tests.conftest import make_list_resource
 
@@ -47,10 +46,11 @@ def _process(bundle_service: BundleService, entry: BundleEntry[Any], index: int 
 @pytest.fixture()
 def bundle_service(
     referral_service: ReferralService,
-    key_info_service: KeyInfoService,
+    pseudonym_referral_service: PseudonymReferralService,
 ) -> BundleService:
-    resolver = PseudonymResolver(crypto_client=CryptoServiceApiClientMock(), key_info_service=key_info_service)
-    localization_service = LocalizationListService(referral_service=referral_service, pseudonym_resolver=resolver)
+    localization_service = LocalizationListService(
+        referral_service=referral_service, pseudonym_referral_service=pseudonym_referral_service
+    )
     return BundleService(localization_service)
 
 
@@ -293,11 +293,9 @@ class TestEntryFailureMapping:
         event_ids = [r.event_id for r in caplog.records if hasattr(r, "event_id")]
         assert Log.LOCALIZATION_FAILED.event_id in event_ids
 
-    def test_failure_without_a_failure_event_is_not_logged(
+    def test_read_of_an_unknown_id_logs_no_event(
         self, bundle_service: BundleService, caplog: pytest.LogCaptureFixture
     ) -> None:
-        # GET-by-id passes no failure_event, so a missing record produces an error entry
-        # without an operational log line.
         with caplog.at_level(logging.WARNING):
             result = _process(bundle_service, _entry("GET", f"List/{uuid4()}"), index=0)
 
@@ -306,17 +304,13 @@ class TestEntryFailureMapping:
         assert [r.event_id for r in caplog.records if hasattr(r, "event_id")] == []
 
 
-def test_post_with_a_non_list_resource_returns_validation_response(
-    bundle_service: BundleService, caplog: pytest.LogCaptureFixture
-) -> None:
+def test_post_with_a_non_list_resource_returns_validation_response(bundle_service: BundleService) -> None:
     entry: BundleEntry[Any] = BundleEntry(
         request=EntryRequest(method="POST", url="List"),
         resource=OperationOutcome.make_good_outcome("not a List"),
     )
 
-    with caplog.at_level(logging.WARNING):
-        result = _process(bundle_service, entry, index=0)
+    result = _process(bundle_service, entry, index=0)
 
     assert result.response is not None
     assert result.response.status == "422"
-    assert Log.REFERRAL_REGISTRATION_FAILED.event_id in [r.event_id for r in caplog.records if hasattr(r, "event_id")]

@@ -1,18 +1,14 @@
 import logging
 from typing import no_type_check
 
-import gfmodules.logging as gflog
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from gfmodules.logging import LogEvent
 from gfmodules.logging.exceptions import log_unhandled_exception
 from gfmodules.logging.middleware import restore_request_context
 
 from app.errors.fhir import FHIRError
-from app.errors.mapping import EXCEPTION_MAP, should_log, spec_for
-from app.logging.events import Log
-from app.models.fhir.resources.localization_list.request import SUBJECT_IDENTIFIER_PARAM
+from app.errors.mapping import DEFAULT_SPEC, EXCEPTION_MAP, UNEXPECTED_ERROR_MESSAGE, spec_for
 from app.models.fhir.resources.operation_outcome.resource import (
     OperationOutcome,
     OperationOutcomeDetail,
@@ -22,23 +18,6 @@ from app.models.fhir.resources.operation_outcome.resource import (
 logger = logging.getLogger(__name__)
 
 _DENIAL_STATUSES = frozenset({401, 403})
-
-
-def _failure_event_for(request: Request, status_code: int) -> LogEvent | None:
-    path = request.url.path
-    method = request.method
-    if method == "POST" and path.endswith(("/registrations", "/fhir/List")):
-        return Log.REFERRAL_REGISTRATION_FAILED
-    localize_failed_rest = method == "POST" and path.endswith("/localize")
-    localize_failed_fhir = (
-        method == "GET" and path.endswith("/fhir/List") and request.query_params.get(SUBJECT_IDENTIFIER_PARAM)
-    )
-    if localize_failed_rest or localize_failed_fhir:
-        if status_code < 500:
-            return Log.LOCALIZATION_FAILED
-        else:
-            return Log.LOCALIZATION_ERROR
-    return None
 
 
 def _summarize_reason(exc: Exception) -> str:
@@ -51,24 +30,7 @@ def _summarize_reason(exc: Exception) -> str:
     return str(exc)
 
 
-def log_request_failure(request: Request, status_code: int, exc: Exception) -> None:
-    event = _failure_event_for(request, status_code)
-    if event is None:
-        return
-    auth = getattr(request.state, "auth", None)
-    gflog.emit(
-        logger,
-        event,
-        "Referral registration failed" if event is Log.REFERRAL_REGISTRATION_FAILED else "Localization failed",
-        fields={
-            "ura_number": str(auth.claims.ura_number) if auth is not None else None,
-            "http_status": status_code,
-            "error_reason": _summarize_reason(exc),
-        },
-    )
-
-
-def _log_rejection(status_code: int, exc: Exception) -> None:
+def log_rejection(status_code: int, exc: Exception) -> None:
     level = logging.WARNING if status_code in _DENIAL_STATUSES else logging.INFO
     logger.log(
         level,
@@ -82,9 +44,7 @@ def _log_rejection(status_code: int, exc: Exception) -> None:
 def handle_mapped_exception(request: Request, exc: Exception) -> JSONResponse:
     spec = spec_for(exc)
     status_code = spec.http_status
-    _log_rejection(status_code, exc)
-    if should_log(exc):
-        log_request_failure(request, status_code, exc)
+    log_rejection(status_code, exc)
 
     if "fhir" in request.url.path:
         fhir_error = FHIRError(severity=spec.severity, code=spec.fhir_code, msg=str(exc))
@@ -100,7 +60,7 @@ def handle_mapped_exception(request: Request, exc: Exception) -> JSONResponse:
 def handle_request_validation_exception(req: Request, exc: RequestValidationError) -> JSONResponse:
     path = req.url.path
     status_code = 422
-    log_request_failure(req, status_code, exc)
+    log_rejection(status_code, exc)
     if "fhir" in path:
         issues = []
 
@@ -128,12 +88,11 @@ def handle_request_validation_exception(req: Request, exc: RequestValidationErro
 def handle_unhandled_exception(req: Request, exc: Exception) -> JSONResponse:
     status_code = 500
     log_unhandled_exception(logger, req, exc)
-    log_request_failure(req, status_code, exc)
     if "fhir" in req.url.path:
         fhir_error = FHIRError(
-            severity="error",
-            code="expression",
-            msg="An unexpected error occurred",
+            severity=DEFAULT_SPEC.severity,
+            code=DEFAULT_SPEC.fhir_code,
+            msg=UNEXPECTED_ERROR_MESSAGE,
             expression=[type(exc).__name__],
         )
 
