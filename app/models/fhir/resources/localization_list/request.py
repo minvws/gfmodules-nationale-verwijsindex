@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 SUBJECT_IDENTIFIER_PARAM = "subject:identifier"
 DEVICE_IDENTIFIER_PARAM = "source:identifier"
 CODE_PARAM = "code"
+COUNT_PARAM = "_count"
+OFFSET_PARAM = "_offset"
 
 
 def _create_openapi_examples(system: str) -> dict[str, Any]:
@@ -87,3 +89,20 @@ class LocalizationListParams(BaseModel):
 
     def is_localize_params(self) -> bool:
         return self.subject is not None and self.source is None
+
+
+class LocalizationListSearchParams(LocalizationListParams):
+    """Search parameters for a List search, which also controls the page that is returned."""
+
+    count: int | None = Query(
+        alias=COUNT_PARAM,
+        default=None,
+        ge=1,
+        description="Number of entries per page. Defaults to and is capped by the configured page sizes",
+    )
+    offset: int = Query(
+        alias=OFFSET_PARAM,
+        default=0,
+        ge=0,
+        description="Number of entries to skip before the first entry of the page",
+    )

@@ -60,6 +60,28 @@ class TestRegisterBundle:
         statuses = [e["response"]["status"] for e in response.json()["entry"]]
         assert statuses == ["201", "403"]
 
+    def test_pages_a_get_query_entry(self, client: TestClient) -> None:
+        client.post("/fhir", json=_bundle(_post_entry()), headers=FHIR_JSON)
+
+        response = client.post(
+            "/fhir",
+            json=_bundle({"request": {"method": "GET", "url": "List?source:identifier=SRC-001&_count=1"}}),
+            headers=FHIR_JSON,
+        )
+
+        result = response.json()["entry"][0]["resource"]
+        assert result["total"] == 1
+        assert result["link"] == [{"relation": "self", "url": "List?source%3Aidentifier=SRC-001&_count=1&_offset=0"}]
+
+    def test_rejects_paging_parameters_on_a_delete_query_entry(self, client: TestClient) -> None:
+        response = client.post(
+            "/fhir",
+            json=_bundle({"request": {"method": "DELETE", "url": "List?source:identifier=SRC-001&_count=1"}}),
+            headers=FHIR_JSON,
+        )
+
+        assert response.json()["entry"][0]["response"]["status"] == "422"
+
     def test_processes_a_get_query_entry(self, client: TestClient) -> None:
         client.post("/fhir", json=_bundle(_post_entry()), headers=FHIR_JSON)
 

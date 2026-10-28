@@ -5,11 +5,14 @@ from fastapi.testclient import TestClient
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.models.auth.data import AuthorizationScope
+from app.models.pseudonym import EncryptedPseudonym
+from app.models.ura import UraNumber
 from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 from tests.conftest import TEST_PSEUDONYM_TOKEN, make_list_resource
 from tests.routers.conftest import (
     TEST_SOURCE_ID,
+    TEST_URA,
     make_auth_context,
     make_localize_auth_context,
     make_test_client,
@@ -20,6 +23,23 @@ FHIR_JSON = {"Content-Type": "application/fhir+json"}
 
 def _body(**kwargs: Any) -> dict[str, Any]:
     return make_list_resource(**kwargs).model_dump(by_alias=True, exclude_none=True, mode="json")
+
+
+def _seed_referrals(referral_service: ReferralService, key_info_service: KeyInfoService, amount: int) -> None:
+    """Store referrals for different patients of the test client's URA and source."""
+    key_id = key_info_service.get_many()[0].id
+    for i in range(amount):
+        referral_service.add_one(
+            encrypted_pseudonym=EncryptedPseudonym(encrypted_data=f"pseudonym-{i}", iv="iv"),
+            ura_number=UraNumber(TEST_URA),
+            source=TEST_SOURCE_ID,
+            organization_name="Org",
+            key_id=key_id,
+        )
+
+
+def _links(bundle: dict[str, Any]) -> dict[str, str]:
+    return {link["relation"]: link["url"] for link in bundle.get("link", [])}
 
 
 @pytest.fixture()
@@ -162,6 +182,53 @@ class TestQuery:
         )
 
         assert response.status_code == 200
+
+
+class TestQueryPagination:
+    def test_returns_the_requested_page(
+        self, client: TestClient, referral_service: ReferralService, key_info_service: KeyInfoService
+    ) -> None:
+        _seed_referrals(referral_service, key_info_service, 5)
+
+        response = client.get("/fhir/List", params={"_count": 2, "_offset": 2})
+
+        assert response.status_code == 200
+        bundle = response.json()
+        assert bundle["total"] == 5
+        assert len(bundle["entry"]) == 2
+
+    def test_links_navigate_through_all_pages(
+        self, client: TestClient, referral_service: ReferralService, key_info_service: KeyInfoService
+    ) -> None:
+        _seed_referrals(referral_service, key_info_service, 5)
+
+        ids: list[str] = []
+        url: str | None = "/fhir/List?source:identifier=" + TEST_SOURCE_ID + "&_count=2"
+        while url is not None:
+            bundle = client.get(url).json()
+            ids += [entry["resource"]["id"] for entry in bundle["entry"]]
+            url = _links(bundle).get("next")
+
+        assert len(ids) == 5
+        assert len(set(ids)) == 5
+
+    def test_links_keep_the_search_parameters(self, client: TestClient) -> None:
+        response = client.get("/fhir/List", params={"source:identifier": TEST_SOURCE_ID, "_count": 2})
+
+        self_link = _links(response.json())["self"]
+        assert "source%3Aidentifier=SRC-001" in self_link
+        assert "_count=2" in self_link
+
+    @pytest.mark.parametrize("params", [{"_count": 0}, {"_count": -1}, {"_offset": -1}, {"_count": "many"}])
+    def test_rejects_invalid_paging_parameters(self, client: TestClient, params: dict[str, Any]) -> None:
+        response = client.get("/fhir/List", params=params)
+
+        assert response.status_code == 422
+
+    def test_delete_by_query_does_not_accept_paging_parameters(self, client: TestClient) -> None:
+        response = client.delete("/fhir/List", params={"source:identifier": TEST_SOURCE_ID, "_count": 2})
+
+        assert response.status_code == 422
 
 
 class TestDelete:

@@ -1,3 +1,4 @@
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -106,6 +107,70 @@ def test_find_many_with_alternative_params_should_succeed(
         actual = referral_repository.find_many()
 
     assert expected == actual
+
+
+def _referrals_created_in_reverse_order(key_info: KeyInfoEntity, amount: int) -> list[ReferralEntity]:
+    """Referrals that are inserted newest first, so the order of a query cannot follow the insertion order."""
+    first = datetime(2026, 1, 1, tzinfo=UTC)
+    return [
+        ReferralEntity(
+            ura_number="0000123",
+            pseudonym=f"ps-{i}",
+            source="Some-Device",
+            key_info=key_info,
+            created_at=first + timedelta(minutes=i),
+        )
+        for i in reversed(range(amount))
+    ]
+
+
+def test_find_many_should_order_by_creation_time(
+    referral_repository: ReferralRepository,
+    mock_key_info: KeyInfoEntity,
+) -> None:
+    referrals = _referrals_created_in_reverse_order(mock_key_info, 3)
+
+    with referral_repository.db_session:
+        for referral in referrals:
+            referral_repository.add_one(referral)
+        actual = referral_repository.find_many(ura_number="0000123")
+
+    assert [r.pseudonym for r in actual] == ["ps-0", "ps-1", "ps-2"]
+
+
+def test_find_many_should_return_the_requested_page(
+    referral_repository: ReferralRepository,
+    mock_key_info: KeyInfoEntity,
+) -> None:
+    referrals = _referrals_created_in_reverse_order(mock_key_info, 5)
+
+    with referral_repository.db_session:
+        for referral in referrals:
+            referral_repository.add_one(referral)
+        first_page = referral_repository.find_many(ura_number="0000123", limit=2)
+        second_page = referral_repository.find_many(ura_number="0000123", limit=2, offset=2)
+        last_page = referral_repository.find_many(ura_number="0000123", limit=2, offset=4)
+
+    assert [r.pseudonym for r in first_page] == ["ps-0", "ps-1"]
+    assert [r.pseudonym for r in second_page] == ["ps-2", "ps-3"]
+    assert [r.pseudonym for r in last_page] == ["ps-4"]
+
+
+def test_count_should_apply_the_filters(
+    referral_repository: ReferralRepository,
+    mock_key_info: KeyInfoEntity,
+) -> None:
+    referrals = _referrals_created_in_reverse_order(mock_key_info, 3)
+    other_ura = ReferralEntity(ura_number="0000124", pseudonym="ps-0", source="Some-Device", key_info=mock_key_info)
+
+    with referral_repository.db_session:
+        for referral in [*referrals, other_ura]:
+            referral_repository.add_one(referral)
+
+        assert referral_repository.count() == 4
+        assert referral_repository.count(ura_number="0000123") == 3
+        assert referral_repository.count(ura_number="0000123", pseudonym="ps-1") == 1
+        assert referral_repository.count(source="Unknown-Device") == 0
 
 
 def test_find_many_should_return_empty_list(

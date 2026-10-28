@@ -106,6 +106,8 @@ class ReferralService:
         ura_number: UraNumber | None = None,
         encrypted_pseudonym: EncryptedPseudonym | None = None,
         source: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
     ) -> Sequence[ReferralEntity]:
         with self.database.get_db_session() as session:
             repo = session.get_repository(ReferralRepository)
@@ -113,19 +115,39 @@ class ReferralService:
                 ura_number=str(ura_number) if ura_number else None,
                 pseudonym=encrypted_pseudonym.value if encrypted_pseudonym else None,
                 source=source,
+                limit=limit,
+                offset=offset,
             )
 
         return referrals
+
+    def count(
+        self,
+        ura_number: UraNumber | None = None,
+        encrypted_pseudonym: EncryptedPseudonym | None = None,
+        source: str | None = None,
+    ) -> int:
+        with self.database.get_db_session() as session:
+            repo = session.get_repository(ReferralRepository)
+            return repo.count(
+                ura_number=str(ura_number) if ura_number else None,
+                pseudonym=encrypted_pseudonym.value if encrypted_pseudonym else None,
+                source=source,
+            )
 
     def localize(
         self,
         encrypted_pseudonym: EncryptedPseudonym,
         requesting_ura: UraNumber,
         organization_name: str,
-    ) -> Sequence[ReferralEntity]:
-        referrals = self.get_many(encrypted_pseudonym=encrypted_pseudonym)
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> tuple[int, Sequence[ReferralEntity]]:
+        """Returns the total number of matching referrals and the requested page of them."""
+        total = self.count(encrypted_pseudonym=encrypted_pseudonym)
+        referrals = self.get_many(encrypted_pseudonym=encrypted_pseudonym, limit=limit, offset=offset)
 
-        if referrals:
+        if total:
             gflog.emit(
                 logger,
                 Log.LOCALIZATION_SUCCESS,
@@ -134,7 +156,7 @@ class ReferralService:
                     "organization": organization_name,
                     "ura_number": str(requesting_ura),
                     "pseudonym_hash": str(encrypted_pseudonym),
-                    "result_count": len(referrals),
+                    "result_count": total,
                 },
             )
         else:
@@ -145,8 +167,8 @@ class ReferralService:
                 fields={"ura_number": str(requesting_ura), "result_count": 0},
             )
 
-        self.usage_metrics.localized(requesting_ura, len(referrals))
-        return referrals
+        self.usage_metrics.localized(requesting_ura, total)
+        return total, referrals
 
     def delete_many(
         self,

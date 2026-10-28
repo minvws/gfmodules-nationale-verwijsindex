@@ -10,7 +10,10 @@ from app.logging.events import Log
 from app.models.auth.context import AuthContext
 from app.models.auth.data import AuthorizationScope
 from app.models.fhir.bundle import Bundle, BundleEntry, EntryRequestDto, EntryResponse
-from app.models.fhir.resources.localization_list.request import LocalizationListParams
+from app.models.fhir.resources.localization_list.request import (
+    LocalizationListParams,
+    LocalizationListSearchParams,
+)
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.ura import UraNumber
 from app.services.auth.auth_context import AuthContextService
@@ -80,7 +83,9 @@ class BundleService:
 
         params: LocalizationListParams | None = None
         if method in ("GET", "DELETE") and resolved_url.id is None:
-            parsed = self._parse_params(resolved_url, index)
+            parsed = self._parse_params(
+                resolved_url, index, LocalizationListSearchParams if method == "GET" else LocalizationListParams
+            )
             if isinstance(parsed, BundleEntry):
                 return parsed
             params = parsed
@@ -105,13 +110,17 @@ class BundleService:
                     )
 
                 query_params = params
-                assert query_params is not None
+                assert isinstance(query_params, LocalizationListSearchParams)
+                request_url = entry.request.url
                 return self._entry_result(
                     index,
                     authenticated_ura,
                     lambda: BundleEntry(
                         resource=self.localizaton_list_service.query(
-                            query_params, authenticated_ura, organization_name=organization_name
+                            query_params,
+                            authenticated_ura,
+                            organization_name=organization_name,
+                            request_url=request_url,
                         ),
                         response=EntryResponse.make_good_response(),
                     ),
@@ -221,9 +230,11 @@ class BundleService:
         return BundleEntry(response=EntryResponse(status=str(status_code), outcome=outcome))
 
     @staticmethod
-    def _parse_params(resolved_url: EntryRequestDto, index: int) -> LocalizationListParams | BundleEntry[Any]:
+    def _parse_params(
+        resolved_url: EntryRequestDto, index: int, model: type[LocalizationListParams]
+    ) -> LocalizationListParams | BundleEntry[Any]:
         try:
-            return LocalizationListParams.model_validate(resolved_url.params)
+            return model.model_validate(resolved_url.params)
         except ValueError as e:
             return BundleEntry(
                 response=EntryResponse.make_validation_response(
@@ -319,7 +330,7 @@ class BundleService:
     @staticmethod
     def _query_scope(params: dict[str, str] | None) -> AuthorizationScope:
         try:
-            parsed = LocalizationListParams.model_validate(params or {})
+            parsed = LocalizationListSearchParams.model_validate(params or {})
         except ValueError:
             return AuthorizationScope.LOCALIZE
 

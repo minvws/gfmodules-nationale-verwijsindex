@@ -2,7 +2,7 @@ import pytest
 from fastapi import Request
 
 from app.models.auth.data import AuthorizationScope
-from app.models.fhir.resources.localization_list.request import LocalizationListParams
+from app.models.fhir.resources.localization_list.request import LocalizationListSearchParams
 from app.routers.dependencies import (
     _require_managing_request,
     get_auth_context,
@@ -27,8 +27,8 @@ def _request_with_auth(ctx: object) -> Request:
     return request
 
 
-def _params(subject: str | None = None, source: str | None = None) -> LocalizationListParams:
-    return LocalizationListParams.model_construct(subject=subject, source=source)
+def _params(subject: str | None = None, source: str | None = None) -> LocalizationListSearchParams:
+    return LocalizationListSearchParams.model_construct(subject=subject, source=source)
 
 
 def test_get_auth_context_returns_context_from_request_state() -> None:

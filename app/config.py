@@ -3,12 +3,12 @@ import logging
 import os
 import socket
 from enum import Enum
-from typing import Any
+from typing import Any, Self
 from uuid import uuid4
 
 from gfmodules.logging import ConfigLogging as GFConfigLogging
 from gfmodules.logging.ini import split_comma_separated
-from pydantic import BaseModel, Field, SecretStr, ValidationError, field_validator
+from pydantic import BaseModel, Field, SecretStr, ValidationError, field_validator, model_validator
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +96,17 @@ class ConfigAuthorizationHeaders(BaseModel):
         raise ValueError("Invalid input on `expected_audience`, please check config")
 
 
+class ConfigPagination(BaseModel):
+    default_page_size: int = Field(default=50, ge=1)
+    max_page_size: int = Field(default=100, ge=1)
+
+    @model_validator(mode="after")
+    def validate_page_sizes(self) -> Self:
+        if self.default_page_size > self.max_page_size:
+            raise ValueError("`default_page_size` cannot be larger than `max_page_size`")
+        return self
+
+
 class ConfigLogging(GFConfigLogging):
     _split_console_streams = field_validator("console_streams", mode="before")(split_comma_separated())
 
@@ -108,6 +119,7 @@ class Config(BaseModel):
     telemetry: ConfigTelemetry
     uvicorn: ConfigUvicorn
     authorization_headers: ConfigAuthorizationHeaders
+    pagination: ConfigPagination = Field(default_factory=ConfigPagination)
 
 
 def read_ini_file(path: str) -> Any:
