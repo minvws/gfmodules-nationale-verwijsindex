@@ -49,24 +49,14 @@ mtls_key=secrets/ssl/crypto_service_api.key
 verify_ca=secrets/ssl/crypto_service_api_ca.cert
 
 [telemetry]
-# Telemetry is enabled or not
-enabled = False
+# Push NVI usage metrics over OTLP or not
+metrics_enabled = False
 # Endpoint to GRPC server for telemetry
-endpoint = http://tracing:4317
+endpoint = http://otel-collector:4317
 # Service name to use
-service_name = Nationale Verwijsindex
-# Tracer name to use
-tracer_name = zmodules.service.national_referral_index
-
-[stats]
-# Statsd is enabled or not
-enabled = False
-# Host for statsd server
-host = 127.0.0.1
-# Port for statsd server
-port = 8125
-# Module name for statsd
-module_name = localisation
+service_name = nationale-verwijsindex
+# Interval in milliseconds between metric exports
+metrics_export_interval_ms = 15000
 
 [uvicorn]
 # If true, the api docs will be enabled

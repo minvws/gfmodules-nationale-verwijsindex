@@ -8,6 +8,7 @@ from app.db.db import Database
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
 from app.logging.events import Log
+from app.metrics import UsageMetrics
 from app.models.pseudonym import EncryptedPseudonym
 from app.models.ura import UraNumber
 from app.services.exceptions import (
@@ -18,8 +19,9 @@ logger = logging.getLogger(__name__)
 
 
 class ReferralService:
-    def __init__(self, database: Database) -> None:
+    def __init__(self, database: Database, usage_metrics: UsageMetrics) -> None:
         self.database = database
+        self.usage_metrics = usage_metrics
 
     def get_by_id(self, id: UUID) -> ReferralEntity:
         with self.database.get_db_session() as session:
@@ -80,6 +82,7 @@ class ReferralService:
                     "pseudonym_hash": str(encrypted_pseudonym),
                 },
             )
+            self.usage_metrics.registered(ura_number)
             return new_referral, True
 
     def get_one(
@@ -114,6 +117,37 @@ class ReferralService:
 
         return referrals
 
+    def localize(
+        self,
+        encrypted_pseudonym: EncryptedPseudonym,
+        requesting_ura: UraNumber,
+        organization_name: str,
+    ) -> Sequence[ReferralEntity]:
+        referrals = self.get_many(encrypted_pseudonym=encrypted_pseudonym)
+
+        if referrals:
+            gflog.emit(
+                logger,
+                Log.LOCALIZATION_SUCCESS,
+                "Localization succeeded",
+                fields={
+                    "organization": organization_name,
+                    "ura_number": str(requesting_ura),
+                    "pseudonym_hash": str(encrypted_pseudonym),
+                    "result_count": len(referrals),
+                },
+            )
+        else:
+            gflog.emit(
+                logger,
+                Log.LOCALIZATION_NO_MATCH,
+                "Localization returned no match",
+                fields={"ura_number": str(requesting_ura), "result_count": 0},
+            )
+
+        self.usage_metrics.localized(requesting_ura, len(referrals))
+        return referrals
+
     def delete_many(
         self,
         ura_number: UraNumber,
@@ -132,6 +166,8 @@ class ReferralService:
 
             session.commit()
 
+        if affected_rows > 0:
+            self.usage_metrics.deleted(ura_number, affected_rows)
         return affected_rows
 
     def delete_one(

@@ -1,32 +1,22 @@
-import fastapi
-from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+from opentelemetry.metrics import MeterProvider, NoOpMeterProvider
+from opentelemetry.sdk.metrics import MeterProvider as SdkMeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.trace import NoOpTracer, Tracer
 
 from app.config import ConfigTelemetry
 
-_TRACER: Tracer = NoOpTracer()
+
+def create_resource(config: ConfigTelemetry) -> Resource:
+    return Resource(attributes={"service.name": config.service_name or "", "service.instance.id": config.instance_id})
 
 
-def setup_telemetry(app: fastapi.FastAPI, config: ConfigTelemetry) -> None:
-    processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=config.endpoint))
+def create_meter_provider(config: ConfigTelemetry) -> MeterProvider:
+    if not config.metrics_enabled:
+        return NoOpMeterProvider()
 
-    resource = Resource(attributes={"service.name": config.service_name or ""})
-    provider = TracerProvider(resource=resource)
-    provider.add_span_processor(processor)
-    trace.set_tracer_provider(provider)
-
-    global _TRACER
-    _TRACER = trace.get_tracer(config.tracer_name or "")
-
-    FastAPIInstrumentor.instrument_app(app)
-    RequestsInstrumentor().instrument()
-
-
-def get_tracer() -> trace.Tracer | None:
-    return _TRACER
+    reader = PeriodicExportingMetricReader(
+        OTLPMetricExporter(endpoint=config.endpoint),
+        export_interval_millis=config.metrics_export_interval_ms,
+    )
+    return SdkMeterProvider(resource=create_resource(config), metric_readers=[reader])

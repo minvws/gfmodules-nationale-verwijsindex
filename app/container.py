@@ -9,6 +9,7 @@ from app.config import (
 )
 from app.db.db import Database
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
+from app.metrics import UsageMetrics
 from app.services.auth.header import AuthHeaderService
 from app.services.crypto_service_api_client import CryptoServiceApiClient
 from app.services.fhir.bundle import BundleService
@@ -16,6 +17,7 @@ from app.services.fhir.localization_list import LocalizationListService
 from app.services.key_info import KeyInfoService, KeyInfoServiceMock
 from app.services.pseudonym_resolver import PseudonymResolver
 from app.services.referral_service import ReferralService
+from app.telemetry import create_meter_provider
 from app.utils.load_capability_statement import (
     CapabilityStatement,
     load_capability_statement,
@@ -28,6 +30,7 @@ def container_config(binder: inject.Binder) -> None:
     config = get_config()
 
     binder.bind(Config, config)
+    meter_provider = create_meter_provider(config.telemetry)
 
     capability_statement = load_capability_statement()
     binder.bind(CapabilityStatement, capability_statement)
@@ -35,7 +38,8 @@ def container_config(binder: inject.Binder) -> None:
     db = Database(config_database=config.database)
     binder.bind(Database, db)
 
-    referral_service = ReferralService(database=db)
+    usage_metrics = UsageMetrics(meter_provider)
+    referral_service = ReferralService(database=db, usage_metrics=usage_metrics)
     binder.bind(ReferralService, referral_service)
 
     key_info_service = create_key_info_service(config.crypto_service_api, db)

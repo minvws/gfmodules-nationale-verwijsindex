@@ -7,7 +7,6 @@ from app.config import (
     ConfigCryptoServiceApi,
     ConfigDatabase,
     ConfigLogging,
-    ConfigStats,
     ConfigTelemetry,
     ConfigUvicorn,
     LogLevel,
@@ -37,12 +36,10 @@ def get_test_config() -> Config:
             verify_ca=True,
         ),
         telemetry=ConfigTelemetry(
-            enabled=False,
+            metrics_enabled=False,
             endpoint=None,
             service_name=None,
-            tracer_name=None,
         ),
-        stats=ConfigStats(enabled=False, host=None, port=None, module_name=None),
         uvicorn=ConfigUvicorn(
             docs_url="/docs",
             redoc_url="/redoc",
