@@ -65,7 +65,7 @@ class ReferralRepository(RepositoryBase):
         if id is not None:
             stmt = stmt.where(ReferralEntity.id == id)
 
-        results = self.db_session.delete_stmt(stmt)  # type: ignore
+        results = self.db_session.delete_stmt(stmt)
 
         return results.rowcount  # type: ignore
 
