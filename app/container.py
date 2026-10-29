@@ -15,6 +15,7 @@ from app.services.crypto_service_api_client import CryptoServiceApiClient
 from app.services.fhir.bundle import BundleService
 from app.services.fhir.localization_list import LocalizationListService
 from app.services.key_info import KeyInfoService, KeyInfoServiceMock
+from app.services.pseudonym_referral_service import PseudonymReferralService
 from app.services.pseudonym_resolver import PseudonymResolver
 from app.services.referral_service import ReferralService
 from app.telemetry import create_meter_provider
@@ -55,11 +56,15 @@ def container_config(binder: inject.Binder) -> None:
         crypto_client=crypto_client,
         key_info_service=key_info_service,
     )
-    binder.bind(PseudonymResolver, pseudonym_resolver)
+    pseudonym_referral_service = PseudonymReferralService(
+        referral_service=referral_service,
+        pseudonym_resolver=pseudonym_resolver,
+    )
+    binder.bind(PseudonymReferralService, pseudonym_referral_service)
 
     localization_list_service = LocalizationListService(
         referral_service=referral_service,
-        pseudonym_resolver=pseudonym_resolver,
+        pseudonym_referral_service=pseudonym_referral_service,
     )
     binder.bind(LocalizationListService, localization_list_service)
 

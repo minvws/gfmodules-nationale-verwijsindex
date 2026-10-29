@@ -3,14 +3,13 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.logging.events import Log
 from app.models.fhir.resources.localization_list.request import LocalizationListParams
 from app.models.ura import UraNumber
 from app.services.exceptions import NotFoundError, UnauthorizedUraError
 from app.services.fhir.localization_list import LocalizationListService
 from app.services.key_info import KeyInfoService
-from app.services.pseudonym_resolver import PseudonymResolver
+from app.services.pseudonym_referral_service import PseudonymReferralService
 from app.services.referral_service import ReferralService
 from tests.conftest import TEST_PSEUDONYM_TOKEN, make_list_resource
 
@@ -21,10 +20,15 @@ OTHER_SOURCE = "SRC-002"
 
 
 @pytest.fixture()
-def service(referral_service: ReferralService, key_info_service: KeyInfoService) -> LocalizationListService:
+def service(
+    referral_service: ReferralService,
+    pseudonym_referral_service: PseudonymReferralService,
+    key_info_service: KeyInfoService,
+) -> LocalizationListService:
     key_info_service.add_one("nvi-label", "AES_CBC")
-    resolver = PseudonymResolver(crypto_client=CryptoServiceApiClientMock(), key_info_service=key_info_service)
-    return LocalizationListService(referral_service=referral_service, pseudonym_resolver=resolver)
+    return LocalizationListService(
+        referral_service=referral_service, pseudonym_referral_service=pseudonym_referral_service
+    )
 
 
 def _params(subject: str | None = None, source: str | None = None) -> LocalizationListParams:

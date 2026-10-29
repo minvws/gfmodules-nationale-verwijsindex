@@ -4,7 +4,6 @@ from uuid import uuid4
 
 import pytest
 
-from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.logging.events import Log
 from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.data import AuthorizationScope
@@ -15,7 +14,7 @@ from app.models.ura import UraNumber
 from app.services.fhir.bundle import BundleService
 from app.services.fhir.localization_list import LocalizationListService
 from app.services.key_info import KeyInfoService
-from app.services.pseudonym_resolver import PseudonymResolver
+from app.services.pseudonym_referral_service import PseudonymReferralService
 from app.services.referral_service import ReferralService
 from tests.conftest import make_list_resource
 
@@ -47,10 +46,11 @@ def _process(bundle_service: BundleService, entry: BundleEntry[Any], index: int 
 @pytest.fixture()
 def bundle_service(
     referral_service: ReferralService,
-    key_info_service: KeyInfoService,
+    pseudonym_referral_service: PseudonymReferralService,
 ) -> BundleService:
-    resolver = PseudonymResolver(crypto_client=CryptoServiceApiClientMock(), key_info_service=key_info_service)
-    localization_service = LocalizationListService(referral_service=referral_service, pseudonym_resolver=resolver)
+    localization_service = LocalizationListService(
+        referral_service=referral_service, pseudonym_referral_service=pseudonym_referral_service
+    )
     return BundleService(localization_service)
 
 
