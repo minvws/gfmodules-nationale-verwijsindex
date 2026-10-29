@@ -1,14 +1,11 @@
-import logging
 from typing import Annotated, Any
 
-import gfmodules.logging as gflog
 from fastapi import APIRouter, Body, Depends, Query, Response
 
 from app.dependencies import (
     get_pseudonym_resolver,
     get_referral_service,
 )
-from app.logging.events import Log
 from app.models.auth.context import AuthContext
 from app.models.auth.data import AuthorizationScope
 from app.models.registrations import (
@@ -21,7 +18,6 @@ from app.routers.dependencies import require_managing_source, require_scope
 from app.services.pseudonym_resolver import PseudonymResolver
 from app.services.referral_service import ReferralService
 
-logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Registrations"], prefix="/registrations")
 
 
@@ -36,14 +32,7 @@ def get_registration(
 ) -> Any:
     resolved = pseudonym_resolver.resolve(params.oprf_pseudonym())
 
-    results = referral_service.get_many(ura_number=ctx.claims.ura_number, encrypted_pseudonym=resolved.encrypted)
-
-    gflog.emit(
-        logger,
-        Log.REFERRALS_QUERIED,
-        "Referrals queried",
-        fields={"result_count": len(results)},
-    )
+    results = referral_service.query(ctx.claims.ura_number, encrypted_pseudonym=resolved.encrypted)
 
     return RegistrationList.from_entities(results)
 
@@ -83,20 +72,11 @@ def delete_registration(
     source: Annotated[str, Depends(require_managing_source)],
 ) -> Any:
     resolved = pseudonym_resolver.resolve(params.oprf_pseudonym())
-    encrypted_pseudonym = resolved.encrypted
 
-    deleted_count = referral_service.delete_many(
+    referral_service.delete_many(
         ura_number=ctx.claims.ura_number,
-        encrypted_pseudonym=encrypted_pseudonym,
+        encrypted_pseudonym=resolved.encrypted,
         source=source,
     )
-
-    if deleted_count > 0:
-        gflog.emit(
-            logger,
-            Log.ALL_PATIENT_REFERRALS_DELETED,
-            "All patient referrals deleted",
-            fields={"pseudonym_hash": str(encrypted_pseudonym), "deleted_count": deleted_count},
-        )
 
     return Response(status_code=204)
