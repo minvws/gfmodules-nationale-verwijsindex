@@ -65,7 +65,6 @@ def test_add_one_should_succeed(
         encrypted_pseudonym=EncryptedPseudonym("ps-1", "123"),
         ura_number=ura_number,
         source="SomeDevice",
-        organization_name="Test Org",
         key_id=key_info.id,
     )
     assert isinstance(expected.id, UUID)
@@ -85,7 +84,6 @@ def test_add_referral_is_idempotent_for_duplicates(
         encrypted_pseudonym=patient,
         ura_number=ura_number,
         source="SomeDevice",
-        organization_name="Test Org",
         key_id=key_info.id,
     )
 
@@ -93,7 +91,6 @@ def test_add_referral_is_idempotent_for_duplicates(
         encrypted_pseudonym=patient,
         ura_number=ura_number,
         source="SomeDevice",
-        organization_name="Test Org",
         key_id=key_info.id,
     )
 
@@ -114,7 +111,6 @@ def test_delete_one_should_succeed(
         encrypted_pseudonym=patient,
         ura_number=ura_number,
         source="SomeDevice",
-        organization_name="Test Org",
         key_id=key_info.id,
     )
     assert isinstance(data.id, UUID)
@@ -158,7 +154,6 @@ def test_delete_by_id_should_succeed(
         encrypted_pseudonym=patient,
         ura_number=ura_number,
         source="SomeDevice",
-        organization_name="Test Org",
         key_id=key_info.id,
     )
     assert isinstance(patient_reference.id, UUID)
@@ -191,7 +186,6 @@ def test_get_one_should_succeed(
         encrypted_pseudonym=pseudonym,
         ura_number=ura_number,
         source="SomeDevice",
-        organization_name="Test Org",
         key_id=key_info.id,
     )
 
@@ -216,7 +210,7 @@ def test_get_one_should_return_none_when_not_found(referral_service: ReferralSer
     assert actual is None
 
 
-def test_localize_logs_success_for_the_requesting_organization(
+def test_localize_logs_success_with_the_pseudonym_and_result_count(
     referral_service: ReferralService,
     key_info_service: KeyInfoService,
     ura_number: UraNumber,
@@ -228,31 +222,25 @@ def test_localize_logs_success_for_the_requesting_organization(
         encrypted_pseudonym=pseudonym,
         ura_number=ura_number,
         source="SomeDevice",
-        organization_name="Test Org",
         key_id=key_info.id,
     )
 
     with caplog.at_level(logging.INFO):
-        referrals = referral_service.localize(pseudonym, REQUESTING_URA, organization_name="Requesting Org")
+        referrals = referral_service.localize(pseudonym, REQUESTING_URA)
 
     (fields,) = logged_fields(caplog, Log.LOCALIZATION_SUCCESS)
     assert len(referrals) == 1
-    assert fields["organization"] == "Requesting Org"
-    assert fields["ura_number"] == str(REQUESTING_URA)
     assert fields["pseudonym_hash"] == str(pseudonym)
     assert fields["result_count"] == 1
 
 
-def test_localize_logs_no_match_for_the_requesting_organization(
+def test_localize_logs_no_match_with_a_zero_result_count(
     referral_service: ReferralService,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     with caplog.at_level(logging.INFO):
-        referrals = referral_service.localize(
-            EncryptedPseudonym("ps-1", "123"), REQUESTING_URA, organization_name="Requesting Org"
-        )
+        referrals = referral_service.localize(EncryptedPseudonym("ps-1", "123"), REQUESTING_URA)
 
     (fields,) = logged_fields(caplog, Log.LOCALIZATION_NO_MATCH)
     assert len(referrals) == 0
-    assert fields["ura_number"] == str(REQUESTING_URA)
     assert fields["result_count"] == 0

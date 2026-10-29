@@ -38,7 +38,6 @@ class ReferralService:
         encrypted_pseudonym: EncryptedPseudonym,
         ura_number: UraNumber,
         source: str,
-        organization_name: str,
         key_id: UUID,
     ) -> tuple[ReferralEntity, bool]:
         """
@@ -55,12 +54,7 @@ class ReferralService:
                 source=source,
             )
             if existing is not None:
-                gflog.emit(
-                    logger,
-                    Log.IDEMPOTENT_REGISTRATION,
-                    "Idempotent referral registration",
-                    fields={"ura_number": str(ura_number)},
-                )
+                gflog.emit(logger, Log.IDEMPOTENT_REGISTRATION, "Idempotent referral registration")
                 return existing, False
 
             new_referral: ReferralEntity = referral_repository.add_one(
@@ -76,11 +70,7 @@ class ReferralService:
                 logger,
                 Log.REGISTERED_REFERRAL,
                 "Referral registered",
-                fields={
-                    "organization": organization_name,
-                    "ura_number": str(ura_number),
-                    "pseudonym_hash": str(encrypted_pseudonym),
-                },
+                fields={"pseudonym_hash": str(encrypted_pseudonym)},
             )
             self.usage_metrics.registered(ura_number)
             return new_referral, True
@@ -121,7 +111,6 @@ class ReferralService:
         self,
         encrypted_pseudonym: EncryptedPseudonym,
         requesting_ura: UraNumber,
-        organization_name: str,
     ) -> Sequence[ReferralEntity]:
         referrals = self.get_many(encrypted_pseudonym=encrypted_pseudonym)
 
@@ -130,19 +119,14 @@ class ReferralService:
                 logger,
                 Log.LOCALIZATION_SUCCESS,
                 "Localization succeeded",
-                fields={
-                    "organization": organization_name,
-                    "ura_number": str(requesting_ura),
-                    "pseudonym_hash": str(encrypted_pseudonym),
-                    "result_count": len(referrals),
-                },
+                fields={"pseudonym_hash": str(encrypted_pseudonym), "result_count": len(referrals)},
             )
         else:
             gflog.emit(
                 logger,
                 Log.LOCALIZATION_NO_MATCH,
                 "Localization returned no match",
-                fields={"ura_number": str(requesting_ura), "result_count": 0},
+                fields={"result_count": 0},
             )
 
         self.usage_metrics.localized(requesting_ura, len(referrals))

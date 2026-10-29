@@ -34,7 +34,6 @@ class BundleService:
 
     def process_entry(self, ctx: AuthContext, entry: BundleEntry[Any], index: int) -> BundleEntry[Any]:
         authenticated_ura = ctx.claims.ura_number
-        organization_name = ctx.claims.organization_name
 
         if entry.request is None:
             return BundleEntry(
@@ -54,27 +53,17 @@ class BundleService:
         required_scope = self.required_scope(method, resolved_url)
         if required_scope is not None and required_scope not in ctx.scope:
             error: Exception = UnauthorizedScopeError(ctx.scope, required_scope)
-            gflog.emit(
-                logger,
-                Log.REFERRAL_ACCESS_DENIED,
-                "Bundle entry denied: missing scope",
-                fields={"ura_number": str(authenticated_ura)},
-            )
+            gflog.emit(logger, Log.REFERRAL_ACCESS_DENIED, "Bundle entry denied: missing scope")
             return BundleEntry(response=EntryResponse.make_forbidden_response(msg=f"Bundle.entry.{index}: {error}"))
 
         if self.requires_managing_request(method) and not AuthContextService.is_managing_request(ctx):
             error = UnauthorizedManagingRequestError()
-            gflog.emit(
-                logger,
-                Log.REFERRAL_ACCESS_DENIED,
-                "Bundle entry denied: not a managing request",
-                fields={"ura_number": str(authenticated_ura)},
-            )
+            gflog.emit(logger, Log.REFERRAL_ACCESS_DENIED, "Bundle entry denied: not a managing request")
             return BundleEntry(response=EntryResponse.make_forbidden_response(msg=f"Bundle.entry.{index}: {error}"))
 
         resource: LocalizationList | None = None
         if method == "POST":
-            validated = self._validate_post_resource(entry, authenticated_ura, index)
+            validated = self._validate_post_resource(entry, index)
             if isinstance(validated, BundleEntry):
                 return validated
             resource = validated
@@ -96,11 +85,8 @@ class BundleService:
                     resource_id = resolved_url.id
                     return self._entry_result(
                         index,
-                        authenticated_ura,
                         lambda: BundleEntry(
-                            resource=self.localization_list_service.get(
-                                resource_id, authenticated_ura, organization_name=organization_name
-                            ),
+                            resource=self.localization_list_service.get(resource_id, authenticated_ura),
                             response=EntryResponse.make_good_response("Resource has been retrieved successfully"),
                         ),
                     )
@@ -109,11 +95,8 @@ class BundleService:
                 assert query_params is not None
                 return self._entry_result(
                     index,
-                    authenticated_ura,
                     lambda: BundleEntry(
-                        resource=self.localization_list_service.query(
-                            query_params, authenticated_ura, organization_name=organization_name
-                        ),
+                        resource=self.localization_list_service.query(query_params, authenticated_ura),
                         response=EntryResponse.make_good_response(),
                     ),
                     failure_event=Log.LOCALIZATION_FAILED,
@@ -125,8 +108,7 @@ class BundleService:
                 assert post_resource is not None
                 return self._entry_result(
                     index,
-                    authenticated_ura,
-                    lambda: self._create_entry(post_resource, authenticated_ura, organization_name),
+                    lambda: self._create_entry(post_resource, authenticated_ura),
                     failure_event=Log.REFERRAL_REGISTRATION_FAILED,
                     failure_msg="Referral registration failed",
                 )
@@ -139,20 +121,14 @@ class BundleService:
                     resource_id = resolved_url.id
                     return self._entry_result(
                         index,
-                        authenticated_ura,
-                        lambda: self._delete_by_id_entry(
-                            resource_id, authenticated_ura, managing_source, organization_name
-                        ),
+                        lambda: self._delete_by_id_entry(resource_id, authenticated_ura, managing_source),
                     )
 
                 delete_params = params
                 assert delete_params is not None
                 return self._entry_result(
                     index,
-                    authenticated_ura,
-                    lambda: self._delete_by_query_entry(
-                        delete_params, authenticated_ura, managing_source, organization_name
-                    ),
+                    lambda: self._delete_by_query_entry(delete_params, authenticated_ura, managing_source),
                     failure_event=Log.LOCALIZATION_FAILED,
                     failure_msg="Localization failed",
                 )
@@ -167,7 +143,6 @@ class BundleService:
     def _entry_result(
         self,
         index: int,
-        authenticated_ura: UraNumber,
         action: Callable[[], BundleEntry[Any]],
         *,
         failure_event: LogEvent | None = None,
@@ -189,11 +164,7 @@ class BundleService:
                     logger,
                     failure_event,
                     failure_msg,
-                    fields={
-                        "ura_number": str(authenticated_ura),
-                        "http_status": spec.http_status,
-                        "error_reason": str(exc),
-                    },
+                    fields={"http_status": spec.http_status, "error_reason": str(exc)},
                 )
 
             return BundleEntry(
@@ -204,32 +175,22 @@ class BundleService:
                 )
             )
 
-    def _create_entry(
-        self, resource: LocalizationList, authenticated_ura: UraNumber, organization_name: str
-    ) -> BundleEntry[Any]:
-        stored, created = self.localization_list_service.create(
-            resource, authenticated_ura, organization_name=organization_name
-        )
+    def _create_entry(self, resource: LocalizationList, authenticated_ura: UraNumber) -> BundleEntry[Any]:
+        stored, created = self.localization_list_service.create(resource, authenticated_ura)
         if created:
             response = EntryResponse.make_good_response(msg="Resource has been created successfully", status="201")
         else:
             response = EntryResponse.make_good_response(msg="Resource already exists")
         return BundleEntry(resource=stored, response=response)
 
-    def _delete_by_id_entry(
-        self, resource_id: Any, authenticated_ura: UraNumber, source: str, organization_name: str
-    ) -> BundleEntry[Any]:
-        outcome, status_code = self.localization_list_service.delete(
-            resource_id, authenticated_ura, source, organization_name=organization_name
-        )
+    def _delete_by_id_entry(self, resource_id: Any, authenticated_ura: UraNumber, source: str) -> BundleEntry[Any]:
+        outcome, status_code = self.localization_list_service.delete(resource_id, authenticated_ura, source)
         return BundleEntry(response=EntryResponse(status=str(status_code), outcome=outcome))
 
     def _delete_by_query_entry(
-        self, params: LocalizationListParams, authenticated_ura: UraNumber, source: str, organization_name: str
+        self, params: LocalizationListParams, authenticated_ura: UraNumber, source: str
     ) -> BundleEntry[Any]:
-        outcome, status_code = self.localization_list_service.delete_by_query(
-            params, authenticated_ura, source, organization_name=organization_name
-        )
+        outcome, status_code = self.localization_list_service.delete_by_query(params, authenticated_ura, source)
         return BundleEntry(response=EntryResponse(status=str(status_code), outcome=outcome))
 
     @staticmethod
@@ -276,26 +237,19 @@ class BundleService:
                 logger,
                 Log.REFERRAL_ACCESS_DENIED,
                 "Bundle entry denied: source does not match the authenticated source",
-                fields={"ura_number": str(ctx.claims.ura_number)},
             )
             return BundleEntry(response=EntryResponse.make_forbidden_response(msg=f"Bundle.entry.{index}: {error}"))
 
         return None
 
-    def _validate_post_resource(
-        self, entry: BundleEntry[Any], authenticated_ura: UraNumber, index: int
-    ) -> LocalizationList | BundleEntry[Any]:
+    def _validate_post_resource(self, entry: BundleEntry[Any], index: int) -> LocalizationList | BundleEntry[Any]:
         """Return the validated ``LocalizationList`` or an error ``BundleEntry``."""
         if entry.resource is None:
             gflog.emit(
                 logger,
                 Log.REFERRAL_REGISTRATION_FAILED,
                 "Referral registration failed",
-                fields={
-                    "ura_number": str(authenticated_ura),
-                    "http_status": 422,
-                    "error_reason": f"Bundle.entry.{index}: resource cannot be empty",
-                },
+                fields={"http_status": 422, "error_reason": f"Bundle.entry.{index}: resource cannot be empty"},
             )
             return BundleEntry(
                 response=EntryResponse.make_validation_response(msg=f"Bundle.entry.{index}: resource cannot be empty")
@@ -306,11 +260,7 @@ class BundleService:
                 logger,
                 Log.REFERRAL_REGISTRATION_FAILED,
                 "Referral registration failed",
-                fields={
-                    "ura_number": str(authenticated_ura),
-                    "http_status": 422,
-                    "error_reason": f"Bundle.entry.{index}: invalid List resource",
-                },
+                fields={"http_status": 422, "error_reason": f"Bundle.entry.{index}: invalid List resource"},
             )
             return BundleEntry(
                 response=EntryResponse.make_validation_response(f"Bundle.entry.{index}: invalid List resource")

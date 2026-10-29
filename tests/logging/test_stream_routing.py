@@ -37,6 +37,8 @@ def route() -> Iterator[Any]:
             "endpoint": "/token",
             "method": "POST",
             "correlation_id": "corr-1",
+            "organization": _ORGANIZATION,
+            "ura_number": _URA,
         }
     ):
         yield _route
@@ -49,8 +51,6 @@ class TestReferralRegistration:
             route(
                 Log.REGISTERED_REFERRAL,
                 "registered",
-                organization=_ORGANIZATION,
-                ura_number=_URA,
                 pseudonym_hash=_PSEUDONYM_HASH,
             )
         )
@@ -80,7 +80,7 @@ class TestReferralAccessDenied:
     @pytest.fixture
     def routed(self, route: Any) -> Routed:
         return dict(
-            route(Log.REFERRAL_ACCESS_DENIED, "access denied", ura_number=_URA, resource_ura="87654321"),
+            route(Log.REFERRAL_ACCESS_DENIED, "access denied", resource_ura="87654321"),
         )
 
     def test_endpoint_reaches_every_stream(self, routed: Routed) -> None:
@@ -99,8 +99,6 @@ class TestLocalization:
             route(
                 Log.LOCALIZATION_SUCCESS,
                 "localized",
-                organization=_ORGANIZATION,
-                ura_number=_URA,
                 pseudonym_hash=_PSEUDONYM_HASH,
                 result_count=3,
             )
@@ -130,8 +128,6 @@ class TestBulkDeletion:
         routed: Routed = route(
             Log.ALL_URA_REFERRALS_DELETED,
             "all referrals deleted",
-            organization=_ORGANIZATION,
-            ura_number=_URA,
             deleted_count=42,
         )
 
