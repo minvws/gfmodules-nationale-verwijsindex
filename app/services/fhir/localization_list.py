@@ -43,7 +43,6 @@ class LocalizationListService:
         self,
         data: LocalizationList,
         authenticated_ura: UraNumber,
-        organization_name: str,
     ) -> tuple[LocalizationList, bool]:
         """Returns the stored List and whether it was created by this call."""
         ura_number = data.get_ura()
@@ -54,7 +53,7 @@ class LocalizationListService:
                 logger,
                 Log.REFERRAL_ACCESS_DENIED,
                 "Referral registration denied: URA mismatch",
-                fields={"ura_number": str(authenticated_ura), "resource_ura": str(ura_number)},
+                fields={"resource_ura": str(ura_number)},
             )
             raise UnauthorizedUraError("Registration not linked to the authorized URA")
 
@@ -64,30 +63,25 @@ class LocalizationListService:
             ura_number=ura_number,
             encrypted_pseudonym=resolved.encrypted,
             source=device,
-            organization_name=organization_name,
             key_id=resolved.key_id,
         )
 
         return LocalizationList.from_referral(referral), created
 
-    def get(self, id: UUID, authenticated_ura: UraNumber, organization_name: str) -> LocalizationList:
+    def get(self, id: UUID, authenticated_ura: UraNumber) -> LocalizationList:
         referral = self.referral_service.get_by_id(id)
         gflog.emit(
             logger,
             Log.REFERRAL_SEARCHED_ON_ID,
             "Referral searched on id",
-            fields={
-                "organization": organization_name,
-                "ura_number": referral.ura_number,
-                "pseudonym_hash": referral.pseudonym,
-            },
+            fields={"pseudonym_hash": referral.pseudonym},
         )
         if authenticated_ura != UraNumber(referral.ura_number):
             gflog.emit(
                 logger,
                 Log.REFERRAL_ACCESS_DENIED,
                 "Referral access denied: URA mismatch",
-                fields={"ura_number": str(authenticated_ura), "resource_ura": referral.ura_number},
+                fields={"resource_ura": referral.ura_number},
             )
             raise NotFoundError()
 
@@ -97,7 +91,6 @@ class LocalizationListService:
         self,
         params: LocalizationListSearchParams,
         authenticated_ura: UraNumber,
-        organization_name: str,
         request_url: str | None = None,
     ) -> Bundle[LocalizationList]:
         """
@@ -113,11 +106,7 @@ class LocalizationListService:
 
         if params.is_localize_params() and resolved is not None:
             total, referrals = self.referral_service.localize(
-                resolved.encrypted,
-                authenticated_ura,
-                organization_name,
-                limit=page_size,
-                offset=params.offset,
+                resolved.encrypted, authenticated_ura, limit=page_size, offset=params.offset
             )
         else:
             encrypted_pseudonym = resolved.encrypted if resolved else None
@@ -137,7 +126,7 @@ class LocalizationListService:
                 logger,
                 Log.REFERRALS_QUERIED,
                 "Referrals queried",
-                fields={"ura_number": str(authenticated_ura), "result_count": total},
+                fields={"result_count": total},
             )
 
         bundle = Bundle(
@@ -178,7 +167,6 @@ class LocalizationListService:
         id: UUID,
         authenticated_ura: UraNumber,
         source: str,
-        organization_name: str,
     ) -> tuple[OperationOutcome, int]:
         target = self.referral_service.get_by_id(id)
         affected_rows = self.referral_service.delete_many(ura_number=authenticated_ura, source=source, id=id)
@@ -187,11 +175,7 @@ class LocalizationListService:
                 logger,
                 Log.REFERRAL_DELETED,
                 "Referral deleted",
-                fields={
-                    "organization": organization_name,
-                    "ura_number": str(authenticated_ura),
-                    "pseudonym_hash": target.pseudonym if target else None,
-                },
+                fields={"pseudonym_hash": target.pseudonym if target else None},
             )
             return (
                 OperationOutcome.make_good_outcome(f"Resource {id} has been deleted successfully"),
@@ -208,7 +192,6 @@ class LocalizationListService:
         params: LocalizationListParams,
         authenticated_ura: UraNumber,
         source: str,
-        organization_name: str,
     ) -> tuple[OperationOutcome, int]:
         ura_number = authenticated_ura
 
@@ -232,23 +215,14 @@ class LocalizationListService:
                 logger,
                 Log.ALL_PATIENT_REFERRALS_DELETED,
                 "All patient referrals deleted",
-                fields={
-                    "organization": organization_name,
-                    "ura_number": str(ura_number),
-                    "pseudonym_hash": str(resolved.response),
-                    "deleted_count": deleted_count,
-                },
+                fields={"pseudonym_hash": str(resolved.response), "deleted_count": deleted_count},
             )
         else:
             gflog.emit(
                 logger,
                 Log.ALL_URA_REFERRALS_DELETED,
                 "All URA referrals deleted",
-                fields={
-                    "organization": organization_name,
-                    "ura_number": str(ura_number),
-                    "deleted_count": deleted_count,
-                },
+                fields={"deleted_count": deleted_count},
             )
         return (
             OperationOutcome.make_good_outcome(f"{deleted_count} resources have been deleted successfully"),

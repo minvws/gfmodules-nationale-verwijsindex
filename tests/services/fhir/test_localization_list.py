@@ -41,9 +41,7 @@ def _params(
 def _create_referrals(service: LocalizationListService, amount: int) -> None:
     """Create referrals for AUTH_URA, one per source, as a pseudonym can only be registered once per source."""
     for i in range(amount):
-        service.create(
-            make_list_resource(ura=str(AUTH_URA), source_id=f"SRC-{i:03}"), AUTH_URA, organization_name="Org"
-        )
+        service.create(make_list_resource(ura=str(AUTH_URA), source_id=f"SRC-{i:03}"), AUTH_URA)
 
 
 def _links(bundle: Bundle[LocalizationList]) -> dict[str, str]:
@@ -56,7 +54,7 @@ def _event_ids(caplog: pytest.LogCaptureFixture) -> list[str]:
 
 class TestCreate:
     def test_stores_and_returns_the_resource(self, service: LocalizationListService) -> None:
-        result, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        result, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA)
 
         assert result.id is not None
 
@@ -66,15 +64,13 @@ class TestCreate:
         data = make_list_resource(ura=str(OTHER_URA))
 
         with caplog.at_level(logging.INFO), pytest.raises(UnauthorizedUraError):
-            service.create(data, AUTH_URA, organization_name="Org")
+            service.create(data, AUTH_URA)
 
         assert Log.REFERRAL_ACCESS_DENIED.event_id in _event_ids(caplog)
 
     def test_is_idempotent(self, service: LocalizationListService) -> None:
-        first, first_created = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
-        second, second_created = service.create(
-            make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org"
-        )
+        first, first_created = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA)
+        second, second_created = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA)
 
         assert first_created is True
         assert second_created is False
@@ -84,35 +80,35 @@ class TestCreate:
 
 class TestGet:
     def test_returns_the_stored_resource(self, service: LocalizationListService) -> None:
-        created, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        created, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA)
         assert isinstance(created.id, UUID)
 
-        assert service.get(created.id, AUTH_URA, organization_name="Org").id == created.id
+        assert service.get(created.id, AUTH_URA).id == created.id
 
     def test_hides_another_uras_resource_behind_not_found(
         self, service: LocalizationListService, caplog: pytest.LogCaptureFixture
     ) -> None:
-        created, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        created, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA)
         assert isinstance(created.id, UUID)
 
         with caplog.at_level(logging.INFO), pytest.raises(NotFoundError):
-            service.get(created.id, OTHER_URA, organization_name="Other")
+            service.get(created.id, OTHER_URA)
 
         assert Log.REFERRAL_ACCESS_DENIED.event_id in _event_ids(caplog)
 
     def test_raises_not_found_for_unknown_id(self, service: LocalizationListService) -> None:
         with pytest.raises(NotFoundError):
-            service.get(uuid4(), AUTH_URA, organization_name="Org")
+            service.get(uuid4(), AUTH_URA)
 
 
 class TestQuery:
     def test_localize_hit_logs_success(
         self, service: LocalizationListService, caplog: pytest.LogCaptureFixture
     ) -> None:
-        service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA)
 
         with caplog.at_level(logging.INFO):
-            bundle = service.query(_params(subject=TEST_PSEUDONYM_TOKEN), OTHER_URA, organization_name="Other")
+            bundle = service.query(_params(subject=TEST_PSEUDONYM_TOKEN), OTHER_URA)
 
         assert bundle.total == 1
         assert Log.LOCALIZATION_SUCCESS.event_id in _event_ids(caplog)
@@ -121,7 +117,7 @@ class TestQuery:
         self, service: LocalizationListService, caplog: pytest.LogCaptureFixture
     ) -> None:
         with caplog.at_level(logging.INFO):
-            bundle = service.query(_params(subject=TEST_PSEUDONYM_TOKEN), AUTH_URA, organization_name="Org")
+            bundle = service.query(_params(subject=TEST_PSEUDONYM_TOKEN), AUTH_URA)
 
         assert bundle.total == 0
         assert Log.LOCALIZATION_NO_MATCH.event_id in _event_ids(caplog)
@@ -129,19 +125,19 @@ class TestQuery:
     def test_non_localize_query_is_scoped_to_the_caller_ura(
         self, service: LocalizationListService, caplog: pytest.LogCaptureFixture
     ) -> None:
-        service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA)
 
         with caplog.at_level(logging.INFO):
-            bundle = service.query(_params(source="SRC-001"), OTHER_URA, organization_name="Other")
+            bundle = service.query(_params(source="SRC-001"), OTHER_URA)
 
         assert bundle.total == 0
         assert Log.REFERRALS_QUERIED.event_id in _event_ids(caplog)
 
     def test_empty_query_returns_only_the_caller_records(self, service: LocalizationListService) -> None:
-        service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA)
 
-        assert service.query(_params(), AUTH_URA, organization_name="Org").total == 1
-        assert service.query(_params(), OTHER_URA, organization_name="Other").total == 0
+        assert service.query(_params(), AUTH_URA).total == 1
+        assert service.query(_params(), OTHER_URA).total == 0
 
 
 class TestQueryPagination:
@@ -156,7 +152,7 @@ class TestQueryPagination:
         )
         _create_referrals(paged, 3)
 
-        bundle = paged.query(_params(), AUTH_URA, organization_name="Org")
+        bundle = paged.query(_params(), AUTH_URA)
 
         assert bundle.total == 3
         assert len(bundle.entry) == 2
@@ -172,7 +168,7 @@ class TestQueryPagination:
         )
         _create_referrals(paged, 3)
 
-        bundle = paged.query(_params(count=50), AUTH_URA, organization_name="Org", request_url="List")
+        bundle = paged.query(_params(count=50), AUTH_URA, request_url="List")
 
         assert len(bundle.entry) == 2
         assert _links(bundle)["self"] == "List?_count=2&_offset=0"
@@ -180,7 +176,7 @@ class TestQueryPagination:
     def test_total_counts_all_matches_while_entries_hold_the_page(self, service: LocalizationListService) -> None:
         _create_referrals(service, 5)
 
-        bundle = service.query(_params(count=2, offset=4), AUTH_URA, organization_name="Org")
+        bundle = service.query(_params(count=2, offset=4), AUTH_URA)
 
         assert bundle.total == 5
         assert len(bundle.entry) == 1
@@ -191,7 +187,7 @@ class TestQueryPagination:
         devices = [
             entry.resource.get_device()
             for offset in (0, 2, 4)
-            for entry in service.query(_params(count=2, offset=offset), AUTH_URA, organization_name="Org").entry
+            for entry in service.query(_params(count=2, offset=offset), AUTH_URA).entry
             if entry.resource is not None
         ]
 
@@ -200,12 +196,12 @@ class TestQueryPagination:
     def test_omits_links_without_a_request_url(self, service: LocalizationListService) -> None:
         _create_referrals(service, 1)
 
-        assert service.query(_params(), AUTH_URA, organization_name="Org").link is None
+        assert service.query(_params(), AUTH_URA).link is None
 
     def test_first_page_links_to_the_next_page(self, service: LocalizationListService) -> None:
         _create_referrals(service, 5)
 
-        bundle = service.query(_params(count=2), AUTH_URA, organization_name="Org", request_url="List")
+        bundle = service.query(_params(count=2), AUTH_URA, request_url="List")
 
         assert _links(bundle) == {
             "self": "List?_count=2&_offset=0",
@@ -215,7 +211,7 @@ class TestQueryPagination:
     def test_middle_page_links_both_ways(self, service: LocalizationListService) -> None:
         _create_referrals(service, 5)
 
-        bundle = service.query(_params(count=2, offset=2), AUTH_URA, organization_name="Org", request_url="List")
+        bundle = service.query(_params(count=2, offset=2), AUTH_URA, request_url="List")
 
         assert _links(bundle) == {
             "self": "List?_count=2&_offset=2",
@@ -226,7 +222,7 @@ class TestQueryPagination:
     def test_last_page_links_only_back(self, service: LocalizationListService) -> None:
         _create_referrals(service, 5)
 
-        bundle = service.query(_params(count=2, offset=4), AUTH_URA, organization_name="Org", request_url="List")
+        bundle = service.query(_params(count=2, offset=4), AUTH_URA, request_url="List")
 
         assert _links(bundle) == {
             "self": "List?_count=2&_offset=4",
@@ -236,7 +232,7 @@ class TestQueryPagination:
     def test_previous_link_does_not_go_below_zero(self, service: LocalizationListService) -> None:
         _create_referrals(service, 5)
 
-        bundle = service.query(_params(count=2, offset=1), AUTH_URA, organization_name="Org", request_url="List")
+        bundle = service.query(_params(count=2, offset=1), AUTH_URA, request_url="List")
 
         assert _links(bundle)["previous"] == "List?_count=2&_offset=0"
 
@@ -246,7 +242,6 @@ class TestQueryPagination:
         bundle = service.query(
             _params(source="SRC-000", count=5, offset=0),
             AUTH_URA,
-            organization_name="Org",
             request_url="https://nvi.example/fhir/List?source%3Aidentifier=SRC-000&_count=5&_offset=0",
         )
 
@@ -260,7 +255,7 @@ class TestQueryPagination:
         _create_referrals(service, 3)
 
         with caplog.at_level(logging.INFO):
-            service.query(_params(subject=TEST_PSEUDONYM_TOKEN, count=1), OTHER_URA, organization_name="Other")
+            service.query(_params(subject=TEST_PSEUDONYM_TOKEN, count=1), OTHER_URA)
 
         counts = [
             getattr(r, "result_count", None)
@@ -275,9 +270,7 @@ class TestQueryPagination:
         _create_referrals(service, 1)
 
         with caplog.at_level(logging.INFO):
-            bundle = service.query(
-                _params(subject=TEST_PSEUDONYM_TOKEN, offset=10), OTHER_URA, organization_name="Other"
-            )
+            bundle = service.query(_params(subject=TEST_PSEUDONYM_TOKEN, offset=10), OTHER_URA)
 
         assert bundle.entry == []
         assert Log.LOCALIZATION_SUCCESS.event_id in _event_ids(caplog)
@@ -285,43 +278,41 @@ class TestQueryPagination:
 
 class TestDelete:
     def test_deletes_and_reports_200(self, service: LocalizationListService) -> None:
-        created, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        created, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA)
         assert isinstance(created.id, UUID)
 
-        _, status = service.delete(created.id, AUTH_URA, AUTH_SOURCE, organization_name="Org")
+        _, status = service.delete(created.id, AUTH_URA, AUTH_SOURCE)
 
         assert status == 200
 
     def test_reports_404_when_nothing_was_deleted(self, service: LocalizationListService) -> None:
-        created, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        created, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA)
         assert isinstance(created.id, UUID)
 
-        outcome, status = service.delete(created.id, OTHER_URA, AUTH_SOURCE, organization_name="Other")
+        outcome, status = service.delete(created.id, OTHER_URA, AUTH_SOURCE)
 
         assert status == 404
         assert outcome.issue[0].code == "warning"
 
     def test_hides_another_sources_resource_behind_404(self, service: LocalizationListService) -> None:
-        created, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        created, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA)
         assert isinstance(created.id, UUID)
 
-        outcome, status = service.delete(created.id, AUTH_URA, OTHER_SOURCE, organization_name="Org")
+        outcome, status = service.delete(created.id, AUTH_URA, OTHER_SOURCE)
 
         assert status == 404
         assert outcome.issue[0].code == "warning"
-        assert service.query(_params(), AUTH_URA, organization_name="Org").total == 1
+        assert service.query(_params(), AUTH_URA).total == 1
 
 
 class TestDeleteByQuery:
     def test_deletes_by_subject_and_logs_patient_scope(
         self, service: LocalizationListService, caplog: pytest.LogCaptureFixture
     ) -> None:
-        service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA)
 
         with caplog.at_level(logging.INFO):
-            _, status = service.delete_by_query(
-                _params(subject=TEST_PSEUDONYM_TOKEN), AUTH_URA, AUTH_SOURCE, organization_name="Org"
-            )
+            _, status = service.delete_by_query(_params(subject=TEST_PSEUDONYM_TOKEN), AUTH_URA, AUTH_SOURCE)
 
         assert status == 200
         assert Log.ALL_PATIENT_REFERRALS_DELETED.event_id in _event_ids(caplog)
@@ -329,39 +320,37 @@ class TestDeleteByQuery:
     def test_deletes_without_subject_and_logs_ura_scope(
         self, service: LocalizationListService, caplog: pytest.LogCaptureFixture
     ) -> None:
-        service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA)
 
         with caplog.at_level(logging.INFO):
-            _, status = service.delete_by_query(_params(), AUTH_URA, AUTH_SOURCE, organization_name="Org")
+            _, status = service.delete_by_query(_params(), AUTH_URA, AUTH_SOURCE)
 
         assert status == 200
         assert Log.ALL_URA_REFERRALS_DELETED.event_id in _event_ids(caplog)
 
     def test_is_scoped_to_the_callers_own_source(self, service: LocalizationListService) -> None:
-        service.create(make_list_resource(ura=str(AUTH_URA), source_id=AUTH_SOURCE), AUTH_URA, organization_name="Org")
-        service.create(make_list_resource(ura=str(AUTH_URA), source_id=OTHER_SOURCE), AUTH_URA, organization_name="Org")
+        service.create(make_list_resource(ura=str(AUTH_URA), source_id=AUTH_SOURCE), AUTH_URA)
+        service.create(make_list_resource(ura=str(AUTH_URA), source_id=OTHER_SOURCE), AUTH_URA)
 
-        _, status = service.delete_by_query(
-            _params(subject=TEST_PSEUDONYM_TOKEN), AUTH_URA, AUTH_SOURCE, organization_name="Org"
-        )
+        _, status = service.delete_by_query(_params(subject=TEST_PSEUDONYM_TOKEN), AUTH_URA, AUTH_SOURCE)
 
         assert status == 200
         # The sibling source's referral for the same URA and pseudonym survives.
-        remaining = service.query(_params(), AUTH_URA, organization_name="Org")
+        remaining = service.query(_params(), AUTH_URA)
         assert remaining.total == 1
         assert remaining.entry[0].resource is not None
         assert remaining.entry[0].resource.get_device() == OTHER_SOURCE
 
     def test_reports_not_found_when_nothing_matched(self, service: LocalizationListService) -> None:
-        outcome, status = service.delete_by_query(_params(), AUTH_URA, "NOTHING", organization_name="Org")
+        outcome, status = service.delete_by_query(_params(), AUTH_URA, "NOTHING")
 
         assert status == 404
         assert outcome.issue[0].code == "not-found"
 
     def test_reports_the_deleted_count_on_success(self, service: LocalizationListService) -> None:
-        service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA, organization_name="Org")
+        service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA)
 
-        outcome, status = service.delete_by_query(_params(), AUTH_URA, AUTH_SOURCE, organization_name="Org")
+        outcome, status = service.delete_by_query(_params(), AUTH_URA, AUTH_SOURCE)
 
         assert status == 200
         assert outcome.issue[0].details is not None
@@ -371,7 +360,7 @@ class TestDeleteByQuery:
         self, service: LocalizationListService, caplog: pytest.LogCaptureFixture
     ) -> None:
         with caplog.at_level(logging.INFO):
-            service.delete_by_query(_params(), AUTH_URA, "NOTHING", organization_name="Org")
+            service.delete_by_query(_params(), AUTH_URA, "NOTHING")
 
         assert Log.ALL_PATIENT_REFERRALS_DELETED.event_id not in _event_ids(caplog)
         assert Log.ALL_URA_REFERRALS_DELETED.event_id not in _event_ids(caplog)

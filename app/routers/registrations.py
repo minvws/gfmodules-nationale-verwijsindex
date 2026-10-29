@@ -42,7 +42,7 @@ def get_registration(
         logger,
         Log.REFERRALS_QUERIED,
         "Referrals queried",
-        fields={"ura_number": str(ctx.claims.ura_number), "result_count": len(results)},
+        fields={"result_count": len(results)},
     )
 
     return RegistrationList.from_entities(results)
@@ -67,7 +67,6 @@ def add_registration(
         encrypted_pseudonym=resolved.encrypted,
         ura_number=ctx.claims.ura_number,
         source=source,
-        organization_name=ctx.claims.organization_name,
         key_id=resolved.key_id,
     )
     if not created:
@@ -97,12 +96,7 @@ def delete_registration(
             logger,
             Log.ALL_PATIENT_REFERRALS_DELETED,
             "All patient referrals deleted",
-            fields={
-                "organization": ctx.claims.organization_name,
-                "ura_number": str(ctx.claims.ura_number),
-                "pseudonym_hash": str(encrypted_pseudonym),
-                "deleted_count": deleted_count,
-            },
+            fields={"pseudonym_hash": str(encrypted_pseudonym), "deleted_count": deleted_count},
         )
 
     return Response(status_code=204)
