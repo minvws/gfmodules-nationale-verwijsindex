@@ -230,27 +230,65 @@ def test_delet_by_id_should_raise_exception_when_no_match_found(
     assert "Record not found" in str(exec.value)
 
 
+def test_delete_many_with_a_pseudonym_logs_patient_scope(
+    referral_service: ReferralService,
+    key_info_service: KeyInfoService,
+    ura_number: UraNumber,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    store_referral(referral_service, key_info_service, ura_number)
+
+    with caplog.at_level(logging.INFO):
+        deleted = referral_service.delete_many(ura_number, encrypted_pseudonym=PSEUDONYM, source=SOURCE)
+
+    (fields,) = logged_fields(caplog, Log.ALL_PATIENT_REFERRALS_DELETED)
+    assert deleted == 1
+    assert fields["pseudonym_hash"] == str(PSEUDONYM)
+    assert fields["deleted_count"] == 1
+
+
+def test_delete_many_without_a_pseudonym_logs_ura_scope(
+    referral_service: ReferralService,
+    key_info_service: KeyInfoService,
+    ura_number: UraNumber,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    store_referral(referral_service, key_info_service, ura_number)
+
+    with caplog.at_level(logging.INFO):
+        referral_service.delete_many(ura_number, source=SOURCE)
+
+    (fields,) = logged_fields(caplog, Log.ALL_URA_REFERRALS_DELETED)
+    assert fields["deleted_count"] == 1
+
+
+def test_delete_many_logs_nothing_when_nothing_matched(
+    referral_service: ReferralService,
+    ura_number: UraNumber,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    with caplog.at_level(logging.INFO):
+        deleted = referral_service.delete_many(ura_number, encrypted_pseudonym=PSEUDONYM)
+
+    assert deleted == 0
+    assert logged_fields(caplog, Log.ALL_PATIENT_REFERRALS_DELETED) == []
+    assert logged_fields(caplog, Log.ALL_URA_REFERRALS_DELETED) == []
+
+
 def test_localize_logs_success_with_the_pseudonym_and_result_count(
     referral_service: ReferralService,
     key_info_service: KeyInfoService,
     ura_number: UraNumber,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    key_info = key_info_service.add_one("label-1", "AES_CBC")
-    pseudonym = EncryptedPseudonym("ps-1", "123")
-    referral_service.add_one(
-        encrypted_pseudonym=pseudonym,
-        ura_number=ura_number,
-        source="SomeDevice",
-        key_id=key_info.id,
-    )
+    store_referral(referral_service, key_info_service, ura_number)
 
     with caplog.at_level(logging.INFO):
-        referrals = referral_service.localize(pseudonym, REQUESTING_URA)
+        referrals = referral_service.localize(PSEUDONYM, REQUESTING_URA)
 
     (fields,) = logged_fields(caplog, Log.LOCALIZATION_SUCCESS)
     assert len(referrals) == 1
-    assert fields["pseudonym_hash"] == str(pseudonym)
+    assert fields["pseudonym_hash"] == str(PSEUDONYM)
     assert fields["result_count"] == 1
 
 
@@ -259,8 +297,44 @@ def test_localize_logs_no_match_with_a_zero_result_count(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     with caplog.at_level(logging.INFO):
-        referrals = referral_service.localize(EncryptedPseudonym("ps-1", "123"), REQUESTING_URA)
+        referrals = referral_service.localize(PSEUDONYM, REQUESTING_URA)
 
     (fields,) = logged_fields(caplog, Log.LOCALIZATION_NO_MATCH)
     assert len(referrals) == 0
     assert fields["result_count"] == 0
+
+
+def test_localize_does_not_log_a_query(
+    referral_service: ReferralService,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    with caplog.at_level(logging.INFO):
+        referral_service.localize(PSEUDONYM, REQUESTING_URA)
+
+    assert logged_fields(caplog, Log.REFERRALS_QUERIED) == []
+
+
+def test_query_logs_the_result_count(
+    referral_service: ReferralService,
+    key_info_service: KeyInfoService,
+    ura_number: UraNumber,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    store_referral(referral_service, key_info_service, ura_number)
+
+    with caplog.at_level(logging.INFO):
+        referrals = referral_service.query(ura_number, encrypted_pseudonym=PSEUDONYM)
+
+    (fields,) = logged_fields(caplog, Log.REFERRALS_QUERIED)
+    assert len(referrals) == 1
+    assert fields["result_count"] == 1
+
+
+def test_query_is_scoped_to_the_callers_ura(
+    referral_service: ReferralService,
+    key_info_service: KeyInfoService,
+    ura_number: UraNumber,
+) -> None:
+    store_referral(referral_service, key_info_service, ura_number)
+
+    assert len(referral_service.query(REQUESTING_URA, encrypted_pseudonym=PSEUDONYM)) == 0
