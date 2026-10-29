@@ -5,7 +5,8 @@ from typing import Any
 import gfmodules.logging as gflog
 from gfmodules.logging import LogEvent
 
-from app.errors.mapping import spec_for
+from app.errors.handlers import log_rejection
+from app.errors.mapping import DEFAULT_SPEC, UNEXPECTED_ERROR_MESSAGE, spec_for
 from app.logging.events import Log
 from app.models.auth.context import AuthContext
 from app.models.auth.data import AuthorizationScope
@@ -27,9 +28,9 @@ logger = logging.getLogger(__name__)
 class BundleService:
     def __init__(
         self,
-        localisation_list_service: LocalizationListService,
+        localization_list_service: LocalizationListService,
     ) -> None:
-        self.localizaton_list_service = localisation_list_service
+        self.localization_list_service = localization_list_service
 
     def process_entry(self, ctx: AuthContext, entry: BundleEntry[Any], index: int) -> BundleEntry[Any]:
         authenticated_ura = ctx.claims.ura_number
@@ -59,7 +60,7 @@ class BundleService:
                 "Bundle entry denied: missing scope",
                 fields={"ura_number": str(authenticated_ura)},
             )
-            return BundleEntry(response=EntryResponse.make_forbidden_respone(msg=f"Bundle.entry.{index}: {error}"))
+            return BundleEntry(response=EntryResponse.make_forbidden_response(msg=f"Bundle.entry.{index}: {error}"))
 
         if self.requires_managing_request(method) and not AuthContextService.is_managing_request(ctx):
             error = UnauthorizedManagingRequestError()
@@ -69,7 +70,7 @@ class BundleService:
                 "Bundle entry denied: not a managing request",
                 fields={"ura_number": str(authenticated_ura)},
             )
-            return BundleEntry(response=EntryResponse.make_forbidden_respone(msg=f"Bundle.entry.{index}: {error}"))
+            return BundleEntry(response=EntryResponse.make_forbidden_response(msg=f"Bundle.entry.{index}: {error}"))
 
         resource: LocalizationList | None = None
         if method == "POST":
@@ -97,7 +98,7 @@ class BundleService:
                         index,
                         authenticated_ura,
                         lambda: BundleEntry(
-                            resource=self.localizaton_list_service.get(
+                            resource=self.localization_list_service.get(
                                 resource_id, authenticated_ura, organization_name=organization_name
                             ),
                             response=EntryResponse.make_good_response("Resource has been retrieved successfully"),
@@ -110,7 +111,7 @@ class BundleService:
                     index,
                     authenticated_ura,
                     lambda: BundleEntry(
-                        resource=self.localizaton_list_service.query(
+                        resource=self.localization_list_service.query(
                             query_params, authenticated_ura, organization_name=organization_name
                         ),
                         response=EntryResponse.make_good_response(),
@@ -158,7 +159,7 @@ class BundleService:
 
             case _:
                 return BundleEntry(
-                    response=EntryResponse.make_forbidden_respone(
+                    response=EntryResponse.make_forbidden_response(
                         msg=f"Bundle.entry.{index}.request.method {method} not supported"
                     )
                 )
@@ -176,26 +177,37 @@ class BundleService:
         try:
             return action()
         except Exception as exc:
-            logger.exception("Bundle entry action failed")
-            status_code = spec_for(exc).http_status
+            spec = spec_for(exc)
+            unexpected = spec is DEFAULT_SPEC
+            if unexpected:
+                logger.exception("Bundle entry action failed")
+            else:
+                log_rejection(spec.http_status, exc)
+
             if failure_event is not None:
                 gflog.emit(
                     logger,
                     failure_event,
                     failure_msg,
-                    fields={"ura_number": str(authenticated_ura), "http_status": status_code, "error_reason": str(exc)},
+                    fields={
+                        "ura_number": str(authenticated_ura),
+                        "http_status": spec.http_status,
+                        "error_reason": str(exc),
+                    },
                 )
+
             return BundleEntry(
                 response=EntryResponse.make_error_response(
-                    msg=f"Bundle.entry.{index}: {exc}",
-                    status=str(status_code),
+                    msg=f"Bundle.entry.{index}: {UNEXPECTED_ERROR_MESSAGE if unexpected else exc}",
+                    status=str(spec.http_status),
+                    code=spec.fhir_code,
                 )
             )
 
     def _create_entry(
         self, resource: LocalizationList, authenticated_ura: UraNumber, organization_name: str
     ) -> BundleEntry[Any]:
-        stored, created = self.localizaton_list_service.create(
+        stored, created = self.localization_list_service.create(
             resource, authenticated_ura, organization_name=organization_name
         )
         if created:
@@ -207,7 +219,7 @@ class BundleService:
     def _delete_by_id_entry(
         self, resource_id: Any, authenticated_ura: UraNumber, source: str, organization_name: str
     ) -> BundleEntry[Any]:
-        outcome, status_code = self.localizaton_list_service.delete(
+        outcome, status_code = self.localization_list_service.delete(
             resource_id, authenticated_ura, source, organization_name=organization_name
         )
         return BundleEntry(response=EntryResponse(status=str(status_code), outcome=outcome))
@@ -215,7 +227,7 @@ class BundleService:
     def _delete_by_query_entry(
         self, params: LocalizationListParams, authenticated_ura: UraNumber, source: str, organization_name: str
     ) -> BundleEntry[Any]:
-        outcome, status_code = self.localizaton_list_service.delete_by_query(
+        outcome, status_code = self.localization_list_service.delete_by_query(
             params, authenticated_ura, source, organization_name=organization_name
         )
         return BundleEntry(response=EntryResponse(status=str(status_code), outcome=outcome))
@@ -248,10 +260,12 @@ class BundleService:
         except ValueError as e:
             # A source built on the wrong naming system, which the standalone route rejects
             # before it reaches the service too.
+            spec = spec_for(e)
             return BundleEntry(
                 response=EntryResponse.make_error_response(
                     msg=f"Bundle.entry.{index}: {e}",
-                    status=str(spec_for(e).http_status),
+                    status=str(spec.http_status),
+                    code=spec.fhir_code,
                 )
             )
 
@@ -264,7 +278,7 @@ class BundleService:
                 "Bundle entry denied: source does not match the authenticated source",
                 fields={"ura_number": str(ctx.claims.ura_number)},
             )
-            return BundleEntry(response=EntryResponse.make_forbidden_respone(msg=f"Bundle.entry.{index}: {error}"))
+            return BundleEntry(response=EntryResponse.make_forbidden_response(msg=f"Bundle.entry.{index}: {error}"))
 
         return None
 
@@ -332,7 +346,7 @@ class BundleService:
 
     @staticmethod
     def validate_localization_bundle_structure(bundle: Bundle[Any]) -> bool:
-        return len(bundle.entry) != 0 and bundle.entry is not None
+        return len(bundle.entry) > 0
 
     def resolve_request_url(self, url: str, index: int) -> EntryRequestDto | BundleEntry[LocalizationList]:
         try:
