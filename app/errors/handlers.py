@@ -11,6 +11,7 @@ from gfmodules.logging.middleware import restore_request_context
 
 from app.errors.fhir import FHIRError
 from app.errors.mapping import DEFAULT_SPEC, EXCEPTION_MAP, UNEXPECTED_ERROR_MESSAGE, should_log, spec_for
+from app.logging.context import bind_auth_claims
 from app.logging.events import Log
 from app.models.fhir.resources.localization_list.request import SUBJECT_IDENTIFIER_PARAM
 from app.models.fhir.resources.operation_outcome.resource import (
@@ -55,17 +56,13 @@ def log_request_failure(request: Request, status_code: int, exc: Exception) -> N
     event = _failure_event_for(request, status_code)
     if event is None:
         return
-    auth = getattr(request.state, "auth", None)
-    gflog.emit(
-        logger,
-        event,
-        "Referral registration failed" if event is Log.REFERRAL_REGISTRATION_FAILED else "Localization failed",
-        fields={
-            "ura_number": str(auth.claims.ura_number) if auth is not None else None,
-            "http_status": status_code,
-            "error_reason": _summarize_reason(exc),
-        },
-    )
+    with bind_auth_claims(getattr(request.state, "auth", None)):
+        gflog.emit(
+            logger,
+            event,
+            "Referral registration failed" if event is Log.REFERRAL_REGISTRATION_FAILED else "Localization failed",
+            fields={"http_status": status_code, "error_reason": _summarize_reason(exc)},
+        )
 
 
 def log_rejection(status_code: int, exc: Exception) -> None:

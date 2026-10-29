@@ -15,6 +15,7 @@ from app.db.models.key_info import KeyInfoEntity
 from app.db.models.referral import ReferralEntity
 from app.db.repository.key_info_repository import KeyInfoRepository
 from app.db.repository.referral_repository import ReferralRepository
+from app.logging.context import CLAIM_FIELDS
 from app.logging.events import Log
 from app.metrics import UsageMetrics
 from app.models.fhir.elements import (
@@ -80,6 +81,7 @@ def logging_catalogue() -> Generator[None, Any, None]:
         config=ConfigLogging(console_streams=["debug"], access_logs=True),
         loglevel="DEBUG",
         catalogue=Log,
+        extra_context_fields=CLAIM_FIELDS,
         strict_fields=True,
     )
     try:
