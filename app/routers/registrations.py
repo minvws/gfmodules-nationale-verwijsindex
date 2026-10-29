@@ -2,10 +2,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, Query, Response
 
-from app.dependencies import (
-    get_pseudonym_resolver,
-    get_referral_service,
-)
+from app.dependencies import get_pseudonym_referral_service
 from app.models.auth.context import AuthContext
 from app.models.auth.data import AuthorizationScope
 from app.models.registrations import (
@@ -15,8 +12,7 @@ from app.models.registrations import (
     RegistrationQueryParams,
 )
 from app.routers.dependencies import require_managing_source, require_scope
-from app.services.pseudonym_resolver import PseudonymResolver
-from app.services.referral_service import ReferralService
+from app.services.pseudonym_referral_service import PseudonymReferralService
 
 router = APIRouter(tags=["Registrations"], prefix="/registrations")
 
@@ -25,14 +21,11 @@ router = APIRouter(tags=["Registrations"], prefix="/registrations")
     "",
 )
 def get_registration(
-    referral_service: Annotated[ReferralService, Depends(get_referral_service)],
-    pseudonym_resolver: Annotated[PseudonymResolver, Depends(get_pseudonym_resolver)],
+    pseudonym_referral_service: Annotated[PseudonymReferralService, Depends(get_pseudonym_referral_service)],
     params: Annotated[RegistrationQueryParams, Query()],
     ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.READ))],
 ) -> Any:
-    resolved = pseudonym_resolver.resolve(params.oprf_pseudonym())
-
-    results = referral_service.query(ctx.claims.ura_number, encrypted_pseudonym=resolved.encrypted)
+    results = pseudonym_referral_service.query(ctx.claims.ura_number, pseudonym=params.oprf_pseudonym())
 
     return RegistrationList.from_entities(results)
 
@@ -45,18 +38,14 @@ def get_registration(
 def add_registration(
     data: Annotated[CreateRegistrationRequest, Body()],
     response: Response,
-    referral_service: Annotated[ReferralService, Depends(get_referral_service)],
-    pseudonym_resolver: Annotated[PseudonymResolver, Depends(get_pseudonym_resolver)],
+    pseudonym_referral_service: Annotated[PseudonymReferralService, Depends(get_pseudonym_referral_service)],
     ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.CREATE))],
     source: Annotated[str, Depends(require_managing_source)],
 ) -> Any:
-    resolved = pseudonym_resolver.resolve(data.oprf_pseudonym())
-
-    referral, created = referral_service.add_one(
-        encrypted_pseudonym=resolved.encrypted,
+    referral, created = pseudonym_referral_service.register(
+        data.oprf_pseudonym(),
         ura_number=ctx.claims.ura_number,
         source=source,
-        key_id=resolved.key_id,
     )
     if not created:
         response.status_code = 200
@@ -66,16 +55,13 @@ def add_registration(
 @router.delete("")
 def delete_registration(
     params: Annotated[RegistrationQueryParams, Query()],
-    referral_service: Annotated[ReferralService, Depends(get_referral_service)],
-    pseudonym_resolver: Annotated[PseudonymResolver, Depends(get_pseudonym_resolver)],
+    pseudonym_referral_service: Annotated[PseudonymReferralService, Depends(get_pseudonym_referral_service)],
     ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.DELETE))],
     source: Annotated[str, Depends(require_managing_source)],
 ) -> Any:
-    resolved = pseudonym_resolver.resolve(params.oprf_pseudonym())
-
-    referral_service.delete_many(
-        ura_number=ctx.claims.ura_number,
-        encrypted_pseudonym=resolved.encrypted,
+    pseudonym_referral_service.delete_many(
+        ctx.claims.ura_number,
+        pseudonym=params.oprf_pseudonym(),
         source=source,
     )
 

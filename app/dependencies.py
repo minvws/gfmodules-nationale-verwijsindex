@@ -9,7 +9,7 @@ from app.services.crypto_service_api_client import CryptoServiceApiClient
 from app.services.fhir.bundle import BundleService
 from app.services.fhir.localization_list import LocalizationListService
 from app.services.key_info import KeyInfoService
-from app.services.pseudonym_resolver import PseudonymResolver
+from app.services.pseudonym_referral_service import PseudonymReferralService
 from app.services.referral_service import ReferralService
 from app.utils.load_capability_statement import CapabilityStatement
 
@@ -34,8 +34,8 @@ def get_crypto_service_api_client() -> CryptoServiceApiClient:
     return inject.instance(CryptoServiceApiClient)
 
 
-def get_pseudonym_resolver() -> PseudonymResolver:
-    return inject.instance(PseudonymResolver)
+def get_pseudonym_referral_service() -> PseudonymReferralService:
+    return inject.instance(PseudonymReferralService)
 
 
 def get_auth_header_service() -> AuthHeaderService:
