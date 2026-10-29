@@ -10,6 +10,7 @@ from app.models.fhir.resources.localization_list.request import (
 )
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
+from app.models.pseudonym import PseudonymToken
 from app.models.ura import UraNumber
 from app.services.exceptions import (
     NotFoundError,
@@ -49,7 +50,7 @@ class LocalizationListService:
             )
             raise UnauthorizedUraError("Registration not linked to the authorized URA")
 
-        resolved = self._pseudonym_resolver.resolve_token(data.get_encoded_pseudonym())
+        resolved = self._pseudonym_resolver.resolve(PseudonymToken(data.get_encoded_pseudonym()))
 
         referral, created = self.referral_service.add_one(
             ura_number=ura_number,
@@ -92,7 +93,7 @@ class LocalizationListService:
     ) -> Bundle[LocalizationList]:
         resolved: ResolvedPseudonym | None = None
         if params.subject:
-            resolved = self._pseudonym_resolver.resolve_token(params.subject)
+            resolved = self._pseudonym_resolver.resolve(PseudonymToken(params.subject))
 
         if params.is_localize_params() and resolved is not None:
             referrals = self.referral_service.localize(resolved.encrypted, authenticated_ura, organization_name)
@@ -158,7 +159,7 @@ class LocalizationListService:
 
         resolved: ResolvedPseudonym | None = None
         if params.subject:
-            resolved = self._pseudonym_resolver.resolve_token(params.subject)
+            resolved = self._pseudonym_resolver.resolve(PseudonymToken(params.subject))
 
         deleted_count = self.referral_service.delete_many(
             encrypted_pseudonym=(resolved.encrypted if resolved else None),

@@ -34,7 +34,7 @@ def get_registration(
     params: Annotated[RegistrationQueryParams, Query()],
     ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.READ))],
 ) -> Any:
-    resolved = pseudonym_resolver.resolve_jwe(jwe=params.pseudonym, blind_factor=params.oprf_key)
+    resolved = pseudonym_resolver.resolve(params.oprf_pseudonym())
 
     results = referral_service.get_many(ura_number=ctx.claims.ura_number, encrypted_pseudonym=resolved.encrypted)
 
@@ -61,7 +61,7 @@ def add_registration(
     ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.CREATE))],
     source: Annotated[str, Depends(require_managing_source)],
 ) -> Any:
-    resolved = pseudonym_resolver.resolve_jwe(jwe=data.pseudonym, blind_factor=data.oprf_key)
+    resolved = pseudonym_resolver.resolve(data.oprf_pseudonym())
 
     referral, created = referral_service.add_one(
         encrypted_pseudonym=resolved.encrypted,
@@ -83,7 +83,7 @@ def delete_registration(
     ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.DELETE))],
     source: Annotated[str, Depends(require_managing_source)],
 ) -> Any:
-    resolved = pseudonym_resolver.resolve_jwe(jwe=params.pseudonym, blind_factor=params.oprf_key)
+    resolved = pseudonym_resolver.resolve(params.oprf_pseudonym())
     encrypted_pseudonym = resolved.encrypted
 
     deleted_count = referral_service.delete_many(
