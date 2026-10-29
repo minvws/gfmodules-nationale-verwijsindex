@@ -210,6 +210,28 @@ class TestDelete:
         assert response.status_code == 404
         assert client.get(f"/fhir/List/{created['id']}").status_code == 200
 
+    def test_delete_by_id_answers_another_uras_resource_like_an_unknown_id(
+        self,
+        client: TestClient,
+        referral_service: ReferralService,
+        crypto_client: CryptoServiceApiClientMock,
+        key_info_service: KeyInfoService,
+    ) -> None:
+        created = client.post("/fhir/List", json=_body(), headers=FHIR_JSON).json()
+        other_ura = make_test_client(
+            referral_service,
+            crypto_client,
+            key_info_service,
+            make_auth_context(ura="99999999"),
+        )
+
+        foreign = other_ura.delete(f"/fhir/List/{created['id']}")
+        unknown = other_ura.delete("/fhir/List/00000000-0000-0000-0000-000000000000")
+
+        assert foreign.status_code == unknown.status_code == 404
+        assert foreign.json() == unknown.json()
+        assert client.get(f"/fhir/List/{created['id']}").status_code == 200
+
     def test_delete_by_query_requires_a_source_id(
         self,
         referral_service: ReferralService,

@@ -1,6 +1,7 @@
 import logging
 from collections.abc import Callable
 from typing import Any
+from uuid import UUID
 
 import gfmodules.logging as gflog
 from gfmodules.logging import LogEvent
@@ -183,9 +184,9 @@ class BundleService:
             response = EntryResponse.make_good_response(msg="Resource already exists")
         return BundleEntry(resource=stored, response=response)
 
-    def _delete_by_id_entry(self, resource_id: Any, authenticated_ura: UraNumber, source: str) -> BundleEntry[Any]:
-        outcome, status_code = self.localization_list_service.delete(resource_id, authenticated_ura, source)
-        return BundleEntry(response=EntryResponse(status=str(status_code), outcome=outcome))
+    def _delete_by_id_entry(self, resource_id: UUID, authenticated_ura: UraNumber, source: str) -> BundleEntry[Any]:
+        outcome = self.localization_list_service.delete(resource_id, authenticated_ura, source)
+        return BundleEntry(response=EntryResponse(status="200", outcome=outcome))
 
     def _delete_by_query_entry(
         self, params: LocalizationListParams, authenticated_ura: UraNumber, source: str

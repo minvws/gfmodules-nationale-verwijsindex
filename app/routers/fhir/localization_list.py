@@ -208,11 +208,8 @@ def delete(
     source: Annotated[str, Depends(require_managing_source)],
 ) -> Any:
     authorized_ura = ctx.claims.ura_number
-    outcome, status_code = service.delete(id, authorized_ura, source)
-    return FHIRJSONResponse(
-        status_code=status_code,
-        content=jsonable_encoder(outcome.model_dump(exclude_none=True)),
-    )
+    outcome = service.delete(id, authorized_ura, source)
+    return FHIRJSONResponse(content=jsonable_encoder(outcome.model_dump(exclude_none=True)))
 
 
 @router.delete(
