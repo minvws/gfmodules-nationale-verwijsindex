@@ -1,11 +1,16 @@
+from unittest.mock import Mock
+
 import pytest
 from fastapi.testclient import TestClient
+from gfmodules.logging.testing import assert_event_emitted, capture_records
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
+from app.logging.events import Log
 from app.models.auth.data import AuthorizationScope
 from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 from tests.routers.conftest import (
+    TEST_ORG_NAME,
     TEST_SOURCE_ID,
     TEST_URA,
     make_auth_context,
@@ -60,6 +65,41 @@ class TestCreateRegistration:
         )
 
         assert response.status_code == 503
+
+    def test_logs_the_registration_with_the_callers_claims(
+        self, source_client: TestClient, key_info_service: KeyInfoService
+    ) -> None:
+        key_info_service.add_one("nvi-label", mechanism="AES_CBC")
+
+        with capture_records() as records:
+            source_client.post("/registrations", json={"pseudonym": "pseu", "oprf_key": "key1"})
+
+        assert_event_emitted(records, Log.REGISTERED_REFERRAL, organization=TEST_ORG_NAME, ura_number=TEST_URA)
+
+    def test_logs_a_failed_registration_with_the_callers_claims(
+        self,
+        source_client: TestClient,
+        crypto_client: CryptoServiceApiClientMock,
+        key_info_service: KeyInfoService,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        key_info_service.add_one("nvi-label", mechanism="AES_CBC")
+        monkeypatch.setattr(crypto_client, "exchange", Mock(side_effect=ValueError("Invalid pseudonym or oprf_key")))
+
+        with capture_records() as records:
+            response = source_client.post("/registrations", json={"pseudonym": "pseu", "oprf_key": "key1"})
+
+        assert response.status_code == 400
+        assert_event_emitted(
+            records, Log.REFERRAL_REGISTRATION_FAILED, organization=TEST_ORG_NAME, ura_number=TEST_URA, http_status=400
+        )
+
+    def test_invalid_request_body_is_not_a_failed_registration(self, source_client: TestClient) -> None:
+        with capture_records() as records:
+            response = source_client.post("/registrations", json={})
+
+        assert response.status_code == 422
+        assert records.for_event(Log.REFERRAL_REGISTRATION_FAILED) == []
 
     def test_requires_create_scope(
         self,

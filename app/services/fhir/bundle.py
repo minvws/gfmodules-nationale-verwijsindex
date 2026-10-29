@@ -4,7 +4,6 @@ from typing import Any
 from uuid import UUID
 
 import gfmodules.logging as gflog
-from gfmodules.logging import LogEvent
 
 from app.errors.handlers import log_rejection
 from app.errors.mapping import DEFAULT_SPEC, UNEXPECTED_ERROR_MESSAGE, spec_for
@@ -34,8 +33,6 @@ class BundleService:
         self.localization_list_service = localization_list_service
 
     def process_entry(self, ctx: AuthContext, entry: BundleEntry[Any], index: int) -> BundleEntry[Any]:
-        authenticated_ura = ctx.claims.ura_number
-
         if entry.request is None:
             return BundleEntry(
                 response=EntryResponse.make_validation_response(f"Bundle.entry.{index}.request is required")
@@ -80,75 +77,62 @@ class BundleService:
         if denied is not None:
             return denied
 
+        action = self._entry_action(ctx, method, resolved_url, resource, params)
+        if action is None:
+            return BundleEntry(
+                response=EntryResponse.make_forbidden_response(
+                    msg=f"Bundle.entry.{index}.request.method {method} not supported"
+                )
+            )
+
+        return self._entry_result(index, action)
+
+    def _entry_action(
+        self,
+        ctx: AuthContext,
+        method: str,
+        resolved_url: EntryRequestDto,
+        resource: LocalizationList | None,
+        params: LocalizationListParams | None,
+    ) -> Callable[[], BundleEntry[Any]] | None:
+        authenticated_ura = ctx.claims.ura_number
+        resource_id = resolved_url.id
+
         match method:
             case "GET":
-                if resolved_url.id:
-                    resource_id = resolved_url.id
-                    return self._entry_result(
-                        index,
-                        lambda: BundleEntry(
-                            resource=self.localization_list_service.get(resource_id, authenticated_ura),
-                            response=EntryResponse.make_good_response("Resource has been retrieved successfully"),
-                        ),
+                if resource_id is not None:
+                    return lambda: BundleEntry(
+                        resource=self.localization_list_service.get(resource_id, authenticated_ura),
+                        response=EntryResponse.make_good_response("Resource has been retrieved successfully"),
                     )
 
                 query_params = params
                 assert query_params is not None
-                return self._entry_result(
-                    index,
-                    lambda: BundleEntry(
-                        resource=self.localization_list_service.query(query_params, authenticated_ura),
-                        response=EntryResponse.make_good_response(),
-                    ),
-                    failure_event=Log.LOCALIZATION_FAILED,
-                    failure_msg="Localization failed",
+                return lambda: BundleEntry(
+                    resource=self.localization_list_service.query(query_params, authenticated_ura),
+                    response=EntryResponse.make_good_response(),
                 )
 
             case "POST":
                 post_resource = resource
                 assert post_resource is not None
-                return self._entry_result(
-                    index,
-                    lambda: self._create_entry(post_resource, authenticated_ura),
-                    failure_event=Log.REFERRAL_REGISTRATION_FAILED,
-                    failure_msg="Referral registration failed",
-                )
+                return lambda: self._create_entry(post_resource, authenticated_ura)
 
             case "DELETE":
                 managing_source = ctx.claims.source_id
                 assert managing_source is not None
 
-                if resolved_url.id:
-                    resource_id = resolved_url.id
-                    return self._entry_result(
-                        index,
-                        lambda: self._delete_by_id_entry(resource_id, authenticated_ura, managing_source),
-                    )
+                if resource_id is not None:
+                    return lambda: self._delete_by_id_entry(resource_id, authenticated_ura, managing_source)
 
                 delete_params = params
                 assert delete_params is not None
-                return self._entry_result(
-                    index,
-                    lambda: self._delete_by_query_entry(delete_params, authenticated_ura, managing_source),
-                    failure_event=Log.LOCALIZATION_FAILED,
-                    failure_msg="Localization failed",
-                )
+                return lambda: self._delete_by_query_entry(delete_params, authenticated_ura, managing_source)
 
             case _:
-                return BundleEntry(
-                    response=EntryResponse.make_forbidden_response(
-                        msg=f"Bundle.entry.{index}.request.method {method} not supported"
-                    )
-                )
+                return None
 
-    def _entry_result(
-        self,
-        index: int,
-        action: Callable[[], BundleEntry[Any]],
-        *,
-        failure_event: LogEvent | None = None,
-        failure_msg: str = "",
-    ) -> BundleEntry[Any]:
+    def _entry_result(self, index: int, action: Callable[[], BundleEntry[Any]]) -> BundleEntry[Any]:
         """Run an entry's service call, mapping any raised exception to an error entry."""
         try:
             return action()
@@ -159,14 +143,6 @@ class BundleService:
                 logger.exception("Bundle entry action failed")
             else:
                 log_rejection(spec.http_status, exc)
-
-            if failure_event is not None:
-                gflog.emit(
-                    logger,
-                    failure_event,
-                    failure_msg,
-                    fields={"http_status": spec.http_status, "error_reason": str(exc)},
-                )
 
             return BundleEntry(
                 response=EntryResponse.make_error_response(
@@ -246,23 +222,11 @@ class BundleService:
     def _validate_post_resource(self, entry: BundleEntry[Any], index: int) -> LocalizationList | BundleEntry[Any]:
         """Return the validated ``LocalizationList`` or an error ``BundleEntry``."""
         if entry.resource is None:
-            gflog.emit(
-                logger,
-                Log.REFERRAL_REGISTRATION_FAILED,
-                "Referral registration failed",
-                fields={"http_status": 422, "error_reason": f"Bundle.entry.{index}: resource cannot be empty"},
-            )
             return BundleEntry(
                 response=EntryResponse.make_validation_response(msg=f"Bundle.entry.{index}: resource cannot be empty")
             )
 
         if not isinstance(entry.resource, LocalizationList):
-            gflog.emit(
-                logger,
-                Log.REFERRAL_REGISTRATION_FAILED,
-                "Referral registration failed",
-                fields={"http_status": 422, "error_reason": f"Bundle.entry.{index}: invalid List resource"},
-            )
             return BundleEntry(
                 response=EntryResponse.make_validation_response(f"Bundle.entry.{index}: invalid List resource")
             )
