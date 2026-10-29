@@ -21,7 +21,8 @@ def test_openapi_shows_the_configured_page_sizes_on_count() -> None:
 
     assert param["schema"]["default"] == 20
     assert {"type": "integer", "minimum": 1, "maximum": 75} in param["schema"]["anyOf"]
-    assert "20" in param["description"] and "75" in param["description"]
+    assert "20" in param["description"]
+    assert "75" in param["description"]
 
 
 def test_openapi_json_endpoint_serves_the_page_sizes() -> None:

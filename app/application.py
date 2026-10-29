@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -123,6 +123,26 @@ def api_key_headers(document_gf_headers: bool) -> list[Any]:
     return [Security(APIKeyHeader(name=header, scheme_name=header, auto_error=False)) for header in headers]
 
 
+def _count_params(schema: dict[str, Any]) -> Iterator[dict[str, Any]]:
+    for operations in schema.get("paths", {}).values():
+        for operation in operations.values():
+            yield from (
+                param
+                for param in operation.get("parameters", [])
+                if param.get("in") == "query" and param.get("name") == COUNT_PARAM
+            )
+
+
+def _set_page_sizes(param: dict[str, Any], default_page_size: int, max_page_size: int) -> None:
+    param["description"] = (
+        f"Number of entries per page. Defaults to {default_page_size}, larger values are capped at {max_page_size}"
+    )
+    param["schema"]["default"] = default_page_size
+    for option in param["schema"].get("anyOf", [param["schema"]]):
+        if option.get("type") == "integer":
+            option["maximum"] = max_page_size
+
+
 def _document_page_sizes(app: FastAPI, default_page_size: int, max_page_size: int) -> None:
     """
     Shows the configured page sizes on the `_count` parameter in the OpenAPI schema. The maximum is not
@@ -132,20 +152,8 @@ def _document_page_sizes(app: FastAPI, default_page_size: int, max_page_size: in
 
     def openapi() -> dict[str, Any]:
         if app.openapi_schema is None:
-            schema = generate()
-            for operations in schema.get("paths", {}).values():
-                for operation in operations.values():
-                    for param in operation.get("parameters", []):
-                        if param.get("in") != "query" or param.get("name") != COUNT_PARAM:
-                            continue
-                        param["description"] = (
-                            f"Number of entries per page. Defaults to {default_page_size}, "
-                            f"larger values are capped at {max_page_size}"
-                        )
-                        param["schema"]["default"] = default_page_size
-                        for option in param["schema"].get("anyOf", [param["schema"]]):
-                            if option.get("type") == "integer":
-                                option["maximum"] = max_page_size
+            for param in _count_params(generate()):
+                _set_page_sizes(param, default_page_size, max_page_size)
         return app.openapi_schema  # type: ignore[return-value]
 
     app.openapi = openapi  # type: ignore[method-assign]
