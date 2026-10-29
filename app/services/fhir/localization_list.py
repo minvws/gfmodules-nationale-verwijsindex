@@ -12,10 +12,7 @@ from app.models.fhir.resources.localization_list.resource import LocalizationLis
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.pseudonym import PseudonymToken
 from app.models.ura import UraNumber
-from app.services.exceptions import (
-    NotFoundError,
-    UnauthorizedUraError,
-)
+from app.services.exceptions import UnauthorizedUraError
 from app.services.pseudonym_resolver import PseudonymResolver, ResolvedPseudonym
 from app.services.referral_service import ReferralService
 
@@ -61,23 +58,7 @@ class LocalizationListService:
         return LocalizationList.from_referral(referral), created
 
     def get(self, id: UUID, authenticated_ura: UraNumber) -> LocalizationList:
-        referral = self.referral_service.get_by_id(id)
-        gflog.emit(
-            logger,
-            Log.REFERRAL_SEARCHED_ON_ID,
-            "Referral searched on id",
-            fields={"pseudonym_hash": referral.pseudonym},
-        )
-        if authenticated_ura != UraNumber(referral.ura_number):
-            gflog.emit(
-                logger,
-                Log.REFERRAL_ACCESS_DENIED,
-                "Referral access denied: URA mismatch",
-                fields={"resource_ura": referral.ura_number},
-            )
-            raise NotFoundError()
-
-        return LocalizationList.from_referral(referral)
+        return LocalizationList.from_referral(self.referral_service.read(id, authenticated_ura))
 
     def query(
         self,
@@ -116,25 +97,9 @@ class LocalizationListService:
         id: UUID,
         authenticated_ura: UraNumber,
         source: str,
-    ) -> tuple[OperationOutcome, int]:
-        target = self.referral_service.get_by_id(id)
-        affected_rows = self.referral_service.delete_many(ura_number=authenticated_ura, source=source, id=id)
-        if affected_rows > 0:
-            gflog.emit(
-                logger,
-                Log.REFERRAL_DELETED,
-                "Referral deleted",
-                fields={"pseudonym_hash": target.pseudonym if target else None},
-            )
-            return (
-                OperationOutcome.make_good_outcome(f"Resource {id} has been deleted successfully"),
-                200,
-            )
-        else:
-            return (
-                OperationOutcome.make_error_outcome(code="warning", msg=f"Resource {id} does not exist"),
-                404,
-            )
+    ) -> OperationOutcome:
+        self.referral_service.delete_by_id(id, authenticated_ura, source)
+        return OperationOutcome.make_good_outcome(f"Resource {id} has been deleted successfully")
 
     def delete_by_query(
         self,

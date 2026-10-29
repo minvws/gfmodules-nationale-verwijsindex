@@ -33,6 +33,28 @@ class ReferralService:
 
             return referral
 
+    def read(self, id: UUID, ura_number: UraNumber) -> ReferralEntity:
+        referral = self._get_owned(id, ura_number)
+        gflog.emit(
+            logger,
+            Log.REFERRAL_SEARCHED_ON_ID,
+            "Referral searched on id",
+            fields={"pseudonym_hash": referral.pseudonym},
+        )
+        return referral
+
+    def _get_owned(self, id: UUID, ura_number: UraNumber) -> ReferralEntity:
+        referral = self.get_by_id(id)
+        if ura_number != UraNumber(referral.ura_number):
+            gflog.emit(
+                logger,
+                Log.REFERRAL_ACCESS_DENIED,
+                "Referral access denied: URA mismatch",
+                fields={"resource_ura": referral.ura_number},
+            )
+            raise NotFoundError()
+        return referral
+
     def add_one(
         self,
         encrypted_pseudonym: EncryptedPseudonym,
@@ -74,22 +96,6 @@ class ReferralService:
             )
             self.usage_metrics.registered(ura_number)
             return new_referral, True
-
-    def get_one(
-        self,
-        encrypted_pseudonym: EncryptedPseudonym,
-        ura_number: UraNumber,
-        source: str,
-    ) -> ReferralEntity | None:
-        with self.database.get_db_session() as session:
-            repo = session.get_repository(ReferralRepository)
-            referral = repo.find_one(
-                pseudonym=encrypted_pseudonym.value,
-                ura_number=str(ura_number),
-                source=source,
-            )
-
-        return referral
 
     def get_many(
         self,
@@ -154,32 +160,14 @@ class ReferralService:
             self.usage_metrics.deleted(ura_number, affected_rows)
         return affected_rows
 
-    def delete_one(
-        self,
-        encrypted_pseudonym: EncryptedPseudonym,
-        ura_number: UraNumber,
-        source: str,
-    ) -> None:
-        """
-        Method that removes a referral from the database
-        """
-        with self.database.get_db_session() as session:
-            referral_repository = session.get_repository(ReferralRepository)
-            referral = referral_repository.find_one(
-                pseudonym=encrypted_pseudonym.value,
-                ura_number=str(ura_number),
-                source=source,
-            )
-            if referral is None:
-                raise NotFoundError()
+    def delete_by_id(self, id: UUID, ura_number: UraNumber, source: str) -> None:
+        referral = self._get_owned(id, ura_number)
+        if self.delete_many(ura_number=ura_number, source=source, id=id) < 1:
+            raise NotFoundError()
 
-            referral_repository.delete_one(referral)
-
-    def delete_by_id(self, id: UUID) -> None:
-        with self.database.get_db_session() as session:
-            repo = session.get_repository(ReferralRepository)
-            target = repo.find_by_id(id)
-            if target is None:
-                raise NotFoundError()
-
-            repo.delete_one(target)
+        gflog.emit(
+            logger,
+            Log.REFERRAL_DELETED,
+            "Referral deleted",
+            fields={"pseudonym_hash": referral.pseudonym},
+        )

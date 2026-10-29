@@ -57,7 +57,7 @@ class LocalizationListServiceSpy:
         self.calls.append("delete")
         if self.delete_error is not None:
             raise self.delete_error
-        return None, 200
+        return None
 
     def delete_by_query(self, *_args: Any, **_kwargs: Any) -> Any:
         self.calls.append("delete_by_query")

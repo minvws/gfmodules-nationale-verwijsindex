@@ -78,6 +78,7 @@ class TestGet:
             service.get(created.id, OTHER_URA)
 
         assert Log.REFERRAL_ACCESS_DENIED.event_id in _event_ids(caplog)
+        assert Log.REFERRAL_SEARCHED_ON_ID.event_id not in _event_ids(caplog)
 
     def test_raises_not_found_for_unknown_id(self, service: LocalizationListService) -> None:
         with pytest.raises(NotFoundError):
@@ -124,32 +125,34 @@ class TestQuery:
 
 
 class TestDelete:
-    def test_deletes_and_reports_200(self, service: LocalizationListService) -> None:
+    def test_deletes_and_reports_success(self, service: LocalizationListService) -> None:
         created, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA)
         assert isinstance(created.id, UUID)
 
-        _, status = service.delete(created.id, AUTH_URA, AUTH_SOURCE)
+        outcome = service.delete(created.id, AUTH_URA, AUTH_SOURCE)
 
-        assert status == 200
+        assert outcome.issue[0].code == "informational"
+        assert service.query(_params(), AUTH_URA).total == 0
 
-    def test_reports_404_when_nothing_was_deleted(self, service: LocalizationListService) -> None:
+    def test_hides_another_uras_resource_behind_not_found(self, service: LocalizationListService) -> None:
         created, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA)
         assert isinstance(created.id, UUID)
 
-        outcome, status = service.delete(created.id, OTHER_URA, AUTH_SOURCE)
+        with pytest.raises(NotFoundError):
+            service.delete(created.id, OTHER_URA, AUTH_SOURCE)
 
-        assert status == 404
-        assert outcome.issue[0].code == "warning"
-
-    def test_hides_another_sources_resource_behind_404(self, service: LocalizationListService) -> None:
+    def test_hides_another_sources_resource_behind_not_found(self, service: LocalizationListService) -> None:
         created, _ = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA)
         assert isinstance(created.id, UUID)
 
-        outcome, status = service.delete(created.id, AUTH_URA, OTHER_SOURCE)
+        with pytest.raises(NotFoundError):
+            service.delete(created.id, AUTH_URA, OTHER_SOURCE)
 
-        assert status == 404
-        assert outcome.issue[0].code == "warning"
         assert service.query(_params(), AUTH_URA).total == 1
+
+    def test_raises_not_found_for_unknown_id(self, service: LocalizationListService) -> None:
+        with pytest.raises(NotFoundError):
+            service.delete(uuid4(), AUTH_URA, AUTH_SOURCE)
 
 
 class TestDeleteByQuery:
