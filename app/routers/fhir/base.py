@@ -20,15 +20,15 @@ router = APIRouter(tags=["FHIR"], prefix="/fhir")
 @router.post("", response_model_exclude_none=True)
 def register(
     data: Bundle[LocalizationList],
-    localisation_list_service: Annotated[BundleService, Depends(get_bundle_service)],
+    bundle_service: Annotated[BundleService, Depends(get_bundle_service)],
     ctx: Annotated[AuthContext, Depends(get_auth_context)],
 ) -> Any:
     results_bundle = Bundle[Any](entry=[])
-    valid_bundle = localisation_list_service.validate_localization_bundle_structure(data)
+    valid_bundle = bundle_service.validate_localization_bundle_structure(data)
     if not valid_bundle:
         raise InvalidModelError("Bundle.entry is invalid")
     for i, entry in enumerate(data.entry):
-        result = localisation_list_service.process_entry(
+        result = bundle_service.process_entry(
             ctx=ctx,
             entry=entry,
             index=i,

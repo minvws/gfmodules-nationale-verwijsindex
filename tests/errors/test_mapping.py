@@ -38,7 +38,7 @@ def _scope_error() -> UnauthorizedScopeError:
         pytest.param(_scope_error(), _spec("security", 403), id="unauthorized-scope-via-mro"),
         pytest.param(UnauthorizedManagingRequestError(), _spec("security", 403), id="unauthorized-managing-via-mro"),
         pytest.param(UnauthorizedUraError(), _spec("security", 403), id="unauthorized-ura-via-mro"),
-        pytest.param(RuntimeError("unexpected"), _spec("expression", 500, log=True), id="unmapped-falls-back-to-500"),
+        pytest.param(RuntimeError("unexpected"), _spec("exception", 500, log=True), id="unmapped-falls-back-to-500"),
     ],
 )
 def test_spec_for_resolves_the_expected_spec(exc: Exception, expected: ErrorSpec) -> None:
