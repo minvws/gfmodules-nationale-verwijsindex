@@ -90,24 +90,12 @@ class LocalizationListService:
                 resolved.encrypted, authenticated_ura, limit=page_size, offset=params.offset
             )
         else:
-            encrypted_pseudonym = resolved.encrypted if resolved else None
-            total = self.referral_service.count(
-                encrypted_pseudonym=encrypted_pseudonym,
+            total, referrals = self.referral_service.query(
+                authenticated_ura,
+                encrypted_pseudonym=(resolved.encrypted if resolved else None),
                 source=params.source,
-                ura_number=authenticated_ura,
-            )
-            referrals = self.referral_service.get_many(
-                encrypted_pseudonym=encrypted_pseudonym,
-                source=params.source,
-                ura_number=authenticated_ura,
                 limit=page_size,
                 offset=params.offset,
-            )
-            gflog.emit(
-                logger,
-                Log.REFERRALS_QUERIED,
-                "Referrals queried",
-                fields={"result_count": total},
             )
 
         bundle = Bundle(
@@ -158,8 +146,6 @@ class LocalizationListService:
         authenticated_ura: UraNumber,
         source: str,
     ) -> tuple[OperationOutcome, int]:
-        ura_number = authenticated_ura
-
         resolved: ResolvedPseudonym | None = None
         if params.subject:
             resolved = self._pseudonym_resolver.resolve(PseudonymToken(params.subject))
@@ -167,27 +153,13 @@ class LocalizationListService:
         deleted_count = self.referral_service.delete_many(
             encrypted_pseudonym=(resolved.encrypted if resolved else None),
             source=source,
-            ura_number=ura_number,
+            ura_number=authenticated_ura,
         )
 
         if deleted_count < 1:
             return (
                 OperationOutcome.make_error_outcome(code="not-found", msg="No resources matched the given criteria"),
                 404,
-            )
-        if resolved is not None:
-            gflog.emit(
-                logger,
-                Log.ALL_PATIENT_REFERRALS_DELETED,
-                "All patient referrals deleted",
-                fields={"pseudonym_hash": str(resolved.response), "deleted_count": deleted_count},
-            )
-        else:
-            gflog.emit(
-                logger,
-                Log.ALL_URA_REFERRALS_DELETED,
-                "All URA referrals deleted",
-                fields={"deleted_count": deleted_count},
             )
         return (
             OperationOutcome.make_good_outcome(f"{deleted_count} resources have been deleted successfully"),

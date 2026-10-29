@@ -131,6 +131,26 @@ class ReferralService:
                 source=source,
             )
 
+    def query(
+        self,
+        ura_number: UraNumber,
+        encrypted_pseudonym: EncryptedPseudonym | None = None,
+        source: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> tuple[int, Sequence[ReferralEntity]]:
+        total = self.count(ura_number=ura_number, encrypted_pseudonym=encrypted_pseudonym, source=source)
+        referrals = self.get_many(
+            ura_number=ura_number, encrypted_pseudonym=encrypted_pseudonym, source=source, limit=limit, offset=offset
+        )
+        gflog.emit(
+            logger,
+            Log.REFERRALS_QUERIED,
+            "Referrals queried",
+            fields={"result_count": total},
+        )
+        return total, referrals
+
     def localize(
         self,
         encrypted_pseudonym: EncryptedPseudonym,
@@ -165,7 +185,45 @@ class ReferralService:
         ura_number: UraNumber,
         encrypted_pseudonym: EncryptedPseudonym | None = None,
         source: str | None = None,
-        id: str | UUID | None = None,
+    ) -> int:
+        deleted_count = self._delete(ura_number=ura_number, encrypted_pseudonym=encrypted_pseudonym, source=source)
+        if deleted_count < 1:
+            return deleted_count
+
+        if encrypted_pseudonym is not None:
+            gflog.emit(
+                logger,
+                Log.ALL_PATIENT_REFERRALS_DELETED,
+                "All patient referrals deleted",
+                fields={"pseudonym_hash": str(encrypted_pseudonym), "deleted_count": deleted_count},
+            )
+        else:
+            gflog.emit(
+                logger,
+                Log.ALL_URA_REFERRALS_DELETED,
+                "All URA referrals deleted",
+                fields={"deleted_count": deleted_count},
+            )
+        return deleted_count
+
+    def delete_by_id(self, id: UUID, ura_number: UraNumber, source: str) -> None:
+        referral = self._get_owned(id, ura_number)
+        if self._delete(ura_number=ura_number, source=source, id=id) < 1:
+            raise NotFoundError()
+
+        gflog.emit(
+            logger,
+            Log.REFERRAL_DELETED,
+            "Referral deleted",
+            fields={"pseudonym_hash": referral.pseudonym},
+        )
+
+    def _delete(
+        self,
+        ura_number: UraNumber,
+        encrypted_pseudonym: EncryptedPseudonym | None = None,
+        source: str | None = None,
+        id: UUID | None = None,
     ) -> int:
         with self.database.get_db_session() as session:
             repo = session.get_repository(ReferralRepository)
@@ -181,15 +239,3 @@ class ReferralService:
         if affected_rows > 0:
             self.usage_metrics.deleted(ura_number, affected_rows)
         return affected_rows
-
-    def delete_by_id(self, id: UUID, ura_number: UraNumber, source: str) -> None:
-        referral = self._get_owned(id, ura_number)
-        if self.delete_many(ura_number=ura_number, source=source, id=id) < 1:
-            raise NotFoundError()
-
-        gflog.emit(
-            logger,
-            Log.REFERRAL_DELETED,
-            "Referral deleted",
-            fields={"pseudonym_hash": referral.pseudonym},
-        )
