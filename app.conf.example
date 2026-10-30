@@ -88,3 +88,9 @@ ssl_key_file = server.key
 # space separated list of expected audiences, one should be present in the authorization authorization header
 # usually the value is the domain of the running application
 expected_audiences = https://localhost:8501
+
+[pagination]
+# Number of entries returned per page when a search does not specify `_count`
+default_page_size = 50
+# Upper limit for `_count`, larger values are clamped to this value
+max_page_size = 100

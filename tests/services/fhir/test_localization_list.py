@@ -5,7 +5,9 @@ import pytest
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.logging.events import Log
-from app.models.fhir.resources.localization_list.request import LocalizationListParams
+from app.models.fhir.bundle import Bundle
+from app.models.fhir.resources.localization_list.request import LocalizationListSearchParams
+from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.ura import UraNumber
 from app.services.exceptions import NotFoundError, UnauthorizedUraError
 from app.services.fhir.localization_list import LocalizationListService
@@ -27,8 +29,25 @@ def service(referral_service: ReferralService, key_info_service: KeyInfoService)
     return LocalizationListService(referral_service=referral_service, pseudonym_resolver=resolver)
 
 
-def _params(subject: str | None = None, source: str | None = None) -> LocalizationListParams:
-    return LocalizationListParams.model_construct(subject=subject, source=source)
+def _params(
+    subject: str | None = None,
+    source: str | None = None,
+    count: int | None = None,
+    offset: int = 0,
+) -> LocalizationListSearchParams:
+    return LocalizationListSearchParams.model_construct(subject=subject, source=source, count=count, offset=offset)
+
+
+def _create_referrals(service: LocalizationListService, amount: int) -> None:
+    """Create referrals for AUTH_URA, one per source, as a pseudonym can only be registered once per source."""
+    for i in range(amount):
+        service.create(
+            make_list_resource(ura=str(AUTH_URA), source_id=f"SRC-{i:03}"), AUTH_URA, organization_name="Org"
+        )
+
+
+def _links(bundle: Bundle[LocalizationList]) -> dict[str, str]:
+    return {link.relation: link.url for link in bundle.link or []}
 
 
 def _event_ids(caplog: pytest.LogCaptureFixture) -> list[str]:
@@ -123,6 +142,145 @@ class TestQuery:
 
         assert service.query(_params(), AUTH_URA, organization_name="Org").total == 1
         assert service.query(_params(), OTHER_URA, organization_name="Other").total == 0
+
+
+class TestQueryPagination:
+    def test_uses_the_default_page_size(
+        self, referral_service: ReferralService, service: LocalizationListService
+    ) -> None:
+        paged = LocalizationListService(
+            referral_service=referral_service,
+            pseudonym_resolver=service._pseudonym_resolver,
+            default_page_size=2,
+            max_page_size=10,
+        )
+        _create_referrals(paged, 3)
+
+        bundle = paged.query(_params(), AUTH_URA, organization_name="Org")
+
+        assert bundle.total == 3
+        assert len(bundle.entry) == 2
+
+    def test_caps_the_requested_page_size(
+        self, referral_service: ReferralService, service: LocalizationListService
+    ) -> None:
+        paged = LocalizationListService(
+            referral_service=referral_service,
+            pseudonym_resolver=service._pseudonym_resolver,
+            default_page_size=1,
+            max_page_size=2,
+        )
+        _create_referrals(paged, 3)
+
+        bundle = paged.query(_params(count=50), AUTH_URA, organization_name="Org", request_url="List")
+
+        assert len(bundle.entry) == 2
+        assert _links(bundle)["self"] == "List?_count=2&_offset=0"
+
+    def test_total_counts_all_matches_while_entries_hold_the_page(self, service: LocalizationListService) -> None:
+        _create_referrals(service, 5)
+
+        bundle = service.query(_params(count=2, offset=4), AUTH_URA, organization_name="Org")
+
+        assert bundle.total == 5
+        assert len(bundle.entry) == 1
+
+    def test_pages_do_not_overlap(self, service: LocalizationListService) -> None:
+        _create_referrals(service, 5)
+
+        devices = [
+            entry.resource.get_device()
+            for offset in (0, 2, 4)
+            for entry in service.query(_params(count=2, offset=offset), AUTH_URA, organization_name="Org").entry
+            if entry.resource is not None
+        ]
+
+        assert sorted(devices) == [f"SRC-{i:03}" for i in range(5)]
+
+    def test_omits_links_without_a_request_url(self, service: LocalizationListService) -> None:
+        _create_referrals(service, 1)
+
+        assert service.query(_params(), AUTH_URA, organization_name="Org").link is None
+
+    def test_first_page_links_to_the_next_page(self, service: LocalizationListService) -> None:
+        _create_referrals(service, 5)
+
+        bundle = service.query(_params(count=2), AUTH_URA, organization_name="Org", request_url="List")
+
+        assert _links(bundle) == {
+            "self": "List?_count=2&_offset=0",
+            "next": "List?_count=2&_offset=2",
+        }
+
+    def test_middle_page_links_both_ways(self, service: LocalizationListService) -> None:
+        _create_referrals(service, 5)
+
+        bundle = service.query(_params(count=2, offset=2), AUTH_URA, organization_name="Org", request_url="List")
+
+        assert _links(bundle) == {
+            "self": "List?_count=2&_offset=2",
+            "next": "List?_count=2&_offset=4",
+            "previous": "List?_count=2&_offset=0",
+        }
+
+    def test_last_page_links_only_back(self, service: LocalizationListService) -> None:
+        _create_referrals(service, 5)
+
+        bundle = service.query(_params(count=2, offset=4), AUTH_URA, organization_name="Org", request_url="List")
+
+        assert _links(bundle) == {
+            "self": "List?_count=2&_offset=4",
+            "previous": "List?_count=2&_offset=2",
+        }
+
+    def test_previous_link_does_not_go_below_zero(self, service: LocalizationListService) -> None:
+        _create_referrals(service, 5)
+
+        bundle = service.query(_params(count=2, offset=1), AUTH_URA, organization_name="Org", request_url="List")
+
+        assert _links(bundle)["previous"] == "List?_count=2&_offset=0"
+
+    def test_links_keep_the_search_parameters(self, service: LocalizationListService) -> None:
+        _create_referrals(service, 1)
+
+        bundle = service.query(
+            _params(source="SRC-000", count=5, offset=0),
+            AUTH_URA,
+            organization_name="Org",
+            request_url="https://nvi.example/fhir/List?source%3Aidentifier=SRC-000&_count=5&_offset=0",
+        )
+
+        assert _links(bundle) == {
+            "self": "https://nvi.example/fhir/List?source%3Aidentifier=SRC-000&_count=5&_offset=0",
+        }
+
+    def test_localize_logs_the_total_instead_of_the_page_size(
+        self, service: LocalizationListService, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        _create_referrals(service, 3)
+
+        with caplog.at_level(logging.INFO):
+            service.query(_params(subject=TEST_PSEUDONYM_TOKEN, count=1), OTHER_URA, organization_name="Other")
+
+        counts = [
+            getattr(r, "result_count", None)
+            for r in caplog.records
+            if getattr(r, "event_id", None) == Log.LOCALIZATION_SUCCESS.event_id
+        ]
+        assert counts == [3]
+
+    def test_localize_beyond_the_last_page_still_counts_as_a_hit(
+        self, service: LocalizationListService, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        _create_referrals(service, 1)
+
+        with caplog.at_level(logging.INFO):
+            bundle = service.query(
+                _params(subject=TEST_PSEUDONYM_TOKEN, offset=10), OTHER_URA, organization_name="Other"
+            )
+
+        assert bundle.entry == []
+        assert Log.LOCALIZATION_SUCCESS.event_id in _event_ids(caplog)
 
 
 class TestDelete:

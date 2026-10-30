@@ -60,6 +60,8 @@ def container_config(binder: inject.Binder) -> None:
     localization_list_service = LocalizationListService(
         referral_service=referral_service,
         pseudonym_resolver=pseudonym_resolver,
+        default_page_size=config.pagination.default_page_size,
+        max_page_size=config.pagination.max_page_size,
     )
     binder.bind(LocalizationListService, localization_list_service)
 

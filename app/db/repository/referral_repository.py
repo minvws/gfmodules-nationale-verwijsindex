@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import and_, delete, exists, select
+from sqlalchemy import ColumnElement, and_, delete, exists, func, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db.decorator import repository
@@ -30,20 +30,53 @@ class ReferralRepository(RepositoryBase):
         pseudonym: str | None = None,
         ura_number: str | None = None,
         source: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
     ) -> Sequence[ReferralEntity]:
-        stmt = select(ReferralEntity)
-
-        if ura_number is not None:
-            stmt = stmt.where(ReferralEntity.ura_number == ura_number)
-
-        if pseudonym is not None:
-            stmt = stmt.where(ReferralEntity.pseudonym == pseudonym)
-
-        if source is not None:
-            stmt = stmt.where(ReferralEntity.source == source)
+        # A stable ordering is required to page through the results with limit and offset
+        stmt = (
+            select(ReferralEntity)
+            .where(*self._filters(pseudonym=pseudonym, ura_number=ura_number, source=source))
+            .order_by(ReferralEntity.created_at, ReferralEntity.id)
+            .offset(offset)
+            .limit(limit)
+        )
 
         results = self.db_session.execute(stmt).scalars().all()
         return results
+
+    def count(
+        self,
+        pseudonym: str | None = None,
+        ura_number: str | None = None,
+        source: str | None = None,
+    ) -> int:
+        stmt = (
+            select(func.count())
+            .select_from(ReferralEntity)
+            .where(*self._filters(pseudonym=pseudonym, ura_number=ura_number, source=source))
+        )
+
+        return self.db_session.execute(stmt).scalar_one()
+
+    @staticmethod
+    def _filters(
+        pseudonym: str | None = None,
+        ura_number: str | None = None,
+        source: str | None = None,
+    ) -> list[ColumnElement[bool]]:
+        filters: list[ColumnElement[bool]] = []
+
+        if ura_number is not None:
+            filters.append(ReferralEntity.ura_number == ura_number)
+
+        if pseudonym is not None:
+            filters.append(ReferralEntity.pseudonym == pseudonym)
+
+        if source is not None:
+            filters.append(ReferralEntity.source == source)
+
+        return filters
 
     def delete_many(
         self,

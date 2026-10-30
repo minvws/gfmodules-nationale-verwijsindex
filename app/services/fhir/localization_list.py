@@ -1,12 +1,16 @@
 import logging
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 from uuid import UUID
 
 import gfmodules.logging as gflog
 
 from app.logging.events import Log
-from app.models.fhir.bundle import Bundle, BundleEntry
+from app.models.fhir.bundle import Bundle, BundleEntry, BundleLink
 from app.models.fhir.resources.localization_list.request import (
+    COUNT_PARAM,
+    OFFSET_PARAM,
     LocalizationListParams,
+    LocalizationListSearchParams,
 )
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
@@ -26,9 +30,13 @@ class LocalizationListService:
         self,
         referral_service: ReferralService,
         pseudonym_resolver: PseudonymResolver,
+        default_page_size: int = 50,
+        max_page_size: int = 100,
     ) -> None:
         self.referral_service = referral_service
         self._pseudonym_resolver = pseudonym_resolver
+        self.default_page_size = default_page_size
+        self.max_page_size = max_page_size
 
     def create(
         self,
@@ -86,36 +94,83 @@ class LocalizationListService:
 
     def query(
         self,
-        params: LocalizationListParams,
+        params: LocalizationListSearchParams,
         authenticated_ura: UraNumber,
         organization_name: str,
+        request_url: str | None = None,
     ) -> Bundle[LocalizationList]:
+        """
+        Search for List resources and return a single page of results.
+
+        When `request_url` is given, the bundle links to the current, next and previous page.
+        """
         resolved: ResolvedPseudonym | None = None
         if params.subject:
             resolved = self._pseudonym_resolver.resolve_token(params.subject)
 
+        page_size = min(params.count or self.default_page_size, self.max_page_size)
+
         if params.is_localize_params() and resolved is not None:
-            referrals = self.referral_service.localize(resolved.encrypted, authenticated_ura, organization_name)
+            total, referrals = self.referral_service.localize(
+                resolved.encrypted,
+                authenticated_ura,
+                organization_name,
+                limit=page_size,
+                offset=params.offset,
+            )
         else:
-            referrals = self.referral_service.get_many(
-                encrypted_pseudonym=(resolved.encrypted if resolved else None),
+            encrypted_pseudonym = resolved.encrypted if resolved else None
+            total = self.referral_service.count(
+                encrypted_pseudonym=encrypted_pseudonym,
                 source=params.source,
                 ura_number=authenticated_ura,
+            )
+            referrals = self.referral_service.get_many(
+                encrypted_pseudonym=encrypted_pseudonym,
+                source=params.source,
+                ura_number=authenticated_ura,
+                limit=page_size,
+                offset=params.offset,
             )
             gflog.emit(
                 logger,
                 Log.REFERRALS_QUERIED,
                 "Referrals queried",
-                fields={"ura_number": str(authenticated_ura), "result_count": len(referrals)},
+                fields={"ura_number": str(authenticated_ura), "result_count": total},
             )
 
         bundle = Bundle(
             type="searchset",
-            total=len(referrals),
+            total=total,
+            link=(
+                self._page_links(request_url, page_size=page_size, offset=params.offset, total=total)
+                if request_url is not None
+                else None
+            ),
             entry=[BundleEntry(resource=LocalizationList.from_referral(r)) for r in referrals],
         )
 
         return bundle
+
+    @staticmethod
+    def _page_links(request_url: str, page_size: int, offset: int, total: int) -> list[BundleLink]:
+        def page_url(page_offset: int) -> str:
+            parsed = urlparse(request_url)
+            query = [
+                (key, value)
+                for key, value in parse_qsl(parsed.query, keep_blank_values=True)
+                if key not in (COUNT_PARAM, OFFSET_PARAM)
+            ]
+            query += [(COUNT_PARAM, str(page_size)), (OFFSET_PARAM, str(page_offset))]
+            return urlunparse(parsed._replace(query=urlencode(query)))
+
+        links = [BundleLink(relation="self", url=page_url(offset))]
+        if offset + page_size < total:
+            links.append(BundleLink(relation="next", url=page_url(offset + page_size)))
+        if offset > 0:
+            links.append(BundleLink(relation="previous", url=page_url(max(offset - page_size, 0))))
+
+        return links
 
     def delete(
         self,

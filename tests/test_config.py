@@ -1,4 +1,5 @@
-from pydantic import SecretStr
+import pytest
+from pydantic import SecretStr, ValidationError
 
 from app.config import (
     Config,
@@ -7,6 +8,7 @@ from app.config import (
     ConfigCryptoServiceApi,
     ConfigDatabase,
     ConfigLogging,
+    ConfigPagination,
     ConfigTelemetry,
     ConfigUvicorn,
     LogLevel,
@@ -52,3 +54,15 @@ def get_test_config() -> Config:
             expected_audiences=["test-audience"],
         ),
     )
+
+
+def test_pagination_defaults_when_the_section_is_missing() -> None:
+    config = get_test_config()
+
+    assert config.pagination.default_page_size == 50
+    assert config.pagination.max_page_size == 100
+
+
+def test_pagination_rejects_a_default_larger_than_the_maximum() -> None:
+    with pytest.raises(ValidationError):
+        ConfigPagination(default_page_size=200, max_page_size=100)

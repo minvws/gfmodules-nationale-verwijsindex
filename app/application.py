@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -21,6 +21,7 @@ from app.config import (
 )
 from app.errors.handlers import register_exceptions
 from app.logging.events import Log
+from app.models.fhir.resources.localization_list.request import COUNT_PARAM
 from app.routers.default import router as default_router
 from app.routers.fhir.base import router as fhir_base_router
 from app.routers.fhir.localization_list import router as fhir_list_router
@@ -122,6 +123,42 @@ def api_key_headers(document_gf_headers: bool) -> list[Any]:
     return [Security(APIKeyHeader(name=header, scheme_name=header, auto_error=False)) for header in headers]
 
 
+def _count_params(schema: dict[str, Any]) -> Iterator[dict[str, Any]]:
+    for operations in schema.get("paths", {}).values():
+        for operation in operations.values():
+            yield from (
+                param
+                for param in operation.get("parameters", [])
+                if param.get("in") == "query" and param.get("name") == COUNT_PARAM
+            )
+
+
+def _set_page_sizes(param: dict[str, Any], default_page_size: int, max_page_size: int) -> None:
+    param["description"] = (
+        f"Number of entries per page. Defaults to {default_page_size}, larger values are capped at {max_page_size}"
+    )
+    param["schema"]["default"] = default_page_size
+    for option in param["schema"].get("anyOf", [param["schema"]]):
+        if option.get("type") == "integer":
+            option["maximum"] = max_page_size
+
+
+def _document_page_sizes(app: FastAPI, default_page_size: int, max_page_size: int) -> None:
+    """
+    Shows the configured page sizes on the `_count` parameter in the OpenAPI schema. The maximum is not
+    validated on the parameter itself: FHIR treats `_count` as a hint, so a larger value is capped instead of rejected.
+    """
+    generate = app.openapi
+
+    def openapi() -> dict[str, Any]:
+        if app.openapi_schema is None:
+            for param in _count_params(generate()):
+                _set_page_sizes(param, default_page_size, max_page_size)
+        return app.openapi_schema  # type: ignore[return-value]
+
+    app.openapi = openapi  # type: ignore[method-assign]
+
+
 def setup_fastapi() -> FastAPI:
     config = get_config()
     fastapi = (
@@ -154,6 +191,7 @@ def setup_fastapi() -> FastAPI:
         fastapi.include_router(router, dependencies=[Depends(get_auth_ctx)])
 
     register_exceptions(fastapi)
+    _document_page_sizes(fastapi, config.pagination.default_page_size, config.pagination.max_page_size)
 
     fastapi.add_middleware(
         RequestContextMiddleware,

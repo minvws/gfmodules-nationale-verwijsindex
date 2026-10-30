@@ -233,7 +233,7 @@ def test_localize_logs_success_for_the_requesting_organization(
     )
 
     with caplog.at_level(logging.INFO):
-        referrals = referral_service.localize(pseudonym, REQUESTING_URA, organization_name="Requesting Org")
+        _, referrals = referral_service.localize(pseudonym, REQUESTING_URA, organization_name="Requesting Org")
 
     (fields,) = logged_fields(caplog, Log.LOCALIZATION_SUCCESS)
     assert len(referrals) == 1
@@ -248,7 +248,7 @@ def test_localize_logs_no_match_for_the_requesting_organization(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     with caplog.at_level(logging.INFO):
-        referrals = referral_service.localize(
+        _, referrals = referral_service.localize(
             EncryptedPseudonym("ps-1", "123"), REQUESTING_URA, organization_name="Requesting Org"
         )
 

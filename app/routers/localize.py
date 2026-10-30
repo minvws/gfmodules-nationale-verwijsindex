@@ -25,6 +25,6 @@ def localize(
 ) -> Any:
     resolved = pseudonym_resolver.resolve_jwe(jwe=data.pseudonym, blind_factor=data.oprf_key)
 
-    results = referral_service.localize(resolved.encrypted, ctx.claims.ura_number, ctx.claims.organization_name)
+    _, results = referral_service.localize(resolved.encrypted, ctx.claims.ura_number, ctx.claims.organization_name)
 
     return [Registration.from_entity(r) for r in results]
