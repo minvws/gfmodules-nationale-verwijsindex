@@ -60,9 +60,11 @@ The request context also holds these, but an event carries them only on the stre
 | `REFERRAL_REGISTRATION_FAILED` | 900404 | WARNING | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `REFERRAL_REGISTRATION_ERROR` | 900404 | ERROR | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `REFERRAL_ACCESS_DENIED` | 900405 | WARNING | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `resource_ura` |
+| `REFERRAL_QUERY_FAILED` | 900406 | WARNING | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `REFERRAL_DELETED` | 900500 | INFO | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name` |
 | `ALL_PATIENT_REFERRALS_DELETED` | 900501 | WARNING | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `deleted_count` |
 | `ALL_URA_REFERRALS_DELETED` | 900503 | CRITICAL | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `deleted_count` |
+| `REFERRALS_DELETE_FAILED` | 900504 | WARNING | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `LOCALIZATION_SUCCESS` | 900600 | INFO | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `pseudonym_hash` |
 | `LOCALIZATION_FAILED` | 900601 | WARNING | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `error_reason`, `http_status` |
 | `LOCALIZATION_ERROR` | 900601 | ERROR | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `error_reason`, `http_status` |
@@ -82,8 +84,10 @@ The request context also holds these, but an event carries them only on the stre
 | `REFERRAL_REGISTRATION_FAILED` | 900404 | WARNING | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `REFERRAL_REGISTRATION_ERROR` | 900404 | ERROR | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `REFERRAL_ACCESS_DENIED` | 900405 | WARNING | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `resource_ura` |
+| `REFERRAL_QUERY_FAILED` | 900406 | WARNING | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `ALL_PATIENT_REFERRALS_DELETED` | 900501 | WARNING | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `deleted_count` |
 | `ALL_URA_REFERRALS_DELETED` | 900503 | CRITICAL | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `deleted_count` |
+| `REFERRALS_DELETE_FAILED` | 900504 | WARNING | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `LOCALIZATION_SUCCESS` | 900600 | INFO | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `result_count` |
 | `LOCALIZATION_FAILED` | 900601 | WARNING | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `error_reason`, `http_status` |
 | `LOCALIZATION_ERROR` | 900601 | ERROR | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `error_reason`, `http_status` |

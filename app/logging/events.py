@@ -107,6 +107,15 @@ class Log(_Base):
             _SIEM: (*_CALLER, "resource_ura"),
         },
     )
+    REFERRAL_QUERY_FAILED = LogEvent(  # NVI-REF-007
+        "900406",
+        logging.WARNING,
+        (_APP, _SIEM),
+        {
+            _APP: (*_CALLER, "http_status", "error_reason"),
+            _SIEM: (*_CALLER, "http_status", "error_reason"),
+        },
+    )
 
     REFERRAL_DELETED = LogEvent(  # NVI-DEL-001
         "900500",
@@ -135,6 +144,15 @@ class Log(_Base):
             _PUB: ("organization_name", "organization_identifier", "deleted_count"),
             _APP: (*_CALLER, "deleted_count"),
             _SIEM: (*_CALLER, "deleted_count"),
+        },
+    )
+    REFERRALS_DELETE_FAILED = LogEvent(  # NVI-DEL-005
+        "900504",
+        logging.WARNING,
+        (_APP, _SIEM),
+        {
+            _APP: (*_CALLER, "http_status", "error_reason"),
+            _SIEM: (*_CALLER, "http_status", "error_reason"),
         },
     )
 
