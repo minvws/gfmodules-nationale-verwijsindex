@@ -1,6 +1,7 @@
 import logging
 from typing import no_type_check
 
+import gfmodules.logging as gflog
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -9,6 +10,8 @@ from gfmodules.logging.middleware import restore_request_context
 
 from app.errors.fhir import FHIRError
 from app.errors.mapping import DEFAULT_SPEC, EXCEPTION_MAP, UNEXPECTED_ERROR_MESSAGE, spec_for
+from app.logging.context import bind_auth_claims
+from app.logging.events import Log
 from app.models.fhir.resources.operation_outcome.resource import (
     OperationOutcome,
     OperationOutcomeDetail,
@@ -41,10 +44,26 @@ def log_rejection(status_code: int, exc: Exception) -> None:
     )
 
 
+def log_invalid_request(status_code: int, reason: str) -> None:
+    gflog.emit(
+        logger,
+        Log.INVALID_REQUEST,
+        "Invalid request rejected",
+        fields={"http_status": status_code, "error_reason": reason},
+    )
+
+
+def _log_invalid_request(request: Request, status_code: int, exc: Exception) -> None:
+    with bind_auth_claims(getattr(request.state, "auth", None)):
+        log_invalid_request(status_code, _summarize_reason(exc))
+
+
 def handle_mapped_exception(request: Request, exc: Exception) -> JSONResponse:
     spec = spec_for(exc)
     status_code = spec.http_status
     log_rejection(status_code, exc)
+    if spec.invalid_input:
+        _log_invalid_request(request, status_code, exc)
 
     if "fhir" in request.url.path:
         fhir_error = FHIRError(severity=spec.severity, code=spec.fhir_code, msg=str(exc))
@@ -61,6 +80,7 @@ def handle_request_validation_exception(req: Request, exc: RequestValidationErro
     path = req.url.path
     status_code = 422
     log_rejection(status_code, exc)
+    _log_invalid_request(req, status_code, exc)
     if "fhir" in path:
         issues = []
 

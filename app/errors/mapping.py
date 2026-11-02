@@ -20,6 +20,7 @@ class ErrorSpec(BaseModel):
     fhir_code: str
     http_status: int
     log: bool = False
+    invalid_input: bool = False
 
 
 # `spec_for` resolves an exception through its MRO, so a subclass picks up its base
@@ -30,11 +31,11 @@ EXCEPTION_MAP: dict[type[Exception], ErrorSpec] = {
     ForbiddenError: ErrorSpec(severity="error", fhir_code="forbidden", http_status=403),
     UnauthorizedError: ErrorSpec(severity="error", fhir_code="security", http_status=403),
     InvalidKeyInfoError: ErrorSpec(severity="error", fhir_code="transient", http_status=503),
-    InvalidModelError: ErrorSpec(severity="error", fhir_code="structure", http_status=400),
+    InvalidModelError: ErrorSpec(severity="error", fhir_code="structure", http_status=400, invalid_input=True),
     InvalidHeaderPropertyError: ErrorSpec(severity="error", fhir_code="invalid", http_status=401),
-    PseudonymError: ErrorSpec(severity="error", fhir_code="invalid", http_status=422),
+    PseudonymError: ErrorSpec(severity="error", fhir_code="invalid", http_status=422, invalid_input=True),
     PseudonymExchangeError: ErrorSpec(severity="error", fhir_code="invalid", http_status=400, log=True),
-    ValueError: ErrorSpec(severity="error", fhir_code="invalid", http_status=400, log=True),
+    ValueError: ErrorSpec(severity="error", fhir_code="invalid", http_status=400, invalid_input=True),
 }
 
 # Applied to any exception without a mapped type (rendered as HTTP 500). Unmapped
