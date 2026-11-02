@@ -14,6 +14,7 @@ class AuthHeaders(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     oin: Annotated[str, Field(alias="x-gf-act-sub")]  # org acting on behalf of main
+    acting_organization_name: Annotated[str, Field(alias="x-gf-act-cn")]
     source_id: Annotated[str | None, Field(alias="x-gf-source-id", default=None)]
     ura: Annotated[str, Field(alias="x-gf-sub")]  # main org
     audience: Annotated[str, Field(alias="x-gf-audience")]

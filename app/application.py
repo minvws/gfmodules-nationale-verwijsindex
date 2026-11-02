@@ -13,13 +13,14 @@ from fastapi.security import APIKeyHeader
 from gfmodules.logging.middleware import RequestContextMiddleware
 
 from app import container
-from app.auth import get_auth_ctx
+from app.auth import auth_log_context, get_auth_ctx
 from app.config import (
     _ENVIRONMENT_CONFIG_PATH_NAME,
     _PATH,
     get_config,
 )
 from app.errors.handlers import register_exceptions
+from app.logging.context import CLAIM_FIELDS
 from app.logging.events import Log
 from app.models.fhir.resources.localization_list.request import COUNT_PARAM
 from app.routers.default import router as default_router
@@ -83,7 +84,12 @@ def create_fastapi_app() -> FastAPI:
 
 def setup_logging() -> None:
     config = get_config()
-    gflog.configure(config=config.logging, loglevel=config.app.loglevel, catalogue=Log)
+    gflog.configure(
+        config=config.logging,
+        loglevel=config.app.loglevel,
+        catalogue=Log,
+        extra_context_fields=CLAIM_FIELDS,
+    )
 
 
 def _read_version() -> str:
@@ -188,7 +194,7 @@ def setup_fastapi() -> FastAPI:
         fastapi.include_router(router)
 
     for router in routers:
-        fastapi.include_router(router, dependencies=[Depends(get_auth_ctx)])
+        fastapi.include_router(router, dependencies=[Depends(get_auth_ctx), Depends(auth_log_context)])
 
     register_exceptions(fastapi)
     _document_page_sizes(fastapi, config.pagination.default_page_size, config.pagination.max_page_size)

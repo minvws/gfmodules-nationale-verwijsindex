@@ -33,7 +33,6 @@ def _seed_referrals(referral_service: ReferralService, key_info_service: KeyInfo
             encrypted_pseudonym=EncryptedPseudonym(encrypted_data=f"pseudonym-{i}", iv="iv"),
             ura_number=UraNumber(TEST_URA),
             source=TEST_SOURCE_ID,
-            organization_name="Org",
             key_id=key_id,
         )
 
