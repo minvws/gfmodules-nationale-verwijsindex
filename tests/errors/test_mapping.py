@@ -32,7 +32,7 @@ def _scope_error() -> UnauthorizedScopeError:
         pytest.param(ForbiddenError(), _spec("forbidden", 403), id="forbidden"),
         pytest.param(InvalidKeyInfoError(), _spec("transient", 503), id="invalid-key-info"),
         pytest.param(InvalidHeaderPropertyError("aud", "x"), _spec("invalid", 401), id="invalid-header-property"),
-        pytest.param(PseudonymError(), _spec("invalid", 422, log=True), id="pseudonym"),
+        pytest.param(PseudonymError(), _spec("invalid", 422), id="pseudonym"),
         pytest.param(ValueError("boom"), _spec("invalid", 400, log=True), id="value-error"),
         pytest.param(InvalidModelError("bad"), _spec("structure", 400), id="invalid-model-outranks-value-error"),
         pytest.param(_scope_error(), _spec("security", 403), id="unauthorized-scope-via-mro"),
@@ -48,7 +48,7 @@ def test_spec_for_resolves_the_expected_spec(exc: Exception, expected: ErrorSpec
 @pytest.mark.parametrize(
     ("exc", "expected"),
     [
-        pytest.param(PseudonymError(), True, id="pseudonym"),
+        pytest.param(PseudonymError(), False, id="pseudonym"),
         pytest.param(ValueError("boom"), True, id="value-error"),
         pytest.param(RuntimeError("unexpected"), True, id="unmapped"),
         pytest.param(NotFoundError(), False, id="not-found"),

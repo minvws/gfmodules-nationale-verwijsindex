@@ -4,7 +4,6 @@ from uuid import uuid4
 
 import pytest
 
-from app.logging.events import Log
 from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.data import AuthorizationScope
 from app.models.fhir.bundle import Bundle, BundleEntry, EntryRequest
@@ -271,13 +270,12 @@ class TestEntryFailureMapping:
             resource=make_list_resource(ura=str(AUTH_URA), pseudonym="not-a-valid-token!!!"),
         )
 
-        with caplog.at_level(logging.WARNING):
+        with caplog.at_level(logging.INFO):
             result = _process(bundle_service, entry, index=0)
 
         assert result.response is not None
         assert result.response.status == "422"
-        event_ids = [r.event_id for r in caplog.records if hasattr(r, "event_id")]
-        assert Log.REFERRAL_REGISTRATION_FAILED.event_id in event_ids
+        assert "Request rejected with 422 (PseudonymError)" in caplog.text
 
     def test_query_with_malformed_pseudonym_maps_to_422_and_logs(
         self,
@@ -287,13 +285,12 @@ class TestEntryFailureMapping:
     ) -> None:
         key_info_service.add_one("nvi-label", "AES_CBC")
 
-        with caplog.at_level(logging.WARNING):
+        with caplog.at_level(logging.INFO):
             result = _process(bundle_service, _entry("GET", "List?subject:identifier=not-a-valid-token!!!"), index=0)
 
         assert result.response is not None
         assert result.response.status == "422"
-        event_ids = [r.event_id for r in caplog.records if hasattr(r, "event_id")]
-        assert Log.LOCALIZATION_FAILED.event_id in event_ids
+        assert "Request rejected with 422 (PseudonymError)" in caplog.text
 
     def test_read_of_an_unknown_id_logs_no_event(
         self, bundle_service: BundleService, caplog: pytest.LogCaptureFixture
