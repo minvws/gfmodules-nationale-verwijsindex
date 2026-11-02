@@ -226,3 +226,46 @@ def test_delete_many_without_pseudonym_removes_referrals_of_the_source(
 
     assert pseudonym_referral_service.delete_many(ura_number, source=SOURCE) == 2
     assert pseudonym_referral_service.query(ura_number)[0] == 1
+
+
+def test_query_logs_a_failure_when_the_pseudonym_is_rejected(
+    rejecting_service: PseudonymReferralService, ura_number: UraNumber, caplog: pytest.LogCaptureFixture
+) -> None:
+    with caplog.at_level(logging.INFO), pytest.raises(PseudonymExchangeError):
+        rejecting_service.query(ura_number, pseudonym=PSEUDONYM)
+
+    (fields,) = logged_fields(caplog, Log.REFERRAL_QUERY_FAILED)
+    assert fields["http_status"] == 400
+
+
+def test_query_without_a_pseudonym_logs_no_failure(
+    pseudonym_referral_service: PseudonymReferralService, ura_number: UraNumber, caplog: pytest.LogCaptureFixture
+) -> None:
+    with caplog.at_level(logging.INFO):
+        pseudonym_referral_service.query(ura_number)
+
+    assert logged_fields(caplog, Log.REFERRAL_QUERY_FAILED) == []
+
+
+def test_delete_many_logs_a_failure_when_it_breaks(
+    failing_service: PseudonymReferralService, ura_number: UraNumber, caplog: pytest.LogCaptureFixture
+) -> None:
+    with caplog.at_level(logging.INFO), pytest.raises(RuntimeError):
+        failing_service.delete_many(ura_number, pseudonym=PSEUDONYM, source=SOURCE)
+
+    (fields,) = logged_fields(caplog, Log.REFERRALS_DELETE_FAILED)
+    assert fields["http_status"] == 500
+    assert fields["error_reason"] == "boom"
+
+
+def test_delete_many_logs_no_failure_when_nothing_matches(
+    pseudonym_referral_service: PseudonymReferralService,
+    key_info_service: KeyInfoService,
+    ura_number: UraNumber,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    key_info_service.add_one("nvi-label", "AES_CBC")
+    with caplog.at_level(logging.INFO):
+        assert pseudonym_referral_service.delete_many(ura_number, pseudonym=PSEUDONYM, source=SOURCE) == 0
+
+    assert logged_fields(caplog, Log.REFERRALS_DELETE_FAILED) == []
