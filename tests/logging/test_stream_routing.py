@@ -14,6 +14,7 @@ _LOGGER_NAME = "app.test_stream_routing"
 _ORGANIZATION = "some_name"
 _URA = "12345678"
 _OIN = "00000001123456700000"
+_ACTING_ORGANIZATION_NAME = "client.example.nl"
 _PSEUDONYM_HASH = "abcd1234abcd1234"
 
 Routed = dict[LoggingStreams, list[dict[str, Any]]]
@@ -41,6 +42,7 @@ def route() -> Iterator[Any]:
             "organization_name": _ORGANIZATION,
             "organization_identifier": _URA,
             "acting_organization_identifier": _OIN,
+            "acting_organization_name": _ACTING_ORGANIZATION_NAME,
         }
     ):
         yield _route
@@ -62,12 +64,15 @@ class TestReferralRegistration:
         assert message["organization_name"] == _ORGANIZATION
         assert message["organization_identifier"] == _URA
         assert message["pseudonym_hash"] == _PSEUDONYM_HASH
-        assert_fields_absent(routed[LoggingStreams.PUBLIC_INSPECT], "acting_organization_identifier")
+        assert_fields_absent(
+            routed[LoggingStreams.PUBLIC_INSPECT], "acting_organization_identifier", "acting_organization_name"
+        )
 
     def test_app_receives_the_organizations_but_not_the_pseudonym_hash(self, routed: Routed) -> None:
         message = routed[LoggingStreams.APP][0]
         assert message["organization_identifier"] == _URA
         assert message["acting_organization_identifier"] == _OIN
+        assert message["acting_organization_name"] == _ACTING_ORGANIZATION_NAME
         assert_fields_absent(routed[LoggingStreams.APP], "pseudonym_hash", "organization_name")
 
     def test_siem_receives_nothing_at_all(self, routed: Routed) -> None:
@@ -113,12 +118,18 @@ class TestLocalization:
         message = routed[LoggingStreams.PUBLIC_INSPECT][0]
         assert message["organization_name"] == _ORGANIZATION
         assert message["pseudonym_hash"] == _PSEUDONYM_HASH
-        assert_fields_absent(routed[LoggingStreams.PUBLIC_INSPECT], "result_count", "acting_organization_identifier")
+        assert_fields_absent(
+            routed[LoggingStreams.PUBLIC_INSPECT],
+            "result_count",
+            "acting_organization_identifier",
+            "acting_organization_name",
+        )
 
     def test_app_receives_the_pseudonym_hash_but_not_the_organization_name(self, routed: Routed) -> None:
         message = routed[LoggingStreams.APP][0]
         assert message["organization_identifier"] == _URA
         assert message["acting_organization_identifier"] == _OIN
+        assert message["acting_organization_name"] == _ACTING_ORGANIZATION_NAME
         assert message["pseudonym_hash"] == _PSEUDONYM_HASH
         assert_fields_absent(routed[LoggingStreams.APP], "result_count", "organization_name")
 
@@ -126,6 +137,7 @@ class TestLocalization:
         message = routed[LoggingStreams.SIEM][0]
         assert message["organization_identifier"] == _URA
         assert message["acting_organization_identifier"] == _OIN
+        assert message["acting_organization_name"] == _ACTING_ORGANIZATION_NAME
         assert message["result_count"] == 3
         assert_fields_absent(routed[LoggingStreams.SIEM], "pseudonym_hash", "organization_name")
 

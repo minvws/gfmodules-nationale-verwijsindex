@@ -9,6 +9,7 @@ class AuthenticationClaims:
     ura_number: UraNumber
     organization_name: str
     oin: str
+    acting_organization_name: str
     source_id: str | None = None
 
 

@@ -34,6 +34,7 @@ TEST_URA = "00000001"
 TEST_SOURCE_ID = "SRC-001"
 TEST_OIN = "00000000000000000001"
 TEST_ORG_NAME = "Test Organization"
+TEST_ACTING_ORG_NAME = "client.example.nl"
 
 
 def make_auth_context(
@@ -53,6 +54,7 @@ def make_auth_context(
             organization_name=TEST_ORG_NAME,
             source_id=source_id,
             oin=TEST_OIN,
+            acting_organization_name=TEST_ACTING_ORG_NAME,
         ),
         scope=scopes,
         audience="nvi.service",
@@ -66,6 +68,7 @@ def make_localize_auth_context(ura: str = TEST_URA) -> AuthContext:
             organization_name=TEST_ORG_NAME,
             source_id=None,
             oin=TEST_OIN,
+            acting_organization_name=TEST_ACTING_ORG_NAME,
         ),
         scope=[AuthorizationScope.LOCALIZE],
         audience="nvi.service",
