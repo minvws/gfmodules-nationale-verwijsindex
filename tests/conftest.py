@@ -15,6 +15,7 @@ from app.db.models.key_info import KeyInfoEntity
 from app.db.models.referral import ReferralEntity
 from app.db.repository.key_info_repository import KeyInfoRepository
 from app.db.repository.referral_repository import ReferralRepository
+from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.logging.context import CLAIM_FIELDS
 from app.logging.events import Log
 from app.metrics import UsageMetrics
@@ -39,6 +40,8 @@ from app.models.ura import UraNumber
 from app.services.auth.header import AuthHeaderService
 from app.services.http import HttpService
 from app.services.key_info import KeyInfoService
+from app.services.pseudonym_referral_service import PseudonymReferralService
+from app.services.pseudonym_resolver import PseudonymResolver
 from app.services.referral_service import ReferralService
 from tests.test_config import get_test_config
 
@@ -195,6 +198,14 @@ def referral_service(database: Database, usage_metrics: UsageMetrics) -> Referra
 @pytest.fixture()
 def key_info_service(database: Database) -> KeyInfoService:
     return KeyInfoService(database)
+
+
+@pytest.fixture
+def pseudonym_referral_service(
+    referral_service: ReferralService, key_info_service: KeyInfoService
+) -> PseudonymReferralService:
+    resolver = PseudonymResolver(crypto_client=CryptoServiceApiClientMock(), key_info_service=key_info_service)
+    return PseudonymReferralService(referral_service=referral_service, pseudonym_resolver=resolver)
 
 
 @pytest.fixture()
