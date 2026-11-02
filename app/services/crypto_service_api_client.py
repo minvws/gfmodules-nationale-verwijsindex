@@ -4,7 +4,7 @@ from json import JSONDecodeError
 from requests.exceptions import ConnectionError, HTTPError, Timeout
 
 from app.config import ConfigCryptoServiceApi
-from app.models.pseudonym import PseudonymResponse
+from app.models.pseudonym import OprfPseudonym, PseudonymResponse
 from app.services.http import HttpService
 
 logger = logging.getLogger(__name__)
@@ -20,14 +20,14 @@ class CryptoServiceApiClient:
             verify_ca=config.verify_ca,
         )
 
-    def exchange(self, jwe: str, blind_factor: str, label: str, mechanism: str) -> PseudonymResponse:
+    def exchange(self, pseudonym: OprfPseudonym, label: str, mechanism: str) -> PseudonymResponse:
         try:
             response = self._http.do_request(
                 method="POST",
                 sub_route="process",
                 data={
-                    "jwe": jwe,
-                    "blind_factor": blind_factor,
+                    "jwe": pseudonym.jwe,
+                    "blind_factor": pseudonym.blind_factor,
                     "label": label,
                     "mechanism": mechanism,
                 },

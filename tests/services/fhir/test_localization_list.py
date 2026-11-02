@@ -73,15 +73,15 @@ class TestCreate:
 
         assert _event_ids(caplog) == [Log.REFERRAL_ACCESS_DENIED.event_id]
 
-    def test_logs_a_failed_registration_for_an_invalid_pseudonym(
+    def test_rejects_an_invalid_pseudonym_without_a_failure_event(
         self, service: LocalizationListService, caplog: pytest.LogCaptureFixture
     ) -> None:
         data = make_list_resource(ura=str(AUTH_URA), pseudonym=INVALID_PSEUDONYM_TOKEN)
 
-        with caplog.at_level(logging.INFO), pytest.raises(PseudonymError):
+        with caplog.at_level(logging.INFO), pytest.raises(PseudonymError, match="List.subject.identifier.value"):
             service.create(data, AUTH_URA)
 
-        assert _event_ids(caplog) == [Log.REFERRAL_REGISTRATION_FAILED.event_id]
+        assert _event_ids(caplog) == []
 
     def test_is_idempotent(self, service: LocalizationListService) -> None:
         first, first_created = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA)
@@ -138,23 +138,12 @@ class TestQuery:
         assert bundle.total == 0
         assert Log.LOCALIZATION_NO_MATCH.event_id in _event_ids(caplog)
 
-    def test_localize_with_an_invalid_pseudonym_logs_a_localization_failure(
-        self, service: LocalizationListService, caplog: pytest.LogCaptureFixture
+    @pytest.mark.parametrize("source", [None, AUTH_SOURCE], ids=["localize", "own-source"])
+    def test_rejects_an_invalid_pseudonym_without_a_failure_event(
+        self, service: LocalizationListService, source: str | None, caplog: pytest.LogCaptureFixture
     ) -> None:
-        params = _params(subject=INVALID_PSEUDONYM_TOKEN)
-
-        with caplog.at_level(logging.INFO), pytest.raises(PseudonymError):
-            service.query(params, AUTH_URA)
-
-        assert _event_ids(caplog) == [Log.LOCALIZATION_FAILED.event_id]
-
-    def test_own_source_query_with_an_invalid_pseudonym_is_not_a_localization(
-        self, service: LocalizationListService, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        params = _params(subject=INVALID_PSEUDONYM_TOKEN, source=AUTH_SOURCE)
-
-        with caplog.at_level(logging.INFO), pytest.raises(PseudonymError):
-            service.query(params, AUTH_URA)
+        with caplog.at_level(logging.INFO), pytest.raises(PseudonymError, match="subject:identifier"):
+            service.query(_params(subject=INVALID_PSEUDONYM_TOKEN, source=source), AUTH_URA)
 
         assert _event_ids(caplog) == []
 

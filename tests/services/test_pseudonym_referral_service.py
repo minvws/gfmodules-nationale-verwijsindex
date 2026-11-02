@@ -6,9 +6,9 @@ from gfmodules.logging import LogEvent
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.logging.events import Log
-from app.models.pseudonym import OprfPseudonym, PseudonymResponse, PseudonymToken
+from app.models.pseudonym import OprfPseudonym, PseudonymResponse
 from app.models.ura import UraNumber
-from app.services.exceptions import InvalidKeyInfoError, PseudonymError
+from app.services.exceptions import InvalidKeyInfoError
 from app.services.key_info import KeyInfoService
 from app.services.pseudonym_referral_service import PseudonymReferralService
 from app.services.pseudonym_resolver import PseudonymResolver
@@ -19,23 +19,38 @@ SOURCE = "SomeDevice"
 OTHER_SOURCE = "OtherDevice"
 PSEUDONYM = OprfPseudonym(jwe="JWE", blind_factor="BF")
 OTHER_PSEUDONYM = OprfPseudonym(jwe="OTHER", blind_factor="BF")
-INVALID_TOKEN = PseudonymToken("not-a-valid-token!!!")
 
 
 class FailingCryptoClient(CryptoServiceApiClientMock):
-    def exchange(self, jwe: str, blind_factor: str, label: str, mechanism: str) -> PseudonymResponse:
+    def exchange(self, pseudonym: OprfPseudonym, label: str, mechanism: str) -> PseudonymResponse:
         raise RuntimeError("boom")
+
+
+class RejectingCryptoClient(CryptoServiceApiClientMock):
+    def exchange(self, pseudonym: OprfPseudonym, label: str, mechanism: str) -> PseudonymResponse:
+        raise ValueError("Invalid pseudonym or oprf_key")
 
 
 def logged_fields(caplog: pytest.LogCaptureFixture, event: LogEvent) -> list[dict[str, Any]]:
     return [vars(record) for record in caplog.records if getattr(record, "event_id", None) == event.event_id]
 
 
+def _service_with(
+    crypto_client: CryptoServiceApiClientMock, referral_service: ReferralService, key_info_service: KeyInfoService
+) -> PseudonymReferralService:
+    key_info_service.add_one("nvi-label", "AES_CBC")
+    resolver = PseudonymResolver(crypto_client=crypto_client, key_info_service=key_info_service)
+    return PseudonymReferralService(referral_service=referral_service, pseudonym_resolver=resolver)
+
+
 @pytest.fixture
 def failing_service(referral_service: ReferralService, key_info_service: KeyInfoService) -> PseudonymReferralService:
-    key_info_service.add_one("nvi-label", "AES_CBC")
-    resolver = PseudonymResolver(crypto_client=FailingCryptoClient(), key_info_service=key_info_service)
-    return PseudonymReferralService(referral_service=referral_service, pseudonym_resolver=resolver)
+    return _service_with(FailingCryptoClient(), referral_service, key_info_service)
+
+
+@pytest.fixture
+def rejecting_service(referral_service: ReferralService, key_info_service: KeyInfoService) -> PseudonymReferralService:
+    return _service_with(RejectingCryptoClient(), referral_service, key_info_service)
 
 
 def test_register_stores_the_resolved_pseudonym(
@@ -53,18 +68,15 @@ def test_register_stores_the_resolved_pseudonym(
 
 
 def test_register_logs_a_failure_when_the_pseudonym_is_invalid(
-    pseudonym_referral_service: PseudonymReferralService,
-    key_info_service: KeyInfoService,
+    rejecting_service: PseudonymReferralService,
     ura_number: UraNumber,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    key_info_service.add_one("nvi-label", "AES_CBC")
-
-    with caplog.at_level(logging.INFO), pytest.raises(PseudonymError):
-        pseudonym_referral_service.register(INVALID_TOKEN, ura_number, SOURCE)
+    with caplog.at_level(logging.INFO), pytest.raises(ValueError):
+        rejecting_service.register(PSEUDONYM, ura_number, SOURCE)
 
     (fields,) = logged_fields(caplog, Log.REFERRAL_REGISTRATION_FAILED)
-    assert fields["http_status"] == 422
+    assert fields["http_status"] == 400
 
 
 def test_register_does_not_log_an_expected_failure(
@@ -92,18 +104,15 @@ def test_localize_finds_referrals_of_the_resolved_pseudonym(
 
 
 def test_localize_logs_a_failure_when_the_pseudonym_is_invalid(
-    pseudonym_referral_service: PseudonymReferralService,
-    key_info_service: KeyInfoService,
+    rejecting_service: PseudonymReferralService,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    key_info_service.add_one("nvi-label", "AES_CBC")
-
-    with caplog.at_level(logging.INFO), pytest.raises(PseudonymError):
-        pseudonym_referral_service.localize(INVALID_TOKEN, REQUESTING_URA)
+    with caplog.at_level(logging.INFO), pytest.raises(ValueError):
+        rejecting_service.localize(PSEUDONYM, REQUESTING_URA)
 
     (fields,) = logged_fields(caplog, Log.LOCALIZATION_FAILED)
     assert fields["levelno"] == logging.WARNING
-    assert fields["http_status"] == 422
+    assert fields["http_status"] == 400
 
 
 def test_localize_logs_an_error_when_it_breaks(

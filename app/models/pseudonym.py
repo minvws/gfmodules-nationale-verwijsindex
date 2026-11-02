@@ -11,20 +11,8 @@ class PseudonymResponse(BaseModel):
 
 @dataclass(frozen=True)
 class OprfPseudonym:
-    """Used in the REST routers"""
-
     jwe: str
     blind_factor: str
-
-
-@dataclass(frozen=True)
-class PseudonymToken:
-    """Used in the FHIR routers"""
-
-    value: str
-
-
-BlindedPseudonym = OprfPseudonym | PseudonymToken
 
 
 @dataclass
