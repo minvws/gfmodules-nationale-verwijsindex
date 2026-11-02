@@ -72,10 +72,14 @@ class PseudonymReferralService:
         limit: int | None = None,
         offset: int = 0,
     ) -> tuple[int, Sequence[ReferralEntity]]:
-        encrypted = self._resolve_encrypted(pseudonym) if pseudonym else None
-        return self._referral_service.query(
-            ura_number, encrypted_pseudonym=encrypted, source=source, limit=limit, offset=offset
-        )
+        try:
+            encrypted = self._resolve_encrypted(pseudonym) if pseudonym else None
+            return self._referral_service.query(
+                ura_number, encrypted_pseudonym=encrypted, source=source, limit=limit, offset=offset
+            )
+        except Exception as exc:
+            _log_failure(Log.REFERRAL_QUERY_FAILED, "Referral query failed", exc)
+            raise
 
     def delete_many(
         self,
@@ -83,8 +87,12 @@ class PseudonymReferralService:
         pseudonym: OprfPseudonym | None = None,
         source: str | None = None,
     ) -> int:
-        encrypted = self._resolve_encrypted(pseudonym) if pseudonym else None
-        return self._referral_service.delete_many(ura_number, encrypted_pseudonym=encrypted, source=source)
+        try:
+            encrypted = self._resolve_encrypted(pseudonym) if pseudonym else None
+            return self._referral_service.delete_many(ura_number, encrypted_pseudonym=encrypted, source=source)
+        except Exception as exc:
+            _log_failure(Log.REFERRALS_DELETE_FAILED, "Referral deletion failed", exc)
+            raise
 
     def _resolve_encrypted(self, pseudonym: OprfPseudonym) -> EncryptedPseudonym:
         return self._pseudonym_resolver.resolve(pseudonym).encrypted
