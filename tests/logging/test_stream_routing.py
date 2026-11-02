@@ -13,6 +13,7 @@ from app.logging.events import Log
 _LOGGER_NAME = "app.test_stream_routing"
 _ORGANIZATION = "some_name"
 _URA = "12345678"
+_OIN = "00000001123456700000"
 _PSEUDONYM_HASH = "abcd1234abcd1234"
 
 Routed = dict[LoggingStreams, list[dict[str, Any]]]
@@ -37,8 +38,9 @@ def route() -> Iterator[Any]:
             "endpoint": "/token",
             "method": "POST",
             "correlation_id": "corr-1",
-            "organization": _ORGANIZATION,
-            "ura_number": _URA,
+            "organization_name": _ORGANIZATION,
+            "organization_identifier": _URA,
+            "acting_organization_identifier": _OIN,
         }
     ):
         yield _route
@@ -57,13 +59,16 @@ class TestReferralRegistration:
 
     def test_public_inspect_receives_the_organization_and_pseudonym_hash(self, routed: Routed) -> None:
         message = routed[LoggingStreams.PUBLIC_INSPECT][0]
-        assert message["organization"] == _ORGANIZATION
-        assert message["ura_number"] == _URA
+        assert message["organization_name"] == _ORGANIZATION
+        assert message["organization_identifier"] == _URA
         assert message["pseudonym_hash"] == _PSEUDONYM_HASH
+        assert_fields_absent(routed[LoggingStreams.PUBLIC_INSPECT], "acting_organization_identifier")
 
-    def test_app_receives_the_ura_number_but_not_the_pseudonym_hash(self, routed: Routed) -> None:
-        assert routed[LoggingStreams.APP][0]["ura_number"] == _URA
-        assert_fields_absent(routed[LoggingStreams.APP], "pseudonym_hash", "organization")
+    def test_app_receives_the_organizations_but_not_the_pseudonym_hash(self, routed: Routed) -> None:
+        message = routed[LoggingStreams.APP][0]
+        assert message["organization_identifier"] == _URA
+        assert message["acting_organization_identifier"] == _OIN
+        assert_fields_absent(routed[LoggingStreams.APP], "pseudonym_hash", "organization_name")
 
     def test_siem_receives_nothing_at_all(self, routed: Routed) -> None:
         assert routed[LoggingStreams.SIEM] == []
@@ -106,21 +111,23 @@ class TestLocalization:
 
     def test_public_inspect_receives_the_organization_but_not_the_result_count(self, routed: Routed) -> None:
         message = routed[LoggingStreams.PUBLIC_INSPECT][0]
-        assert message["organization"] == _ORGANIZATION
+        assert message["organization_name"] == _ORGANIZATION
         assert message["pseudonym_hash"] == _PSEUDONYM_HASH
-        assert_fields_absent(routed[LoggingStreams.PUBLIC_INSPECT], "result_count")
+        assert_fields_absent(routed[LoggingStreams.PUBLIC_INSPECT], "result_count", "acting_organization_identifier")
 
-    def test_app_receives_the_pseudonym_hash_but_not_the_organization(self, routed: Routed) -> None:
+    def test_app_receives_the_pseudonym_hash_but_not_the_organization_name(self, routed: Routed) -> None:
         message = routed[LoggingStreams.APP][0]
-        assert message["ura_number"] == _URA
+        assert message["organization_identifier"] == _URA
+        assert message["acting_organization_identifier"] == _OIN
         assert message["pseudonym_hash"] == _PSEUDONYM_HASH
-        assert_fields_absent(routed[LoggingStreams.APP], "result_count", "organization")
+        assert_fields_absent(routed[LoggingStreams.APP], "result_count", "organization_name")
 
     def test_the_pseudonym_hash_never_reaches_siem(self, routed: Routed) -> None:
         message = routed[LoggingStreams.SIEM][0]
-        assert message["ura_number"] == _URA
+        assert message["organization_identifier"] == _URA
+        assert message["acting_organization_identifier"] == _OIN
         assert message["result_count"] == 3
-        assert_fields_absent(routed[LoggingStreams.SIEM], "pseudonym_hash", "organization")
+        assert_fields_absent(routed[LoggingStreams.SIEM], "pseudonym_hash", "organization_name")
 
 
 class TestBulkDeletion:
@@ -133,8 +140,8 @@ class TestBulkDeletion:
 
         for stream in LoggingStreams:
             assert routed[stream][0]["deleted_count"] == 42
-        assert_fields_absent(routed[LoggingStreams.APP], "organization")
-        assert_fields_absent(routed[LoggingStreams.SIEM], "organization")
+        assert_fields_absent(routed[LoggingStreams.APP], "organization_name")
+        assert_fields_absent(routed[LoggingStreams.SIEM], "organization_name")
 
 
 class TestAccessRequest:
