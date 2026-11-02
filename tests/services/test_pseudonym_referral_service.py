@@ -8,7 +8,7 @@ from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.logging.events import Log
 from app.models.pseudonym import OprfPseudonym, PseudonymResponse
 from app.models.ura import UraNumber
-from app.services.exceptions import InvalidKeyInfoError
+from app.services.exceptions import InvalidKeyInfoError, PseudonymExchangeError
 from app.services.key_info import KeyInfoService
 from app.services.pseudonym_referral_service import PseudonymReferralService
 from app.services.pseudonym_resolver import PseudonymResolver
@@ -28,7 +28,7 @@ class FailingCryptoClient(CryptoServiceApiClientMock):
 
 class RejectingCryptoClient(CryptoServiceApiClientMock):
     def exchange(self, pseudonym: OprfPseudonym, label: str, mechanism: str) -> PseudonymResponse:
-        raise ValueError("Invalid pseudonym or oprf_key")
+        raise PseudonymExchangeError("Invalid pseudonym or oprf_key")
 
 
 def logged_fields(caplog: pytest.LogCaptureFixture, event: LogEvent) -> list[dict[str, Any]]:
@@ -72,7 +72,7 @@ def test_register_logs_a_failure_when_the_pseudonym_is_invalid(
     ura_number: UraNumber,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    with caplog.at_level(logging.INFO), pytest.raises(ValueError):
+    with caplog.at_level(logging.INFO), pytest.raises(PseudonymExchangeError):
         rejecting_service.register(PSEUDONYM, ura_number, SOURCE)
 
     (fields,) = logged_fields(caplog, Log.REFERRAL_REGISTRATION_FAILED)
@@ -107,7 +107,7 @@ def test_localize_logs_a_failure_when_the_pseudonym_is_invalid(
     rejecting_service: PseudonymReferralService,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    with caplog.at_level(logging.INFO), pytest.raises(ValueError):
+    with caplog.at_level(logging.INFO), pytest.raises(PseudonymExchangeError):
         rejecting_service.localize(PSEUDONYM, REQUESTING_URA)
 
     (fields,) = logged_fields(caplog, Log.LOCALIZATION_FAILED)

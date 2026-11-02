@@ -5,6 +5,7 @@ from requests.exceptions import ConnectionError, HTTPError, Timeout
 
 from app.config import ConfigCryptoServiceApi
 from app.models.pseudonym import OprfPseudonym, PseudonymResponse
+from app.services.exceptions import PseudonymExchangeError
 from app.services.http import HttpService
 
 logger = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ class CryptoServiceApiClient:
             logger.exception("Error during request to Crypto Service API")
             raise ConnectionError("Failed to connect to the Crypto Service API")
         except HTTPError:
-            raise ValueError("Invalid pseudonym or oprf_key")
+            raise PseudonymExchangeError("Invalid pseudonym or oprf_key")
         except (JSONDecodeError, KeyError, ValueError):
             logger.exception("Unexpected response from Crypto Service API")
             raise RuntimeError("Unexpected response from the Crypto Service API")

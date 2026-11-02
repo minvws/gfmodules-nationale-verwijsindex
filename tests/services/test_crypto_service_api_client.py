@@ -6,6 +6,7 @@ from requests.exceptions import ConnectionError, HTTPError, Timeout
 
 from app.models.pseudonym import OprfPseudonym, PseudonymResponse
 from app.services.crypto_service_api_client import CryptoServiceApiClient
+from app.services.exceptions import PseudonymExchangeError
 
 PSEUDONYM = OprfPseudonym(pseudonym="jwe", oprf_key="bf")
 
@@ -82,7 +83,7 @@ def test_exchange_raises_on_missing_key(crypto_client: CryptoServiceApiClient, h
 def test_exchange_raises_on_http_error(crypto_client: CryptoServiceApiClient, http_mock: MagicMock) -> None:
     http_mock.do_request.side_effect = HTTPError("500")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(PseudonymExchangeError, match="Invalid pseudonym or oprf_key"):
         crypto_client.exchange(PSEUDONYM, "some-label", "CBC_AES")
 
 

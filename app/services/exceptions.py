@@ -69,3 +69,7 @@ class PseudonymError(Exception):
     def __init__(self, msg: str | None = None) -> None:
         error_msg = "Error occurred while decoding pseudonym" if msg is None else msg
         super().__init__(error_msg)
+
+
+class PseudonymExchangeError(Exception):
+    pass
