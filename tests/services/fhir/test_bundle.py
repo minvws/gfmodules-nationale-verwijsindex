@@ -36,6 +36,7 @@ def _process(bundle_service: BundleService, entry: BundleEntry[Any], index: int 
         claims=AuthenticationClaims(
             ura_number=AUTH_URA,
             organization_name="Org",
+            oin="00000000000000000001",
             source_id=TEST_SOURCE_ID,
         ),
         scope=ALL_SCOPES,

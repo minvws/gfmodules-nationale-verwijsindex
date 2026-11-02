@@ -19,7 +19,7 @@ def bind_auth_claims(auth: AuthContext | None) -> Generator[None]:
         else {
             ORGANIZATION_NAME.name: auth.claims.organization_name,
             ORGANIZATION_IDENTIFIER.name: str(auth.claims.ura_number),
-            ACTING_ORGANIZATION_IDENTIFIER.name: auth.claims.oin or gflog.UNSET,
+            ACTING_ORGANIZATION_IDENTIFIER.name: auth.claims.oin,
         }
     )
     with gflog.update_context(claims):

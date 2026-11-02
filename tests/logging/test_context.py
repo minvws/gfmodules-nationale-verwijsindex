@@ -14,16 +14,15 @@ _logger = logging.getLogger("app.test_context")
 _OIN = "00000001123456700000"
 
 
-def _auth(oin: str | None) -> AuthContext:
-    return AuthContext(
-        claims=AuthenticationClaims(ura_number=UraNumber("123"), organization_name="Some Org", oin=oin),
-        scope=[AuthorizationScope.CREATE],
-        audience="nvi.service",
-    )
+_AUTH = AuthContext(
+    claims=AuthenticationClaims(ura_number=UraNumber("123"), organization_name="Some Org", oin=_OIN),
+    scope=[AuthorizationScope.CREATE],
+    audience="nvi.service",
+)
 
 
 def test_binds_the_organizations_of_the_caller() -> None:
-    with capture_records(_logger.name) as records, bind_auth_claims(_auth(_OIN)):
+    with capture_records(_logger.name) as records, bind_auth_claims(_AUTH):
         gflog.emit(_logger, Log.IDEMPOTENT_REGISTRATION, "registered")
 
     assert_event_emitted(
@@ -33,13 +32,6 @@ def test_binds_the_organizations_of_the_caller() -> None:
         organization_identifier="00000123",
         acting_organization_identifier=_OIN,
     )
-
-
-def test_binds_no_acting_organization_when_the_caller_has_no_oin() -> None:
-    with capture_records(_logger.name) as records, bind_auth_claims(_auth(None)):
-        gflog.emit(_logger, Log.IDEMPOTENT_REGISTRATION, "registered")
-
-    assert_fields_absent([entry.message for entry in records], "acting_organization_identifier")
 
 
 def test_binds_nothing_without_an_auth_context() -> None:

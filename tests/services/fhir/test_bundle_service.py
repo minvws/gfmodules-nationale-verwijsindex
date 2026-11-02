@@ -15,6 +15,7 @@ from tests.conftest import make_list_resource
 
 TEST_URA = UraNumber("00000001")
 TEST_ORG_NAME = "Test Organization"
+TEST_OIN = "00000000000000000001"
 TEST_SOURCE_ID = "SRC-001"
 
 RESOURCE_ID = uuid4()
@@ -88,6 +89,7 @@ def make_ctx(scopes: list[AuthorizationScope], source_id: str | None = TEST_SOUR
         claims=AuthenticationClaims(
             ura_number=TEST_URA,
             organization_name=TEST_ORG_NAME,
+            oin=TEST_OIN,
             source_id=source_id,
         ),
         scope=scopes,
