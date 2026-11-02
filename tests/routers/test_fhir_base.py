@@ -1,9 +1,13 @@
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 from fastapi.testclient import TestClient
+from gfmodules.logging.testing import assert_event_emitted, capture_records
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
+from app.logging.events import Log
+from app.services.exceptions import PseudonymExchangeError
 from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 from tests.conftest import make_list_resource
@@ -95,3 +99,61 @@ class TestRegisterBundle:
         entry = response.json()["entry"][0]
         assert entry["response"]["status"] == "200"
         assert entry["resource"]["resourceType"] == "Bundle"
+
+
+_NO_RESOURCE = {"request": {"method": "POST", "url": "List"}}
+
+
+def _wrong_ura_entry() -> dict[str, Any]:
+    entry = _post_entry()
+    entry["resource"]["extension"][0]["valueReference"]["identifier"]["system"] = "urn:wrong"
+    return entry
+
+
+class TestInvalidEntryLogging:
+    @pytest.mark.parametrize(
+        ("entry", "status"),
+        [
+            (_NO_RESOURCE, 422),
+            (_wrong_ura_entry(), 400),
+            ({"request": {"method": "GET", "url": "Patient"}}, 422),
+        ],
+        ids=["missing-resource", "wrong-ura-system", "unsupported-resource"],
+    )
+    def test_logs_a_rejected_entry(self, client: TestClient, entry: dict[str, Any], status: int) -> None:
+        with capture_records() as records:
+            response = client.post("/fhir", json=_bundle(entry), headers=FHIR_JSON)
+
+        assert response.json()["entry"][0]["response"]["status"] == str(status)
+        assert_event_emitted(records, Log.INVALID_REQUEST, organization_identifier=TEST_URA, http_status=status)
+
+    def test_logs_only_the_invalid_entries_of_a_mixed_bundle(self, client: TestClient) -> None:
+        with capture_records() as records:
+            response = client.post(
+                "/fhir", json=_bundle(_post_entry(), _NO_RESOURCE, _wrong_ura_entry()), headers=FHIR_JSON
+            )
+
+        assert [e["response"]["status"] for e in response.json()["entry"]] == ["201", "422", "400"]
+        assert len(records.for_event(Log.INVALID_REQUEST)) == 2
+
+    def test_keeps_the_subject_token_out_of_a_rejected_entry_log(self, client: TestClient) -> None:
+        entry = {"request": {"method": "DELETE", "url": "List?subject:identifier=urn:wrong|leaky-token-value"}}
+        with capture_records() as records:
+            response = client.post("/fhir", json=_bundle(entry), headers=FHIR_JSON)
+
+        assert response.json()["entry"][0]["response"]["status"] == "422"
+        logged = assert_event_emitted(records, Log.INVALID_REQUEST, http_status=422)
+        assert "leaky-token-value" not in logged.message["error_reason"]
+
+    def test_logs_a_rejected_exchange_in_an_entry_only_as_a_failed_registration(
+        self, client: TestClient, crypto_client: CryptoServiceApiClientMock, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        rejected = PseudonymExchangeError("Invalid pseudonym or oprf_key")
+        monkeypatch.setattr(crypto_client, "exchange", Mock(side_effect=rejected))
+
+        with capture_records() as records:
+            response = client.post("/fhir", json=_bundle(_post_entry()), headers=FHIR_JSON)
+
+        assert response.json()["entry"][0]["response"]["status"] == "400"
+        assert len(records.for_event(Log.REFERRAL_REGISTRATION_FAILED)) == 1
+        assert records.for_event(Log.INVALID_REQUEST) == []

@@ -4,6 +4,7 @@ from uuid import uuid4
 
 import pytest
 
+from app.logging.events import Log
 from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.data import AuthorizationScope
 from app.models.fhir.bundle import BundleEntry, EntryRequest
@@ -510,7 +511,7 @@ class TestEntryFailureLogging:
         with caplog.at_level(logging.INFO):
             process(bundle_service, make_entry("GET", own_query_url), [AuthorizationScope.READ])
 
-        assert _event_ids(caplog) == []
+        assert _event_ids(caplog) == [Log.INVALID_REQUEST.event_id]
 
     def test_failed_delete_by_query_is_not_a_localization_failure(
         self,
@@ -523,7 +524,7 @@ class TestEntryFailureLogging:
         with caplog.at_level(logging.INFO):
             process(bundle_service, make_entry("DELETE", QUERY_URL), [AuthorizationScope.DELETE])
 
-        assert _event_ids(caplog) == []
+        assert _event_ids(caplog) == [Log.INVALID_REQUEST.event_id]
 
 
 class TestSourceMatch:

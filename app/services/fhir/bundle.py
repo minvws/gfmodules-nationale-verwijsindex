@@ -5,7 +5,7 @@ from uuid import UUID
 
 import gfmodules.logging as gflog
 
-from app.errors.handlers import log_rejection
+from app.errors.handlers import log_invalid_request, log_rejection, summarize_reason
 from app.errors.mapping import DEFAULT_SPEC, UNEXPECTED_ERROR_MESSAGE, spec_for
 from app.logging.events import Log
 from app.models.auth.context import AuthContext
@@ -28,6 +28,11 @@ from app.services.fhir.localization_list import LocalizationListService
 logger = logging.getLogger(__name__)
 
 
+def _invalid_entry(msg: str, status: int = 422, code: str = "required", reason: str | None = None) -> BundleEntry[Any]:
+    log_invalid_request(status, reason or msg)
+    return BundleEntry(response=EntryResponse.make_error_response(msg, str(status), code))
+
+
 class BundleService:
     def __init__(
         self,
@@ -37,14 +42,10 @@ class BundleService:
 
     def process_entry(self, ctx: AuthContext, entry: BundleEntry[Any], index: int) -> BundleEntry[Any]:
         if entry.request is None:
-            return BundleEntry(
-                response=EntryResponse.make_validation_response(f"Bundle.entry.{index}.request is required")
-            )
+            return _invalid_entry(f"Bundle.entry.{index}.request is required")
 
         if entry.request.method is None:
-            return BundleEntry(
-                response=EntryResponse.make_validation_response(f"Bundle.entry.{index}.request.method is required")
-            )
+            return _invalid_entry(f"Bundle.entry.{index}.request.method is required")
 
         method = entry.request.method
         resolved_url = self.resolve_request_url(entry.request.url, index)
@@ -151,6 +152,9 @@ class BundleService:
             else:
                 log_rejection(spec.http_status, exc)
 
+            if spec.invalid_input:
+                return _invalid_entry(f"Bundle.entry.{index}: {exc}", spec.http_status, spec.fhir_code)
+
             return BundleEntry(
                 response=EntryResponse.make_error_response(
                     msg=f"Bundle.entry.{index}: {UNEXPECTED_ERROR_MESSAGE if unexpected else exc}",
@@ -184,11 +188,8 @@ class BundleService:
         try:
             return model.model_validate(resolved_url.params)
         except ValueError as e:
-            return BundleEntry(
-                response=EntryResponse.make_validation_response(
-                    f"Bundle.entry.{index}.request: invalid url parameter: {e}"
-                )
-            )
+            prefix = f"Bundle.entry.{index}.request: invalid url parameter"
+            return _invalid_entry(f"{prefix}: {e}", reason=f"{prefix}: {summarize_reason(e)}")
 
     def _deny_mismatched_source(
         self,
@@ -208,13 +209,7 @@ class BundleService:
             # A source built on the wrong naming system, which the standalone route rejects
             # before it reaches the service too.
             spec = spec_for(e)
-            return BundleEntry(
-                response=EntryResponse.make_error_response(
-                    msg=f"Bundle.entry.{index}: {e}",
-                    status=str(spec.http_status),
-                    code=spec.fhir_code,
-                )
-            )
+            return _invalid_entry(f"Bundle.entry.{index}: {e}", spec.http_status, spec.fhir_code)
 
         try:
             AuthContextService.assert_source_matches(ctx, entry_source)
@@ -231,14 +226,10 @@ class BundleService:
     def _validate_post_resource(self, entry: BundleEntry[Any], index: int) -> LocalizationList | BundleEntry[Any]:
         """Return the validated ``LocalizationList`` or an error ``BundleEntry``."""
         if entry.resource is None:
-            return BundleEntry(
-                response=EntryResponse.make_validation_response(msg=f"Bundle.entry.{index}: resource cannot be empty")
-            )
+            return _invalid_entry(f"Bundle.entry.{index}: resource cannot be empty")
 
         if not isinstance(entry.resource, LocalizationList):
-            return BundleEntry(
-                response=EntryResponse.make_validation_response(f"Bundle.entry.{index}: invalid List resource")
-            )
+            return _invalid_entry(f"Bundle.entry.{index}: invalid List resource")
 
         return entry.resource
 
@@ -276,27 +267,15 @@ class BundleService:
         try:
             request_dto = EntryRequestDto.from_url(url)
         except ValueError:
-            return BundleEntry(
-                response=EntryResponse.make_validation_response(f"Bundle.entry.{index}.request.url is malformed")
-            )
+            return _invalid_entry(f"Bundle.entry.{index}.request.url is malformed")
 
         if request_dto.resource is None:
-            return BundleEntry(
-                response=EntryResponse.make_validation_response(f"Bundle.entry.{index}.request.url: resource not found")
-            )
+            return _invalid_entry(f"Bundle.entry.{index}.request.url: resource not found")
 
         if request_dto.resource != "List":
-            return BundleEntry(
-                response=EntryResponse.make_validation_response(
-                    f"Bundle.entry.{index}.request.url unsupported {request_dto.resource} resource"
-                )
-            )
+            return _invalid_entry(f"Bundle.entry.{index}.request.url unsupported {request_dto.resource} resource")
 
         if request_dto.id is not None and request_dto.params is not None:
-            return BundleEntry(
-                response=EntryResponse.make_validation_response(
-                    f"Bundle.entry.{index}.request.url:  unsupported url for requested transaction"
-                )
-            )
+            return _invalid_entry(f"Bundle.entry.{index}.request.url:  unsupported url for requested transaction")
 
         return request_dto
