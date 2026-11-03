@@ -17,8 +17,8 @@ from app.services.referral_service import ReferralService
 REQUESTING_URA = UraNumber("00000456")
 SOURCE = "SomeDevice"
 OTHER_SOURCE = "OtherDevice"
-PSEUDONYM = OprfPseudonym(jwe="JWE", blind_factor="BF")
-OTHER_PSEUDONYM = OprfPseudonym(jwe="OTHER", blind_factor="BF")
+PSEUDONYM = OprfPseudonym(pseudonym="JWE", oprf_key="BF")
+OTHER_PSEUDONYM = OprfPseudonym(pseudonym="OTHER", oprf_key="BF")
 
 
 class FailingCryptoClient(CryptoServiceApiClientMock):

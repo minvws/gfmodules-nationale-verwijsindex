@@ -7,7 +7,7 @@ from requests.exceptions import ConnectionError, HTTPError, Timeout
 from app.models.pseudonym import OprfPseudonym, PseudonymResponse
 from app.services.crypto_service_api_client import CryptoServiceApiClient
 
-PSEUDONYM = OprfPseudonym(jwe="jwe", blind_factor="bf")
+PSEUDONYM = OprfPseudonym(pseudonym="jwe", oprf_key="bf")
 
 
 @pytest.fixture()
@@ -31,7 +31,7 @@ def test_exchange_returns_hashed_pseudonym(crypto_client: CryptoServiceApiClient
     http_mock.do_request.return_value = response
 
     result = crypto_client.exchange(
-        OprfPseudonym(jwe="some-jwe", blind_factor="some-blind-factor"), "some-label", "CBC_AES"
+        OprfPseudonym(pseudonym="some-jwe", oprf_key="some-blind-factor"), "some-label", "CBC_AES"
     )
 
     assert result == PseudonymResponse(encrypted_pseudonym="abc", iv="123")

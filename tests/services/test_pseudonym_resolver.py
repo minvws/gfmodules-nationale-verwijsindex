@@ -6,7 +6,7 @@ from app.services.exceptions import InvalidKeyInfoError
 from app.services.key_info import KeyInfoService
 from app.services.pseudonym_resolver import PseudonymResolver
 
-OPRF_PSEUDONYM = OprfPseudonym(jwe="JWE", blind_factor="BF")
+OPRF_PSEUDONYM = OprfPseudonym(pseudonym="JWE", oprf_key="BF")
 
 
 @pytest.fixture()

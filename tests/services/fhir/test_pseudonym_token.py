@@ -17,7 +17,7 @@ def _encode(data: dict[str, str]) -> str:
 
 
 def test_decodes_evaluated_output_and_blind_factor() -> None:
-    assert decode_pseudonym_token(TEST_PSEUDONYM_TOKEN, FIELD) == OprfPseudonym(jwe="JWE", blind_factor="BF")
+    assert decode_pseudonym_token(TEST_PSEUDONYM_TOKEN, FIELD) == OprfPseudonym(pseudonym="JWE", oprf_key="BF")
 
 
 @pytest.mark.parametrize(

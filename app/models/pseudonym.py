@@ -10,10 +10,10 @@ class PseudonymResponse(BaseModel):
 
 
 class OprfPseudonym(BaseModel):
-    model_config = ConfigDict(frozen=True, validate_by_name=True)
+    model_config = ConfigDict(frozen=True)
 
-    jwe: str = Field(validation_alias="pseudonym")
-    blind_factor: str = Field(validation_alias="oprf_key")
+    jwe: str = Field(alias="pseudonym")
+    blind_factor: str = Field(alias="oprf_key")
 
 
 @dataclass
