@@ -37,7 +37,8 @@ EXCEPTION_MAP: dict[type[Exception], ErrorSpec] = {
 
 # Applied to any exception without a mapped type (rendered as HTTP 500). Unmapped
 # failures are unexpected by definition, so they are always logged.
-DEFAULT_SPEC: ErrorSpec = ErrorSpec(severity="error", fhir_code="expression", http_status=500, log=True)
+DEFAULT_SPEC: ErrorSpec = ErrorSpec(severity="error", fhir_code="exception", http_status=500, log=True)
+UNEXPECTED_ERROR_MESSAGE = "An unexpected error occurred"
 
 
 def spec_for(exc: Exception) -> ErrorSpec:

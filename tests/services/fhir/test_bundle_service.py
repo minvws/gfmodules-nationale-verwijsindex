@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Literal
 from uuid import uuid4
 
@@ -14,6 +15,8 @@ from tests.conftest import make_list_resource
 
 TEST_URA = UraNumber("00000001")
 TEST_ORG_NAME = "Test Organization"
+TEST_OIN = "00000000000000000001"
+TEST_ACTING_ORG_NAME = "client.example.nl"
 TEST_SOURCE_ID = "SRC-001"
 
 RESOURCE_ID = uuid4()
@@ -56,7 +59,7 @@ class LocalizationListServiceSpy:
         self.calls.append("delete")
         if self.delete_error is not None:
             raise self.delete_error
-        return None, 200
+        return None
 
     def delete_by_query(self, *_args: Any, **_kwargs: Any) -> Any:
         self.calls.append("delete_by_query")
@@ -87,6 +90,8 @@ def make_ctx(scopes: list[AuthorizationScope], source_id: str | None = TEST_SOUR
         claims=AuthenticationClaims(
             ura_number=TEST_URA,
             organization_name=TEST_ORG_NAME,
+            oin=TEST_OIN,
+            acting_organization_name=TEST_ACTING_ORG_NAME,
             source_id=source_id,
         ),
         scope=scopes,
@@ -372,11 +377,10 @@ class TestDeleteErrorMapping:
     """
 
     @pytest.mark.parametrize(
-        ("error", "expected_status"),
+        ("error", "expected_status", "expected_code"),
         [
-            (NotFoundError(), "404"),
-            (UnauthorizedUraError(), "403"),
-            (RuntimeError("boom"), "500"),
+            (NotFoundError(), "404", "not-found"),
+            (UnauthorizedUraError(), "403", "security"),
         ],
     )
     def test_delete_by_id_error_maps_to_entry_status(
@@ -385,6 +389,7 @@ class TestDeleteErrorMapping:
         service: LocalizationListServiceSpy,
         error: Exception,
         expected_status: str,
+        expected_code: str,
     ) -> None:
         service.delete_error = error
 
@@ -393,16 +398,16 @@ class TestDeleteErrorMapping:
         assert result.response is not None
         assert result.response.status == expected_status
         assert result.response.outcome is not None
+        assert result.response.outcome.issue[0].code == expected_code
         message = str(result.response.outcome.model_dump())
         assert "Bundle.entry.1" in message
         assert str(error) in message
 
     @pytest.mark.parametrize(
-        ("error", "expected_status"),
+        ("error", "expected_status", "expected_code"),
         [
-            (NotFoundError(), "404"),
-            (PseudonymError(), "422"),
-            (RuntimeError("boom"), "500"),
+            (NotFoundError(), "404", "not-found"),
+            (PseudonymError(), "422", "invalid"),
         ],
     )
     def test_delete_by_query_error_maps_to_entry_status(
@@ -411,6 +416,7 @@ class TestDeleteErrorMapping:
         service: LocalizationListServiceSpy,
         error: Exception,
         expected_status: str,
+        expected_code: str,
     ) -> None:
         service.delete_by_query_error = error
 
@@ -419,9 +425,58 @@ class TestDeleteErrorMapping:
         assert result.response is not None
         assert result.response.status == expected_status
         assert result.response.outcome is not None
+        assert result.response.outcome.issue[0].code == expected_code
         message = str(result.response.outcome.model_dump())
         assert "Bundle.entry.1" in message
         assert str(error) in message
+
+    def test_unexpected_error_maps_to_500_without_leaking_its_message(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+    ) -> None:
+        service.delete_error = RuntimeError("internal detail that must not leak")
+
+        result = process(bundle_service, make_entry("DELETE", ID_URL), [AuthorizationScope.DELETE], index=1)
+
+        assert result.response is not None
+        assert result.response.status == "500"
+        assert result.response.outcome is not None
+        assert result.response.outcome.issue[0].code == "exception"
+        message = str(result.response.outcome.model_dump())
+        assert "Bundle.entry.1" in message
+        assert "internal detail" not in message
+
+
+class TestEntryFailureLogging:
+    def test_unexpected_error_is_logged_with_its_traceback(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        service.delete_error = RuntimeError("boom")
+
+        with caplog.at_level(logging.INFO):
+            process(bundle_service, make_entry("DELETE", ID_URL), [AuthorizationScope.DELETE])
+
+        (unexpected,) = [r for r in caplog.records if r.exc_info is not None]
+        assert unexpected.levelno == logging.ERROR
+
+    def test_expected_error_is_logged_without_a_traceback(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        service.delete_error = NotFoundError()
+
+        with caplog.at_level(logging.INFO):
+            process(bundle_service, make_entry("DELETE", ID_URL), [AuthorizationScope.DELETE])
+
+        assert "Record not found" in caplog.text
+        assert all(r.exc_info is None for r in caplog.records)
+        assert all(r.levelno < logging.WARNING for r in caplog.records)
 
 
 class TestSourceMatch:

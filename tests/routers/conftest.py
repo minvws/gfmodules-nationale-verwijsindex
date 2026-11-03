@@ -16,15 +16,16 @@ from app.dependencies import (
     get_crypto_service_api_client,
     get_key_info_service,
     get_localization_list_service,
-    get_pseudonym_resolver,
-    get_referral_service,
+    get_pseudonym_referral_service,
 )
+from app.metrics import UsageMetrics
 from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.data import AuthorizationScope
 from app.models.ura import UraNumber
 from app.services.fhir.bundle import BundleService
 from app.services.fhir.localization_list import LocalizationListService
 from app.services.key_info import KeyInfoService
+from app.services.pseudonym_referral_service import PseudonymReferralService
 from app.services.pseudonym_resolver import PseudonymResolver
 from app.services.referral_service import ReferralService
 from tests.test_config import get_test_config
@@ -33,6 +34,7 @@ TEST_URA = "00000001"
 TEST_SOURCE_ID = "SRC-001"
 TEST_OIN = "00000000000000000001"
 TEST_ORG_NAME = "Test Organization"
+TEST_ACTING_ORG_NAME = "client.example.nl"
 
 
 def make_auth_context(
@@ -52,6 +54,7 @@ def make_auth_context(
             organization_name=TEST_ORG_NAME,
             source_id=source_id,
             oin=TEST_OIN,
+            acting_organization_name=TEST_ACTING_ORG_NAME,
         ),
         scope=scopes,
         audience="nvi.service",
@@ -65,6 +68,7 @@ def make_localize_auth_context(ura: str = TEST_URA) -> AuthContext:
             organization_name=TEST_ORG_NAME,
             source_id=None,
             oin=TEST_OIN,
+            acting_organization_name=TEST_ACTING_ORG_NAME,
         ),
         scope=[AuthorizationScope.LOCALIZE],
         audience="nvi.service",
@@ -83,8 +87,8 @@ def db() -> Generator[Database, Any, None]:
 
 
 @pytest.fixture()
-def referral_service(db: Database) -> ReferralService:
-    return ReferralService(database=db)
+def referral_service(db: Database, usage_metrics: UsageMetrics) -> ReferralService:
+    return ReferralService(database=db, usage_metrics=usage_metrics)
 
 
 @pytest.fixture()
@@ -107,15 +111,18 @@ def make_test_client(
     app = setup_fastapi()
 
     pseudonym_resolver = PseudonymResolver(crypto_client=crypto_client, key_info_service=key_info_service)
-    localization_list_service = LocalizationListService(
+    pseudonym_referral_service = PseudonymReferralService(
         referral_service=referral_service,
         pseudonym_resolver=pseudonym_resolver,
     )
+    localization_list_service = LocalizationListService(
+        referral_service=referral_service,
+        pseudonym_referral_service=pseudonym_referral_service,
+    )
 
-    app.dependency_overrides[get_referral_service] = lambda: referral_service
     app.dependency_overrides[get_crypto_service_api_client] = lambda: crypto_client
     app.dependency_overrides[get_key_info_service] = lambda: key_info_service
-    app.dependency_overrides[get_pseudonym_resolver] = lambda: pseudonym_resolver
+    app.dependency_overrides[get_pseudonym_referral_service] = lambda: pseudonym_referral_service
     app.dependency_overrides[get_localization_list_service] = lambda: localization_list_service
     app.dependency_overrides[get_bundle_service] = lambda: BundleService(localization_list_service)
 

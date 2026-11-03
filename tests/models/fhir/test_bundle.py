@@ -1,6 +1,8 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+import pytest
+
 from app.models.fhir.bundle import Bundle, BundleEntry, EntryRequestDto
 from app.models.fhir.elements import CodeableConcept, Coding, Identifier, Reference
 from app.models.fhir.resources.data import (
@@ -184,3 +186,7 @@ class TestEntryRequestDtoFromUrl:
 
     def test_has_no_params_when_query_is_absent(self) -> None:
         assert EntryRequestDto.from_url("List").params is None
+
+    def test_rejects_a_path_beyond_the_resource_id(self) -> None:
+        with pytest.raises(ValueError):
+            EntryRequestDto.from_url("List/0f14d0ab-9605-4a62-a9e4-5ed26688389b/_history/2")

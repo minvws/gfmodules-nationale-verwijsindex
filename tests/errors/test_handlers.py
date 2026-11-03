@@ -229,7 +229,7 @@ class TestUnhandledExceptionHandler:
 
         assert resp.status_code == 500
         body = resp.json()
-        assert body["issue"][0]["code"] == "expression"
+        assert body["issue"][0]["code"] == "exception"
         assert "internal detail" not in resp.text
         assert "RuntimeError" in resp.text
 

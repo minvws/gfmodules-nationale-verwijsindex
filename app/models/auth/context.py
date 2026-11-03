@@ -8,7 +8,8 @@ from app.models.ura import UraNumber
 class AuthenticationClaims:
     ura_number: UraNumber
     organization_name: str
-    oin: str | None = None
+    oin: str
+    acting_organization_name: str
     source_id: str | None = None
 
 

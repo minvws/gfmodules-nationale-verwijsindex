@@ -2,7 +2,7 @@ import logging
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, Response
+from fastapi import APIRouter, Body, Depends, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.params import Query
 
@@ -19,8 +19,11 @@ from app.models.fhir.resources.data import (
     URA_SYSTEM_EXTENSION,
 )
 from app.models.fhir.resources.localization_list.request import (
+    COUNT_PARAM,
+    OFFSET_PARAM,
     SUBJECT_IDENTIFIER_PARAM,
     LocalizationListParams,
+    LocalizationListSearchParams,
 )
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
@@ -32,6 +35,7 @@ from app.routers.dependencies import (
     require_scope_for_localization_query,
     require_source_matches_body,
     require_source_matches_query,
+    require_source_matches_search_query,
 )
 from app.services.fhir.localization_list import LocalizationListService
 
@@ -112,7 +116,7 @@ def create(
     _source_match: Annotated[AuthContext, Depends(require_source_matches_body)],
 ) -> Any:
     authorized_ura: UraNumber = ctx.claims.ura_number
-    resource, created = service.create(data, authorized_ura, organization_name=ctx.claims.organization_name)
+    resource, created = service.create(data, authorized_ura)
     if not created:
         response.status_code = 200
     return resource
@@ -142,7 +146,7 @@ def get(
     ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.READ))],
 ) -> Any:
     authorized_ura = ctx.claims.ura_number
-    return service.get(id, authorized_ura, organization_name=ctx.claims.organization_name)
+    return service.get(id, authorized_ura)
 
 
 @router.get(
@@ -153,7 +157,9 @@ def get(
         f"Retrieves a Bundle containing List resources based on query params. "
         f"Localization for a specific pseudonym can be done by specifying only {SUBJECT_IDENTIFIER_PARAM}. "
         "The code query parameter for data domain is deprecated and ignored by this router. "
-        "Any other combination will return List resource specific to the URA Number of the requester"
+        "Any other combination will return List resource specific to the URA Number of the requester. "
+        f"Results are paged: use {COUNT_PARAM} for the page size and {OFFSET_PARAM} for the start of the page, "
+        "or follow the next and previous links in the Bundle"
     ),
     response_class=FHIRJSONResponse,
     responses={
@@ -176,13 +182,14 @@ def get(
     },
 )
 def query(
-    params: Annotated[LocalizationListParams, Query()],
+    request: Request,
+    params: Annotated[LocalizationListSearchParams, Query()],
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
     ctx: Annotated[AuthContext, Depends(require_scope_for_localization_query)],
-    _source_match: Annotated[AuthContext, Depends(require_source_matches_query)],
+    _source_match: Annotated[AuthContext, Depends(require_source_matches_search_query)],
 ) -> Any:
     authorized_ura = ctx.claims.ura_number
-    return service.query(params, authorized_ura, organization_name=ctx.claims.organization_name)
+    return service.query(params, authorized_ura, request_url=str(request.url))
 
 
 @router.delete(
@@ -208,11 +215,8 @@ def delete(
     source: Annotated[str, Depends(require_managing_source)],
 ) -> Any:
     authorized_ura = ctx.claims.ura_number
-    outcome, status_code = service.delete(id, authorized_ura, source, organization_name=ctx.claims.organization_name)
-    return FHIRJSONResponse(
-        status_code=status_code,
-        content=jsonable_encoder(outcome.model_dump(exclude_none=True)),
-    )
+    outcome = service.delete(id, authorized_ura, source)
+    return FHIRJSONResponse(content=jsonable_encoder(outcome.model_dump(exclude_none=True)))
 
 
 @router.delete(
@@ -239,9 +243,7 @@ def delete_for_query(
     _source_match: Annotated[AuthContext, Depends(require_source_matches_query)],
 ) -> Any:
     authenticated_ura = ctx.claims.ura_number
-    outcome, status_code = service.delete_by_query(
-        params, authenticated_ura, source, organization_name=ctx.claims.organization_name
-    )
+    outcome, status_code = service.delete_by_query(params, authenticated_ura, source)
 
     return FHIRJSONResponse(
         status_code=status_code,

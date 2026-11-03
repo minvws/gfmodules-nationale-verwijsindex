@@ -5,7 +5,10 @@ from fastapi import Body, Depends, Query, Request
 
 from app.models.auth.context import AuthContext
 from app.models.auth.data import AuthorizationScope
-from app.models.fhir.resources.localization_list.request import LocalizationListParams
+from app.models.fhir.resources.localization_list.request import (
+    LocalizationListParams,
+    LocalizationListSearchParams,
+)
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.services.auth.auth_context import AuthContextService
 from app.services.exceptions import (
@@ -42,7 +45,7 @@ def require_managing_source(ctx: Annotated[AuthContext, Depends(get_auth_context
 
 
 def require_scope_for_localization_query(
-    params: Annotated[LocalizationListParams, Query()],
+    params: Annotated[LocalizationListSearchParams, Query()],
     ctx: Annotated[AuthContext, Depends(get_auth_context)],
 ) -> AuthContext:
     """Require LOCALIZE scope for localization queries, READ scope for other queries."""
@@ -65,6 +68,14 @@ def require_source_matches_body(
 
 def require_source_matches_query(
     params: Annotated[LocalizationListParams, Query()],
+    ctx: Annotated[AuthContext, Depends(get_auth_context)],
+) -> AuthContext:
+    return AuthContextService.assert_source_matches(ctx, params.source)
+
+
+def require_source_matches_search_query(
+    # The query models forbid unknown parameters, so a search needs the model that knows the paging parameters
+    params: Annotated[LocalizationListSearchParams, Query()],
     ctx: Annotated[AuthContext, Depends(get_auth_context)],
 ) -> AuthContext:
     return AuthContextService.assert_source_matches(ctx, params.source)

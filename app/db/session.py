@@ -4,7 +4,7 @@ import re
 from collections.abc import Callable
 from time import sleep
 from types import TracebackType
-from typing import Any, ParamSpec, Self, TypeVar
+from typing import Any, ParamSpec, Self, TypeVar, TypeVarTuple
 
 import gfmodules.logging as gflog
 from sqlalchemy import Delete, Engine, Insert, Result
@@ -90,7 +90,8 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 P = ParamSpec("P")
-R = TypeVar("R", bound=tuple[Any, ...])
+# SQLAlchemy 2.1 types statements and results by their column types, e.g. Result[ReferralEntity]
+Rs = TypeVarTuple("Rs")
 
 
 class DbSession:
@@ -164,7 +165,7 @@ class DbSession:
         """
         self._retry(self.session.rollback)
 
-    def delete_stmt(self, stmt: Delete) -> Result[R]:
+    def delete_stmt(self, stmt: Delete) -> Result[*tuple[Any, ...]]:
         """
         Execute a statement in the current session
 
@@ -173,7 +174,7 @@ class DbSession:
         """
         return self._retry(self.session.execute, stmt)
 
-    def execute(self, stmt: TypedReturnsRows[R] | Insert) -> Result[R]:
+    def execute(self, stmt: TypedReturnsRows[*Rs] | Insert) -> Result[*Rs]:
         """
         Execute a statement in the current session
 

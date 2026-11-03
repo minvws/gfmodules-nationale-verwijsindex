@@ -13,6 +13,7 @@ from app.models.ura import UraNumber
 def auth_headers_dict(ura_number: UraNumber) -> dict[str, Any]:
     return {
         "oin": "oin123",
+        "acting_organization_name": "client.example.nl",
         "source_id": "source123",
         "ura": ura_number.value,
         "audience": "audience",
@@ -26,6 +27,7 @@ def auth_headers_dict(ura_number: UraNumber) -> dict[str, Any]:
 def auth_headers(ura_number: UraNumber) -> AuthHeaders:
     return AuthHeaders(
         oin="oin123",
+        acting_organization_name="client.example.nl",
         source_id="source123",
         ura=ura_number.value,
         audience="audience",
@@ -39,6 +41,7 @@ def auth_headers(ura_number: UraNumber) -> AuthHeaders:
 def header_data(ura_number: UraNumber) -> dict[str, Any]:
     return {
         "x-gf-act-sub": "oin123",
+        "x-gf-act-cn": "client.example.nl",
         "x-gf-source-id": "source123",
         "x-gf-sub": ura_number.value,
         "x-gf-audience": "audience",
@@ -114,7 +117,15 @@ def test_from_request_should_panic_with_missing_prop(
 
 @pytest.mark.parametrize(
     "header_name",
-    ["x-gf-act-sub", "x-gf-sub", "x-gf-audience", "x-gf-scope", "x-gf-cert-type", "x-gf-organization-name"],
+    [
+        "x-gf-act-sub",
+        "x-gf-act-cn",
+        "x-gf-sub",
+        "x-gf-audience",
+        "x-gf-scope",
+        "x-gf-cert-type",
+        "x-gf-organization-name",
+    ],
 )
 def test_from_request_should_panic_with_any_missing_required_header(
     header_data: dict[str, Any],

@@ -5,12 +5,16 @@ from typing import Any, Self
 from pydantic import BaseModel, field_validator
 
 from app.db.models.referral import ReferralEntity
+from app.models.pseudonym import OprfPseudonym
 from app.models.ura import UraNumber
 
 
 class RegistrationQueryParams(BaseModel):
     pseudonym: str
     oprf_key: str
+
+    def oprf_pseudonym(self) -> OprfPseudonym:
+        return OprfPseudonym(jwe=self.pseudonym, blind_factor=self.oprf_key)
 
 
 class CreateRegistrationRequest(RegistrationQueryParams):

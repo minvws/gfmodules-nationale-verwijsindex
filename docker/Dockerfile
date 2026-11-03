@@ -66,11 +66,14 @@ ENV POETRY_CACHE_DIR=/tmp/poetry-cache \
     POETRY_VIRTUALENVS_CREATE=true \
     POETRY_VIRTUALENVS_IN_PROJECT=true
 
+# pip is not needed at runtime. Its vendored dependencies show up in image scans,
+# so it is removed from the virtualenv for non-dev images.
 RUN --mount=type=cache,target=${POETRY_CACHE_DIR} \
     if [ "${DEV}" = "true" ]; then \
         poetry install --no-root --no-interaction; \
     else \
-        poetry install --no-root --no-interaction --only main; \
+        poetry install --no-root --no-interaction --only main && \
+        rm -rf .venv/bin/pip* .venv/lib/python*/site-packages/pip .venv/lib/python*/site-packages/pip-*.dist-info; \
     fi
 
 # Final stage
@@ -85,9 +88,11 @@ ENV PATH="${VIRTUAL_ENV}/bin:$PATH"
 # Copy only the virtualenv — no pip, no poetry, no build tools
 COPY --from=builder --chown=${APP_USER}:${APP_GROUP} /src/.venv ${VIRTUAL_ENV}
 
-# Optionally install poetry for local development images
+# Optionally install poetry for local development images, otherwise remove the base image's pip
 RUN if [ "${DEV}" = "true" ]; then \
     pip install --no-cache-dir poetry==${POETRY_VERSION}; \
+  else \
+    /usr/local/bin/python -m pip uninstall -y pip; \
   fi
 
 # Copy only what the app needs at runtime (no tests, docs, CI artifacts, etc.)

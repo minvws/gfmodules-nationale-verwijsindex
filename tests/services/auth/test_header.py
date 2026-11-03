@@ -10,6 +10,7 @@ from app.services.exceptions import InvalidHeaderPropertyError
 def test_validate_should_succeed(ura_number: UraNumber, auth_header_service: AuthHeaderService) -> None:
     expected = AuthHeaders(
         oin="oin123",
+        acting_organization_name="client.example.nl",
         source_id="source123",
         ura=ura_number.value,
         audience=auth_header_service.expected_audiences[0],
@@ -28,6 +29,7 @@ def test_validate_should_panic_with_invalid_audience(
 ) -> None:
     data = AuthHeaders(
         oin="oin123",
+        acting_organization_name="client.example.nl",
         source_id="source123",
         ura=ura_number.value,
         audience="some-invalid-audience",

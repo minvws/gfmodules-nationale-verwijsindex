@@ -1,10 +1,12 @@
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from typing import Any
 
 import gfmodules.logging as gflog
 import pytest
 from gfmodules.logging import ConfigLogging
 from gfmodules.logging.testing import reset_for_tests
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import DataPointT, InMemoryMetricReader, NumberDataPoint
 from pydantic import SecretStr
 
 from app.config import ConfigDatabase
@@ -13,7 +15,10 @@ from app.db.models.key_info import KeyInfoEntity
 from app.db.models.referral import ReferralEntity
 from app.db.repository.key_info_repository import KeyInfoRepository
 from app.db.repository.referral_repository import ReferralRepository
+from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
+from app.logging.context import CLAIM_FIELDS
 from app.logging.events import Log
+from app.metrics import UsageMetrics
 from app.models.fhir.elements import (
     CodeableConcept,
     Coding,
@@ -35,12 +40,17 @@ from app.models.ura import UraNumber
 from app.services.auth.header import AuthHeaderService
 from app.services.http import HttpService
 from app.services.key_info import KeyInfoService
+from app.services.pseudonym_referral_service import PseudonymReferralService
+from app.services.pseudonym_resolver import PseudonymResolver
 from app.services.referral_service import ReferralService
 from tests.test_config import get_test_config
 
 # A url-safe base64 token decoding to {"evaluated_output": "JWE", "blind_factor": "BF"},
 # which is the shape `decode_url_safe_token` expects of List.subject.
 TEST_PSEUDONYM_TOKEN = "eyJldmFsdWF0ZWRfb3V0cHV0IjogIkpXRSIsICJibGluZF9mYWN0b3IiOiAiQkYifQ"
+
+type MetricPoints = Callable[[str], list[DataPointT]]
+type CounterValue = Callable[[str, dict[str, str]], int]
 
 
 def make_list_resource(
@@ -74,6 +84,7 @@ def logging_catalogue() -> Generator[None, Any, None]:
         config=ConfigLogging(console_streams=["debug"], access_logs=True),
         loglevel="DEBUG",
         catalogue=Log,
+        extra_context_fields=CLAIM_FIELDS,
         strict_fields=True,
     )
     try:
@@ -135,13 +146,66 @@ def mock_referral_entity() -> ReferralEntity:
 
 
 @pytest.fixture()
-def referral_service(database: Database) -> ReferralService:
-    return ReferralService(database=database)
+def metric_reader() -> InMemoryMetricReader:
+    return InMemoryMetricReader()
+
+
+@pytest.fixture
+def meter_provider(metric_reader: InMemoryMetricReader) -> MeterProvider:
+    return MeterProvider(metric_readers=[metric_reader])
+
+
+@pytest.fixture
+def metric_points(metric_reader: InMemoryMetricReader) -> MetricPoints:
+    """Look up the data points ``metric_reader`` has collected so far for a metric name."""
+
+    def points(name: str) -> list[DataPointT]:
+        data = metric_reader.get_metrics_data()
+        if data is None:
+            return []
+        return [
+            point
+            for resource_metrics in data.resource_metrics
+            for scope_metrics in resource_metrics.scope_metrics
+            for metric in scope_metrics.metrics
+            if metric.name == name
+            for point in metric.data.data_points
+        ]
+
+    return points
+
+
+@pytest.fixture
+def counter_value(metric_points: MetricPoints) -> CounterValue:
+    """Sum a counter's data points whose attributes exactly match the given attributes."""
+    return lambda name, attributes: sum(
+        int(point.value)
+        for point in metric_points(name)
+        if isinstance(point, NumberDataPoint) and dict(point.attributes or {}) == attributes
+    )
+
+
+@pytest.fixture
+def usage_metrics(meter_provider: MeterProvider) -> UsageMetrics:
+    return UsageMetrics(meter_provider)
+
+
+@pytest.fixture
+def referral_service(database: Database, usage_metrics: UsageMetrics) -> ReferralService:
+    return ReferralService(database=database, usage_metrics=usage_metrics)
 
 
 @pytest.fixture()
 def key_info_service(database: Database) -> KeyInfoService:
     return KeyInfoService(database)
+
+
+@pytest.fixture
+def pseudonym_referral_service(
+    referral_service: ReferralService, key_info_service: KeyInfoService
+) -> PseudonymReferralService:
+    resolver = PseudonymResolver(crypto_client=CryptoServiceApiClientMock(), key_info_service=key_info_service)
+    return PseudonymReferralService(referral_service=referral_service, pseudonym_resolver=resolver)
 
 
 @pytest.fixture()
