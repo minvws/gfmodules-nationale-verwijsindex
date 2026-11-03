@@ -9,6 +9,8 @@ from app.models.fhir.resources.data import (
     DEVICE_SYSTEM,
     PSEUDONYM_SYSTEM,
 )
+from app.models.pseudonym import OprfPseudonym
+from app.services.fhir.pseudonym_token import decode_pseudonym_token
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +91,9 @@ class LocalizationListParams(BaseModel):
 
     def is_localize_params(self) -> bool:
         return self.subject is not None and self.source is None
+
+    def get_subject_as_class_or_none(self) -> OprfPseudonym | None:
+        return decode_pseudonym_token(self.subject, SUBJECT_IDENTIFIER_PARAM) if self.subject else None
 
 
 class LocalizationListSearchParams(LocalizationListParams):
