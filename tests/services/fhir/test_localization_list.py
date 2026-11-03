@@ -63,10 +63,11 @@ class TestCreate:
 
         assert result.id is not None
 
+    @pytest.mark.parametrize("pseudonym", [TEST_PSEUDONYM_TOKEN, INVALID_PSEUDONYM_TOKEN], ids=["valid", "invalid"])
     def test_rejects_a_resource_for_another_ura(
-        self, service: LocalizationListService, caplog: pytest.LogCaptureFixture
+        self, service: LocalizationListService, caplog: pytest.LogCaptureFixture, pseudonym: str
     ) -> None:
-        data = make_list_resource(ura=str(OTHER_URA))
+        data = make_list_resource(ura=str(OTHER_URA), pseudonym=pseudonym)
 
         with caplog.at_level(logging.INFO), pytest.raises(UnauthorizedUraError):
             service.create(data, AUTH_URA)
