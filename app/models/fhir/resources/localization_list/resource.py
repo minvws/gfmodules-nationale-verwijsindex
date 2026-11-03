@@ -19,9 +19,7 @@ from app.models.fhir.resources.data import (
     URA_SYSTEM_EXTENSION,
 )
 from app.models.fhir.resources.domain_resource import DomainResource
-from app.models.pseudonym import OprfPseudonym
 from app.models.ura import UraNumber
-from app.services.fhir.pseudonym_token import decode_pseudonym_token
 
 
 class ReferenceExtension(Extension):
@@ -88,14 +86,14 @@ class LocalizationList(DomainResource):
 
         return UraNumber(target_ura)
 
-    def get_encoded_pseudonym(self) -> OprfPseudonym:
+    def get_encoded_pseudonym(self) -> str:
         if self.subject is None:
             raise ValueError("List.subject is required")
 
         if self.subject.identifier.system != PSEUDONYM_SYSTEM:
             raise ValueError(f"List.subject.identifier.system must be {PSEUDONYM_SYSTEM}")
 
-        return decode_pseudonym_token(self.subject.identifier.value, "List.subject.identifier.value")
+        return self.subject.identifier.value
 
     def get_device(self) -> str:
         if self.source.identifier.system != DEVICE_SYSTEM:
