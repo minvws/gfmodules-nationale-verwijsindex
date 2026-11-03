@@ -142,8 +142,9 @@ class TestQuery:
     def test_rejects_an_invalid_pseudonym_without_a_failure_event(
         self, service: LocalizationListService, source: str | None, caplog: pytest.LogCaptureFixture
     ) -> None:
+        params = _params(subject=INVALID_PSEUDONYM_TOKEN, source=source)
         with caplog.at_level(logging.INFO), pytest.raises(PseudonymError, match="subject:identifier"):
-            service.query(_params(subject=INVALID_PSEUDONYM_TOKEN, source=source), AUTH_URA)
+            service.query(params, AUTH_URA)
 
         assert _event_ids(caplog) == []
 
