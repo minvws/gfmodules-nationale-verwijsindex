@@ -10,6 +10,7 @@ CREATE TABLE admin.organizations (
     CONSTRAINT organizations_pkey PRIMARY KEY (id)
 );
 CREATE UNIQUE INDEX uq_organizations_external_id_active ON admin.organizations (external_id) WHERE deleted_at IS NULL;
+CREATE INDEX ix_organizations_external_id ON admin.organizations (external_id);
 
 CREATE TABLE admin.clients (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
