@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.config import ConfigDatabase
 from app.db.db import Database
 from app.db.models.key_info import KeyInfoEntity
+from app.db.models.organization import OrganizationEntity
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
 
@@ -388,3 +389,57 @@ def test_exists_should_return_false_if_record_is_not_there(
         )
 
         assert exist is False
+
+
+NOW = datetime(2026, 1, 1, tzinfo=UTC)
+
+
+@pytest.mark.parametrize(
+    "organizations,visible",
+    [
+        pytest.param([None], True, id="active"),
+        pytest.param([NOW], False, id="deleted"),
+        pytest.param([NOW, None], True, id="deleted-then-recreated"),
+        pytest.param([], True, id="no-organization"),
+    ],
+)
+def test_referral_visibility_depends_on_organization(
+    referral_repository: ReferralRepository,
+    mock_referral_entity: ReferralEntity,
+    mock_key_info: KeyInfoEntity,
+    organizations: list[datetime | None],
+    visible: bool,
+) -> None:
+    with referral_repository.db_session:
+        for deleted_at in organizations:
+            referral_repository.db_session.add(
+                OrganizationEntity(id=uuid4(), external_id=mock_referral_entity.ura_number, deleted_at=deleted_at)
+            )
+        mock_referral_entity.key_info = mock_key_info
+        referral_repository.add_one(mock_referral_entity)
+
+        by_id = referral_repository.find_by_id(mock_referral_entity.id)
+        many = referral_repository.find_many(ura_number=mock_referral_entity.ura_number)
+        count = referral_repository.count(ura_number=mock_referral_entity.ura_number)
+
+    assert (by_id is not None) is visible
+    assert len(many) == count == (1 if visible else 0)
+
+
+def test_deleted_organization_hides_only_its_own_referrals(
+    referral_repository: ReferralRepository,
+    mock_key_info: KeyInfoEntity,
+) -> None:
+    with referral_repository.db_session:
+        referral_repository.db_session.add(OrganizationEntity(id=uuid4(), external_id="00000001", deleted_at=NOW))
+        referral_repository.db_session.add(OrganizationEntity(id=uuid4(), external_id="00000002", deleted_at=None))
+        for ura in ("00000001", "00000002"):
+            referral_repository.add_one(
+                ReferralEntity(ura_number=ura, pseudonym="some-pseudonym", source="Some-Device", key_info=mock_key_info)
+            )
+
+        actual = referral_repository.find_many(pseudonym="some-pseudonym")
+        count = referral_repository.count(pseudonym="some-pseudonym")
+
+    assert [r.ura_number for r in actual] == ["00000002"]
+    assert count == 1

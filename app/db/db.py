@@ -30,6 +30,8 @@ class Database:
                 )
                 with self.engine.connect() as conn:
                     conn.execute(text("PRAGMA foreign_keys=ON"))
+                    # Postgres schemas are emulated with attached databases
+                    conn.execute(text("ATTACH DATABASE ':memory:' AS admin"))
             else:
                 self.engine = create_engine(
                     dsn,

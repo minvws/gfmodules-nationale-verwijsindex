@@ -1,12 +1,25 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, and_, delete, exists, func, select
+from sqlalchemy import ColumnElement, and_, delete, exists, func, not_, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db.decorator import repository
+from app.db.models.organization import OrganizationEntity
 from app.db.models.referral import ReferralEntity
 from app.db.repository.respository_base import RepositoryBase
+
+
+def _organization_not_deleted() -> ColumnElement[bool]:
+    """
+    Hide referrals whose organization is soft-deleted, unless an active organization with the same
+    URA number exists (deleted and recreated). Referrals without any organization stay visible.
+    """
+    same_ura = OrganizationEntity.external_id == ReferralEntity.ura_number
+    return or_(
+        exists().where(same_ura, OrganizationEntity.deleted_at.is_(None)),
+        not_(exists().where(same_ura)),
+    )
 
 
 @repository(ReferralEntity)
@@ -21,7 +34,7 @@ class ReferralRepository(RepositoryBase):
         return result
 
     def find_by_id(self, id: UUID) -> ReferralEntity | None:
-        stmt = select(ReferralEntity).where(ReferralEntity.id == id)
+        stmt = select(ReferralEntity).where(ReferralEntity.id == id, _organization_not_deleted())
         results = self.db_session.execute(stmt).scalars().first()
         return results
 
@@ -65,7 +78,7 @@ class ReferralRepository(RepositoryBase):
         ura_number: str | None = None,
         source: str | None = None,
     ) -> list[ColumnElement[bool]]:
-        filters: list[ColumnElement[bool]] = []
+        filters: list[ColumnElement[bool]] = [_organization_not_deleted()]
 
         if ura_number is not None:
             filters.append(ReferralEntity.ura_number == ura_number)
