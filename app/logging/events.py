@@ -46,6 +46,15 @@ class Log(_Base):
             _APP: ("exception_type", "table", "column", "value_length", "column_limit"),
         },
     )
+    INVALID_REQUEST = LogEvent(  # NVI-SYS-007
+        "100607",
+        logging.WARNING,
+        (_APP, _SIEM),
+        {
+            _APP: (*_CALLER, "http_status", "error_reason"),
+            _SIEM: (*_CALLER, "http_status", "error_reason"),
+        },
+    )
 
     REGISTERED_REFERRAL = LogEvent(  # NVI-REF-001
         "900400",
