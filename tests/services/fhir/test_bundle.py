@@ -3,10 +3,11 @@ from typing import Any, Literal
 from uuid import uuid4
 
 import pytest
+from pydantic import ValidationError
 
 from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.data import AuthorizationScope
-from app.models.fhir.bundle import Bundle, BundleEntry, EntryRequest, EntryRequestDto
+from app.models.fhir.bundle import Bundle, BundleEntry, EntryRequest
 from app.models.fhir.resources.localization_list.request import LocalizationListSearchParams
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
@@ -316,7 +317,10 @@ class TestEntryFailureMapping:
         class RequiredSearchParams(LocalizationListSearchParams):
             required_value: str
 
-        result = BundleService._parse_params(EntryRequestDto(params=params), 0, RequiredSearchParams)
+        with pytest.raises(ValidationError) as caught:
+            RequiredSearchParams.model_validate(params)
+
+        result = BundleService._invalid_query_entry(0, caught.value)
 
         assert isinstance(result, BundleEntry)
         assert result.response is not None
