@@ -84,6 +84,7 @@ class Log(_Base):
             _SIEM: (*_CALLER, "http_status", "error_reason"),
         },
     )
+    REFERRAL_REGISTRATION_ERROR = REFERRAL_REGISTRATION_FAILED.replace(level=logging.ERROR)  # NVI-REF-005
     REFERRAL_ACCESS_DENIED = LogEvent(  # NVI-REF-006
         "900405",
         logging.WARNING,
