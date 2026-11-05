@@ -9,13 +9,11 @@ from app.models.fhir.bundle import Bundle, BundleEntry, BundleLink
 from app.models.fhir.resources.localization_list.request import (
     COUNT_PARAM,
     OFFSET_PARAM,
-    SUBJECT_IDENTIFIER_PARAM,
     LocalizationListParams,
     LocalizationListSearchParams,
 )
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
-from app.models.pseudonym import OprfPseudonym
 from app.models.ura import UraNumber
 from app.services.exceptions import UnauthorizedUraError
 from app.services.fhir.pseudonym_token import decode_pseudonym_token
@@ -23,10 +21,6 @@ from app.services.pseudonym_referral_service import PseudonymReferralService
 from app.services.referral_service import ReferralService
 
 logger = logging.getLogger(__name__)
-
-
-def _subject_pseudonym(params: LocalizationListParams) -> OprfPseudonym | None:
-    return decode_pseudonym_token(params.subject, SUBJECT_IDENTIFIER_PARAM) if params.subject else None
 
 
 class LocalizationListService:
@@ -79,16 +73,15 @@ class LocalizationListService:
 
         When `request_url` is given, the bundle links to the current, next and previous page.
         """
-        subject = _subject_pseudonym(params)
         page_size = min(params.count or self.default_page_size, self.max_page_size)
 
-        if params.is_localize_params() and subject is not None:
+        if params.is_localize_params() and params.subject is not None:
             total, referrals = self.pseudonym_referral_service.localize(
-                subject, authenticated_ura, limit=page_size, offset=params.offset
+                params.subject, authenticated_ura, limit=page_size, offset=params.offset
             )
         else:
             total, referrals = self.pseudonym_referral_service.query(
-                authenticated_ura, pseudonym=subject, source=params.source, limit=page_size, offset=params.offset
+                authenticated_ura, pseudonym=params.subject, source=params.source, limit=page_size, offset=params.offset
             )
 
         bundle = Bundle(
@@ -139,8 +132,9 @@ class LocalizationListService:
         authenticated_ura: UraNumber,
         source: str,
     ) -> tuple[OperationOutcome, int]:
-        subject = _subject_pseudonym(params)
-        deleted_count = self.pseudonym_referral_service.delete_many(authenticated_ura, pseudonym=subject, source=source)
+        deleted_count = self.pseudonym_referral_service.delete_many(
+            authenticated_ura, pseudonym=params.subject, source=source
+        )
 
         if deleted_count < 1:
             return (

@@ -50,7 +50,7 @@ def handle_mapped_exception(request: Request, exc: Exception) -> JSONResponse:
         fhir_error = FHIRError(severity=spec.severity, code=spec.fhir_code, msg=str(exc))
         return JSONResponse(
             status_code=status_code,
-            content=fhir_error.outcome.model_dump(exclude_none=True),
+            content=fhir_error.outcome.model_dump(by_alias=True, exclude_none=True),
             headers=fhir_error.headers,
         )
 

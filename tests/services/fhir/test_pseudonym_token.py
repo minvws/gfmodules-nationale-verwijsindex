@@ -12,7 +12,7 @@ from tests.conftest import TEST_PSEUDONYM_TOKEN
 FIELD = "some.field"
 
 
-def _encode(data: dict[str, str]) -> str:
+def _encode(data: object) -> str:
     return base64.urlsafe_b64encode(json.dumps(data).encode()).decode().rstrip("=")
 
 
@@ -25,6 +25,8 @@ def test_decodes_evaluated_output_and_blind_factor() -> None:
     [
         pytest.param("not-a-valid-token!!!", id="malformed"),
         pytest.param(_encode({"something_else": "x"}), id="missing-fields"),
+        pytest.param(_encode(["not", "a", "mapping"]), id="non-object"),
+        pytest.param(_encode({"evaluated_output": 42, "blind_factor": "BF"}), id="non-string-field"),
     ],
 )
 def test_raises_pseudonym_error_on_invalid_token(token: str) -> None:
