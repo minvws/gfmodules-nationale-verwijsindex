@@ -6,6 +6,7 @@ from gfmodules.logging import LogEvent
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.logging.events import Log
+from app.logging.rejections import MAX_REASON_LENGTH
 from app.models.pseudonym import OprfPseudonym, PseudonymResponse
 from app.models.ura import UraNumber
 from app.services.exceptions import CryptoServiceError, InvalidKeyInfoError, PseudonymExchangeError
@@ -97,6 +98,24 @@ def test_register_logs_an_error_when_the_crypto_service_fails(
     (fields,) = logged_fields(caplog, Log.REFERRAL_REGISTRATION_ERROR)
     assert fields["levelno"] == logging.ERROR
     assert fields["http_status"] == 502
+
+
+def test_register_bounds_the_logged_failure_reason(
+    referral_service: ReferralService,
+    key_info_service: KeyInfoService,
+    ura_number: UraNumber,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    class VerboseFailingCryptoClient(CryptoServiceApiClientMock):
+        def exchange(self, pseudonym: OprfPseudonym, label: str, mechanism: str) -> PseudonymResponse:
+            raise RuntimeError("x" * (MAX_REASON_LENGTH * 4))
+
+    service = _service_with(VerboseFailingCryptoClient(), referral_service, key_info_service)
+    with caplog.at_level(logging.INFO), pytest.raises(RuntimeError):
+        service.register(PSEUDONYM, ura_number, SOURCE)
+
+    (fields,) = logged_fields(caplog, Log.REFERRAL_REGISTRATION_ERROR)
+    assert len(fields["error_reason"]) == MAX_REASON_LENGTH
 
 
 def test_register_does_not_log_an_expected_failure(

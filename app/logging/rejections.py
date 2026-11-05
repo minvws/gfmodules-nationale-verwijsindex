@@ -6,9 +6,17 @@ from pydantic import ValidationError
 logger = logging.getLogger(__name__)
 
 _DENIAL_STATUSES = frozenset({401, 403})
+MAX_REASON_LENGTH = 500
+_TRUNCATED = "..."
 
 
-def summarize_reason(exc: Exception) -> str:
+def _bounded(reason: str) -> str:
+    if len(reason) <= MAX_REASON_LENGTH:
+        return reason
+    return reason[: MAX_REASON_LENGTH - len(_TRUNCATED)] + _TRUNCATED
+
+
+def _describe(exc: Exception) -> str:
     if isinstance(exc, (RequestValidationError, ValidationError)):
         reasons = [
             f"{'.'.join(str(loc) for loc in err.get('loc', ()))}: {err.get('msg', '')}".strip(" :")
@@ -16,6 +24,10 @@ def summarize_reason(exc: Exception) -> str:
         ]
         return "; ".join(r for r in reasons if r) or "validation error"
     return str(exc)
+
+
+def summarize_reason(exc: Exception) -> str:
+    return _bounded(_describe(exc))
 
 
 def log_rejection(status_code: int, exc: Exception, reason: str) -> None:
