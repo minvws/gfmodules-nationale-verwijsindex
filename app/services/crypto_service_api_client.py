@@ -1,6 +1,5 @@
 import logging
 from http import HTTPStatus
-from json import JSONDecodeError
 
 from requests.exceptions import ConnectionError, HTTPError, Timeout
 
@@ -43,7 +42,7 @@ class CryptoServiceApiClient:
             if e.response is not None and e.response.status_code == HTTPStatus.BAD_REQUEST:
                 raise PseudonymExchangeError("Invalid pseudonym or oprf_key") from e
             raise CryptoServiceError("The Crypto Service API failed to exchange the pseudonym") from e
-        except (JSONDecodeError, KeyError, ValueError) as e:
+        except (KeyError, ValueError) as e:
             logger.exception("Unexpected response from Crypto Service API")
             raise CryptoServiceError("Unexpected response from the Crypto Service API") from e
 
