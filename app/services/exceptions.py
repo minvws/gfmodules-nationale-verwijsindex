@@ -60,6 +60,10 @@ class InvalidModelError(ValueError):
         super().__init__(msg)
 
 
+class InvalidResourceError(Exception):
+    pass
+
+
 class InvalidAuthHeadersError(Exception):
     pass
 
