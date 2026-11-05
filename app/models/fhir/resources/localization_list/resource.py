@@ -20,6 +20,7 @@ from app.models.fhir.resources.data import (
 )
 from app.models.fhir.resources.domain_resource import DomainResource
 from app.models.ura import UraNumber
+from app.services.exceptions import InvalidResourceError
 
 
 class ReferenceExtension(Extension):
@@ -82,20 +83,23 @@ class LocalizationList(DomainResource):
             None,
         )
         if target_ura is None:
-            raise ValueError(f"Missing identifier with naming system {URA_SYSTEM} in List.extension")
+            raise InvalidResourceError(f"Missing identifier with naming system {URA_SYSTEM} in List.extension")
 
-        return UraNumber(target_ura)
+        try:
+            return UraNumber(target_ura)
+        except ValueError as e:
+            raise InvalidResourceError(f"Invalid URA in List.extension: {e}") from e
 
     def get_encoded_pseudonym(self) -> str:
         if self.subject is None:
-            raise ValueError("List.subject is required")
+            raise InvalidResourceError("List.subject is required")
 
         if self.subject.identifier.system != PSEUDONYM_SYSTEM:
-            raise ValueError(f"List.subject.identifier.system must be {PSEUDONYM_SYSTEM}")
+            raise InvalidResourceError(f"List.subject.identifier.system must be {PSEUDONYM_SYSTEM}")
 
         return self.subject.identifier.value
 
     def get_device(self) -> str:
         if self.source.identifier.system != DEVICE_SYSTEM:
-            raise ValueError(f"List.source.identifier should include system {DEVICE_SYSTEM}")
+            raise InvalidResourceError(f"List.source.identifier should include system {DEVICE_SYSTEM}")
         return self.source.identifier.value
