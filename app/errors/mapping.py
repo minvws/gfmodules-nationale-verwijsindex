@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 
+from app.models.fhir.resources.operation_outcome.resource import IssueType
 from app.services.exceptions import (
     ConflictError,
     ForbiddenError,
@@ -16,7 +17,7 @@ class ErrorSpec(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     severity: str
-    fhir_code: str
+    fhir_code: IssueType
     http_status: int
     log: bool = False
 

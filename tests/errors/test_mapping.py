@@ -2,6 +2,7 @@ import pytest
 
 from app.errors.mapping import ErrorSpec, should_log, spec_for
 from app.models.auth.data import AuthorizationScope
+from app.models.fhir.resources.operation_outcome.resource import IssueType
 from app.services.exceptions import (
     ConflictError,
     ForbiddenError,
@@ -16,7 +17,7 @@ from app.services.exceptions import (
 )
 
 
-def _spec(fhir_code: str, http_status: int, *, log: bool = False) -> ErrorSpec:
+def _spec(fhir_code: IssueType, http_status: int, *, log: bool = False) -> ErrorSpec:
     return ErrorSpec(severity="error", fhir_code=fhir_code, http_status=http_status, log=log)
 
 

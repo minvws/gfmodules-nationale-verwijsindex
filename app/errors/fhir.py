@@ -1,4 +1,5 @@
 from app.models.fhir.resources.operation_outcome.resource import (
+    IssueType,
     OperationOutcome,
     OperationOutcomeDetail,
     OperationOutcomeIssue,
@@ -9,7 +10,7 @@ class FHIRError:
     def __init__(
         self,
         severity: str,
-        code: str,
+        code: IssueType,
         msg: str,
         expression: list[str] | None = None,
     ):
