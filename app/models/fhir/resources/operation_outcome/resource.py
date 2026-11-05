@@ -1,6 +1,40 @@
-from typing import Self
+from typing import Literal, Self
 
 from app.models.fhir.resources.domain_resource import DomainResource, FhirBaseModel
+
+IssueType = Literal[
+    "invalid",
+    "structure",
+    "required",
+    "value",
+    "invariant",
+    "security",
+    "login",
+    "unknown",
+    "expired",
+    "forbidden",
+    "suppressed",
+    "processing",
+    "not-supported",
+    "duplicate",
+    "multiple-matches",
+    "not-found",
+    "deleted",
+    "too-long",
+    "code-invalid",
+    "extension",
+    "too-costly",
+    "business-rule",
+    "conflict",
+    "transient",
+    "lock-error",
+    "no-store",
+    "exception",
+    "timeout",
+    "incomplete",
+    "throttled",
+    "informational",
+]
 
 
 class OperationOutcomeDetail(FhirBaseModel):
@@ -19,7 +53,7 @@ class OperationOutcome(DomainResource):
     issue: list[OperationOutcomeIssue]
 
     @classmethod
-    def make_error_outcome(cls, code: str, msg: str) -> Self:
+    def make_error_outcome(cls, code: IssueType, msg: str) -> Self:
         return cls(
             issue=[
                 OperationOutcomeIssue(

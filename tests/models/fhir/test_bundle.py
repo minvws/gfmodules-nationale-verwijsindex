@@ -190,3 +190,25 @@ class TestEntryRequestDtoFromUrl:
     def test_rejects_a_path_beyond_the_resource_id(self) -> None:
         with pytest.raises(ValueError):
             EntryRequestDto.from_url("List/0f14d0ab-9605-4a62-a9e4-5ed26688389b/_history/2")
+
+
+def test_accepts_an_incoming_entry_outcome_with_any_issue_code() -> None:
+    bundle = Bundle[LocalizationList].model_validate(
+        {
+            "resourceType": "Bundle",
+            "type": "transaction",
+            "entry": [
+                {
+                    "response": {
+                        "status": "200",
+                        "outcome": {
+                            "resourceType": "OperationOutcome",
+                            "issue": [{"severity": "information", "code": "success"}],
+                        },
+                    }
+                }
+            ],
+        }
+    )
+
+    assert bundle.entry[0].response is not None
