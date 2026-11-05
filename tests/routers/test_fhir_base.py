@@ -1,7 +1,9 @@
+import json
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from gfmodules.logging.testing import capture_records
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.services.key_info import KeyInfoService
@@ -41,6 +43,14 @@ class TestRegisterBundle:
         entry = response.json()["entry"][0]
         assert entry["response"]["status"] == "201"
         assert entry["resource"]["id"] is not None
+
+    def test_keeps_the_subject_token_out_of_the_logs_of_a_rejected_entry(self, client: TestClient) -> None:
+        entry = {"request": {"method": "DELETE", "url": "List?subject:identifier=urn:wrong|leaky-token-value"}}
+        with capture_records("app") as records:
+            response = client.post("/fhir", json=_bundle(entry), headers=FHIR_JSON)
+
+        assert response.json()["entry"][0]["response"]["status"] == "422"
+        assert not [entry for entry in records if "leaky-token-value" in json.dumps(entry.payload)]
 
     def test_rejects_an_empty_bundle(self, client: TestClient) -> None:
         response = client.post("/fhir", json=_bundle(), headers=FHIR_JSON)

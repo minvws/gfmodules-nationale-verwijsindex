@@ -1,4 +1,7 @@
+from contextlib import suppress
+
 import pytest
+from gfmodules.logging.testing import capture_records
 
 from app.models.fhir.elements import CodeableConcept, Coding, Identifier
 
@@ -115,3 +118,12 @@ def test_identifier_from_query_unknown_system_raises() -> None:
 def test_identifier_from_query_multiple_pipes_raises() -> None:
     with pytest.raises(ValueError, match="Invalid query format"):
         Identifier.from_query("a|b|c", system="some-system")
+
+
+@pytest.mark.parametrize("query", ["secret-value", "other-system|secret-value", "a|b|secret-value"])
+def test_identifier_from_query_keeps_the_value_out_of_the_logs(query: str) -> None:
+    with capture_records("app") as records, suppress(ValueError):
+        Identifier.from_query(query, system="some-system")
+
+    assert records.entries
+    assert not [entry for entry in records if "secret-value" in entry.description]

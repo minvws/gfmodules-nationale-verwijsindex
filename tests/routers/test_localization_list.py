@@ -1,7 +1,9 @@
+import json
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from gfmodules.logging.testing import capture_records
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.models.auth.data import AuthorizationScope
@@ -201,6 +203,13 @@ class TestQuery:
         assert body["issue"][0]["severity"] == "error"
         assert body["issue"][0]["code"] == "invalid"
         assert token not in response.text
+
+    def test_keeps_the_subject_token_out_of_the_logs(self, localize_client: TestClient) -> None:
+        with capture_records("app") as records:
+            response = localize_client.get("/fhir/List", params={"subject:identifier": "leaky-token-value"})
+
+        assert response.status_code == 422
+        assert not [entry for entry in records if "leaky-token-value" in json.dumps(entry.payload)]
 
     def test_localize_query_requires_localize_scope(self, client: TestClient) -> None:
         response = client.get("/fhir/List", params={"subject:identifier": TEST_PSEUDONYM_TOKEN})

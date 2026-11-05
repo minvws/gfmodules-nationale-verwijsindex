@@ -72,7 +72,7 @@ class LocalizationListParams(BaseModel):
             return None
         try:
             identifier = Identifier.from_query(query=value, system=PSEUDONYM_SYSTEM)
-            logger.debug("Validated subject identifier: %r", identifier)
+            logger.debug("Validated subject identifier with system: %s", identifier.system)
         except ValueError as e:
             raise ValueError(f"Invalid subject identifier: {e}")
         if not identifier.system or not identifier.value:
