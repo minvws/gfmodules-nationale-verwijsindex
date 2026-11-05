@@ -9,6 +9,7 @@ from gfmodules.logging.middleware import restore_request_context
 
 from app.errors.fhir import FHIRError
 from app.errors.mapping import DEFAULT_SPEC, EXCEPTION_MAP, UNEXPECTED_ERROR_MESSAGE, spec_for
+from app.logging.rejections import log_rejection, summarize_reason
 from app.models.fhir.resources.operation_outcome.resource import (
     OperationOutcome,
     OperationOutcomeDetail,
@@ -17,34 +18,11 @@ from app.models.fhir.resources.operation_outcome.resource import (
 
 logger = logging.getLogger(__name__)
 
-_DENIAL_STATUSES = frozenset({401, 403})
-
-
-def _summarize_reason(exc: Exception) -> str:
-    if isinstance(exc, RequestValidationError):
-        reasons = [
-            f"{'.'.join(str(loc) for loc in err.get('loc', ()))}: {err.get('msg', '')}".strip(" :")
-            for err in exc.errors()
-        ]
-        return "; ".join(r for r in reasons if r) or "validation error"
-    return str(exc)
-
-
-def log_rejection(status_code: int, exc: Exception) -> None:
-    level = logging.WARNING if status_code in _DENIAL_STATUSES else logging.INFO
-    logger.log(
-        level,
-        "Request rejected with %s (%s): %s",
-        status_code,
-        type(exc).__name__,
-        _summarize_reason(exc),
-    )
-
 
 def handle_mapped_exception(request: Request, exc: Exception) -> JSONResponse:
     spec = spec_for(exc)
     status_code = spec.http_status
-    log_rejection(status_code, exc)
+    log_rejection(status_code, exc, summarize_reason(exc))
 
     if "fhir" in request.url.path:
         fhir_error = FHIRError(severity=spec.severity, code=spec.fhir_code, msg=str(exc))
@@ -60,7 +38,7 @@ def handle_mapped_exception(request: Request, exc: Exception) -> JSONResponse:
 def handle_request_validation_exception(req: Request, exc: RequestValidationError) -> JSONResponse:
     path = req.url.path
     status_code = 422
-    log_rejection(status_code, exc)
+    log_rejection(status_code, exc, summarize_reason(exc))
     if "fhir" in path:
         issues = []
 

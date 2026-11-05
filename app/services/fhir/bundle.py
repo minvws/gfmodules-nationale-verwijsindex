@@ -6,9 +6,9 @@ from uuid import UUID
 import gfmodules.logging as gflog
 from pydantic import ValidationError
 
-from app.errors.handlers import log_rejection
 from app.errors.mapping import DEFAULT_SPEC, UNEXPECTED_ERROR_MESSAGE, spec_for
 from app.logging.events import Log
+from app.logging.rejections import log_rejection, summarize_reason
 from app.models.auth.context import AuthContext
 from app.models.auth.data import AuthorizationScope
 from app.models.fhir.bundle import Bundle, BundleEntry, EntryRequest, EntryRequestDto, EntryResponse
@@ -143,7 +143,7 @@ class BundleService:
             if unexpected:
                 logger.exception("Bundle entry action failed")
             else:
-                log_rejection(spec.http_status, exc)
+                log_rejection(spec.http_status, exc, summarize_reason(exc))
 
             return BundleEntry(
                 response=EntryResponse.make_error_response(
