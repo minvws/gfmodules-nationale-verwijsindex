@@ -18,7 +18,7 @@ VALID_HEADERS = {
 }
 
 
-@pytest.fixture()
+@pytest.fixture
 def client() -> TestClient:
     set_config(get_test_config())
     return TestClient(setup_fastapi(), raise_server_exceptions=False)
