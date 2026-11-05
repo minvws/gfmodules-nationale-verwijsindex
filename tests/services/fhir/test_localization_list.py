@@ -2,10 +2,17 @@ import logging
 from uuid import UUID, uuid4
 
 import pytest
+from pydantic import ValidationError
 
 from app.logging.events import Log
 from app.models.fhir.bundle import Bundle
-from app.models.fhir.resources.localization_list.request import LocalizationListSearchParams
+from app.models.fhir.resources.localization_list.request import (
+    COUNT_PARAM,
+    DEVICE_IDENTIFIER_PARAM,
+    OFFSET_PARAM,
+    SUBJECT_IDENTIFIER_PARAM,
+    LocalizationListSearchParams,
+)
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.ura import UraNumber
 from app.services.exceptions import NotFoundError, PseudonymError, UnauthorizedUraError
@@ -40,7 +47,9 @@ def _params(
     count: int | None = None,
     offset: int = 0,
 ) -> LocalizationListSearchParams:
-    return LocalizationListSearchParams.model_construct(subject=subject, source=source, count=count, offset=offset)
+    return LocalizationListSearchParams.model_validate(
+        {SUBJECT_IDENTIFIER_PARAM: subject, DEVICE_IDENTIFIER_PARAM: source, COUNT_PARAM: count, OFFSET_PARAM: offset}
+    )
 
 
 def _create_referrals(service: LocalizationListService, amount: int) -> None:
@@ -141,11 +150,10 @@ class TestQuery:
 
     @pytest.mark.parametrize("source", [None, AUTH_SOURCE], ids=["localize", "own-source"])
     def test_rejects_an_invalid_pseudonym_without_a_failure_event(
-        self, service: LocalizationListService, source: str | None, caplog: pytest.LogCaptureFixture
+        self, source: str | None, caplog: pytest.LogCaptureFixture
     ) -> None:
-        params = _params(subject=INVALID_PSEUDONYM_TOKEN, source=source)
-        with caplog.at_level(logging.INFO), pytest.raises(PseudonymError, match="subject:identifier"):
-            service.query(params, AUTH_URA)
+        with caplog.at_level(logging.INFO), pytest.raises(ValidationError, match="subject:identifier"):
+            _params(subject=INVALID_PSEUDONYM_TOKEN, source=source)
 
         assert _event_ids(caplog) == []
 

@@ -11,7 +11,7 @@ from app.models.fhir.resources.localization_list.resource import LocalizationLis
 from app.models.ura import UraNumber
 from app.services.exceptions import NotFoundError, PseudonymError, UnauthorizedUraError
 from app.services.fhir.bundle import BundleService
-from tests.conftest import make_list_resource
+from tests.conftest import TEST_PSEUDONYM_TOKEN, make_list_resource
 
 TEST_URA = UraNumber("00000001")
 TEST_ORG_NAME = "Test Organization"
@@ -20,7 +20,7 @@ TEST_ACTING_ORG_NAME = "client.example.nl"
 TEST_SOURCE_ID = "SRC-001"
 
 RESOURCE_ID = uuid4()
-QUERY_URL = "List?subject:identifier=pseudonym-value"
+QUERY_URL = f"List?subject:identifier={TEST_PSEUDONYM_TOKEN}"
 SOURCE_QUERY_URL = f"List?source:identifier={TEST_SOURCE_ID}"
 ID_URL = f"List/{RESOURCE_ID}"
 

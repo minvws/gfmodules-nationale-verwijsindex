@@ -1,14 +1,17 @@
 import logging
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import Query
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ValidateAs, field_validator
 
 from app.models.fhir.elements import Identifier
 from app.models.fhir.resources.data import (
     DEVICE_SYSTEM,
     PSEUDONYM_SYSTEM,
 )
+from app.models.pseudonym import OprfPseudonym
+from app.services.exceptions import PseudonymError
+from app.services.fhir.pseudonym_token import decode_pseudonym_token
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +44,17 @@ def _create_openapi_examples(system: str) -> dict[str, Any]:
     }
 
 
-class LocalizationListParams(BaseModel):
-    model_config = {"extra": "forbid"}
+def _subject_from_query(value: str) -> OprfPseudonym:
+    try:
+        return decode_pseudonym_token(value, SUBJECT_IDENTIFIER_PARAM)
+    except PseudonymError as e:
+        raise ValueError(str(e)) from e
 
-    subject: str | None = Query(
+
+class LocalizationListParams(BaseModel):
+    model_config = {"extra": "forbid", "hide_input_in_errors": True}
+
+    subject: Annotated[OprfPseudonym, ValidateAs(str, _subject_from_query)] | None = Query(
         alias=SUBJECT_IDENTIFIER_PARAM,
         openapi_examples=_create_openapi_examples(PSEUDONYM_SYSTEM),
         default=None,

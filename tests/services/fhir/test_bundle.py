@@ -6,7 +6,8 @@ import pytest
 
 from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.data import AuthorizationScope
-from app.models.fhir.bundle import Bundle, BundleEntry, EntryRequest
+from app.models.fhir.bundle import Bundle, BundleEntry, EntryRequest, EntryRequestDto
+from app.models.fhir.resources.localization_list.request import LocalizationListSearchParams
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.ura import UraNumber
@@ -277,7 +278,7 @@ class TestEntryFailureMapping:
         assert result.response.status == "422"
         assert "Request rejected with 422 (PseudonymError)" in caplog.text
 
-    def test_query_with_malformed_pseudonym_maps_to_422_and_logs(
+    def test_query_with_malformed_pseudonym_maps_to_422_without_rejection_log(
         self,
         bundle_service: BundleService,
         key_info_service: KeyInfoService,
@@ -290,7 +291,86 @@ class TestEntryFailureMapping:
 
         assert result.response is not None
         assert result.response.status == "422"
-        assert "Request rejected with 422 (PseudonymError)" in caplog.text
+        assert result.response.outcome is not None
+        assert result.response.outcome.issue[0].code == "invalid"
+        assert "not-a-valid-token!!!" not in str(result.response.outcome.model_dump())
+        assert "Request rejected with 422 (ValidationError)" not in caplog.text
+
+    @pytest.mark.parametrize("url", ["List?_count=0", "List?source:identifier=wrong-system|value"])
+    def test_invalid_query_parameters_map_to_invalid(self, bundle_service: BundleService, url: str) -> None:
+        result = _process(bundle_service, _entry("GET", url), index=0)
+
+        assert result.response is not None
+        assert result.response.status == "422"
+        assert result.response.outcome is not None
+        assert result.response.outcome.issue[0].code == "invalid"
+
+    @pytest.mark.parametrize(
+        ("params", "expected_code"),
+        [({}, "required"), ({"_count": "0"}, "invalid")],
+        ids=["missing", "missing-and-invalid"],
+    )
+    def test_parameter_validation_classifies_missing_and_invalid_errors(
+        self, params: dict[str, str], expected_code: str
+    ) -> None:
+        class RequiredSearchParams(LocalizationListSearchParams):
+            required_value: str
+
+        result = BundleService._parse_params(EntryRequestDto(params=params), 0, RequiredSearchParams)
+
+        assert isinstance(result, BundleEntry)
+        assert result.response is not None
+        assert result.response.status == "422"
+        assert result.response.outcome is not None
+        assert result.response.outcome.issue[0].code == expected_code
+
+    @pytest.mark.parametrize(
+        ("scope", "status"),
+        [(AuthorizationScope.READ, "403"), (AuthorizationScope.LOCALIZE, "422")],
+    )
+    def test_invalid_subject_with_own_source_uses_existing_scope_fallback(
+        self, bundle_service: BundleService, scope: AuthorizationScope, status: str
+    ) -> None:
+        ctx = AuthContext(
+            claims=AuthenticationClaims(
+                ura_number=AUTH_URA,
+                organization_name="Org",
+                oin="00000000000000000001",
+                acting_organization_name="client.example.nl",
+                source_id=TEST_SOURCE_ID,
+            ),
+            scope=[scope],
+            audience="nvi.service",
+        )
+        url = f"List?subject:identifier=not-a-valid-token!!!&source:identifier={TEST_SOURCE_ID}"
+
+        result = bundle_service.process_entry(ctx=ctx, entry=_entry("GET", url), index=0)
+
+        assert result.response is not None
+        assert result.response.status == status
+        assert result.response.outcome is not None
+        if status == "422":
+            assert result.response.outcome.issue[0].code == "invalid"
+        assert "not-a-valid-token!!!" not in str(result.response.outcome.model_dump())
+
+    def test_invalid_subject_system_keeps_stricter_scope_requirement(self, bundle_service: BundleService) -> None:
+        ctx = AuthContext(
+            claims=AuthenticationClaims(
+                ura_number=AUTH_URA,
+                organization_name="Org",
+                oin="00000000000000000001",
+                acting_organization_name="client.example.nl",
+                source_id=TEST_SOURCE_ID,
+            ),
+            scope=[AuthorizationScope.READ],
+            audience="nvi.service",
+        )
+        url = f"List?subject:identifier=wrong-system|value&source:identifier={TEST_SOURCE_ID}"
+
+        result = bundle_service.process_entry(ctx=ctx, entry=_entry("GET", url), index=0)
+
+        assert result.response is not None
+        assert result.response.status == "403"
 
     def test_read_of_an_unknown_id_logs_no_event(
         self, bundle_service: BundleService, caplog: pytest.LogCaptureFixture
