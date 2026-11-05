@@ -49,7 +49,8 @@ class BundleService:
         if isinstance(resolved_url, BundleEntry):
             return resolved_url
 
-        required_scope = self.required_scope(method, resolved_url)
+        query = self._validated_query(method, resolved_url)
+        required_scope = self.required_scope(method, resolved_url, query)
         if required_scope is not None and required_scope not in ctx.scope:
             error: Exception = UnauthorizedScopeError(ctx.scope, required_scope)
             gflog.emit(logger, Log.REFERRAL_ACCESS_DENIED, "Bundle entry denied: missing scope")
@@ -67,14 +68,9 @@ class BundleService:
                 return validated
             resource = validated
 
-        params: LocalizationListParams | None = None
-        if method in ("GET", "DELETE") and resolved_url.id is None:
-            parsed = self._parse_params(
-                resolved_url, index, LocalizationListSearchParams if method == "GET" else LocalizationListParams
-            )
-            if isinstance(parsed, BundleEntry):
-                return parsed
-            params = parsed
+        if isinstance(query, ValidationError):
+            return self._invalid_query_entry(index, query)
+        params = query
 
         denied = self._deny_mismatched_source(ctx, resource, params, index)
         if denied is not None:
@@ -176,22 +172,24 @@ class BundleService:
         return BundleEntry(response=EntryResponse(status=str(status_code), outcome=outcome))
 
     @staticmethod
-    def _parse_params(
-        resolved_url: EntryRequestDto, index: int, model: type[LocalizationListParams]
-    ) -> LocalizationListParams | BundleEntry[Any]:
+    def _validated_query(method: str, resolved_url: EntryRequestDto) -> LocalizationListParams | ValidationError | None:
+        if method not in ("GET", "DELETE") or resolved_url.id is not None:
+            return None
+        model = LocalizationListSearchParams if method == "GET" else LocalizationListParams
         try:
             return model.model_validate(resolved_url.params)
-        except ValueError as e:
-            if isinstance(e, ValidationError):
-                missing = all(err["type"] == "missing" for err in e.errors())
-            else:
-                missing = True
-            return BundleEntry(
-                response=EntryResponse.make_validation_response(
-                    f"Bundle.entry.{index}.request: invalid url parameter: {e}",
-                    code="required" if missing else "invalid",
-                )
+        except ValidationError as e:
+            return e
+
+    @staticmethod
+    def _invalid_query_entry(index: int, error: ValidationError) -> BundleEntry[Any]:
+        missing = all(err["type"] == "missing" for err in error.errors())
+        return BundleEntry(
+            response=EntryResponse.make_validation_response(
+                f"Bundle.entry.{index}.request: invalid url parameter: {error}",
+                code="required" if missing else "invalid",
             )
+        )
 
     def _deny_mismatched_source(
         self,
@@ -246,25 +244,24 @@ class BundleService:
         return entry.resource
 
     @staticmethod
-    def required_scope(method: str, resolved_url: EntryRequestDto) -> AuthorizationScope | None:
+    def required_scope(
+        method: str, resolved_url: EntryRequestDto, query: LocalizationListParams | ValidationError | None
+    ) -> AuthorizationScope | None:
         match method:
             case "POST":
                 return AuthorizationScope.CREATE
             case "DELETE":
                 return AuthorizationScope.DELETE
             case "GET":
-                return AuthorizationScope.READ if resolved_url.id else BundleService._query_scope(resolved_url.params)
+                return AuthorizationScope.READ if resolved_url.id else BundleService._query_scope(query)
             case _:
                 return None
 
     @staticmethod
-    def _query_scope(params: dict[str, str] | None) -> AuthorizationScope:
-        try:
-            parsed = LocalizationListSearchParams.model_validate(params or {})
-        except ValueError:
-            return AuthorizationScope.LOCALIZE
-
-        return AuthorizationScope.LOCALIZE if parsed.is_localize_params() else AuthorizationScope.READ
+    def _query_scope(query: LocalizationListParams | ValidationError | None) -> AuthorizationScope:
+        if isinstance(query, LocalizationListSearchParams) and not query.is_localize_params():
+            return AuthorizationScope.READ
+        return AuthorizationScope.LOCALIZE
 
     @staticmethod
     def requires_managing_request(method: str) -> bool:
