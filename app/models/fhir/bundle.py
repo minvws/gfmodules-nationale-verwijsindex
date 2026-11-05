@@ -6,7 +6,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from app.models.fhir.resources.domain_resource import DomainResource, FhirBaseModel
-from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
+from app.models.fhir.resources.operation_outcome.resource import IssueType, OperationOutcome
 
 T = TypeVar("T", bound=DomainResource)
 
@@ -73,7 +73,7 @@ class EntryResponse(FhirBaseModel):
         return cls(status=status, outcome=OperationOutcome.make_good_outcome(msg=message))
 
     @classmethod
-    def make_error_response(cls, msg: str, status: str, code: str) -> Self:
+    def make_error_response(cls, msg: str, status: str, code: IssueType) -> Self:
         return cls(
             status=status,
             outcome=OperationOutcome.make_error_outcome(code=code, msg=msg),
