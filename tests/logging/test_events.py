@@ -33,6 +33,7 @@ class TestCatalogue:
             ("REFERRAL_SEARCHED_ON_ID", "900402"),
             ("REFERRALS_QUERIED", "900403"),
             ("REFERRAL_REGISTRATION_FAILED", "900404"),
+            ("REFERRAL_REGISTRATION_ERROR", "900404"),
             ("REFERRAL_ACCESS_DENIED", "900405"),
             ("REFERRAL_DELETED", "900500"),
             ("ALL_PATIENT_REFERRALS_DELETED", "900501"),
