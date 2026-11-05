@@ -18,6 +18,8 @@ from app.models.fhir.resources.operation_outcome.resource import IssueType
 from app.models.ura import UraNumber
 from app.services.auth.auth_context import AuthContextService
 from app.services.exceptions import (
+    BundleTooLargeError,
+    InvalidModelError,
     InvalidResourceError,
     UnauthorizedManagingRequestError,
     UnauthorizedScopeError,
@@ -48,11 +50,9 @@ def _entry_for_exception(index: int, exc: Exception) -> BundleEntry[Any]:
 
 
 class BundleService:
-    def __init__(
-        self,
-        localization_list_service: LocalizationListService,
-    ) -> None:
+    def __init__(self, localization_list_service: LocalizationListService, max_entries: int) -> None:
         self.localization_list_service = localization_list_service
+        self.max_entries = max_entries
 
     def process_entry(self, ctx: AuthContext, entry: BundleEntry[Any], index: int) -> BundleEntry[Any]:
         if entry.request is None:
@@ -258,9 +258,11 @@ class BundleService:
         """Whether an entry is a managing operation and so needs a source_id"""
         return method in ("POST", "DELETE")
 
-    @staticmethod
-    def validate_localization_bundle_structure(bundle: Bundle[Any]) -> bool:
-        return len(bundle.entry) > 0
+    def validate_entry_count(self, bundle: Bundle[Any]) -> None:
+        if not bundle.entry:
+            raise InvalidModelError("Bundle.entry is invalid")
+        if len(bundle.entry) > self.max_entries:
+            raise BundleTooLargeError(f"Bundle.entry holds more than the maximum of {self.max_entries} entries")
 
     def resolve_request_url(self, url: str, index: int) -> EntryRequestDto | BundleEntry[LocalizationList]:
         try:
