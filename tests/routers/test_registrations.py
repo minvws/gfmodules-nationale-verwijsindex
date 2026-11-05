@@ -7,6 +7,7 @@ from gfmodules.logging.testing import assert_event_emitted, capture_records
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.logging.events import Log
 from app.models.auth.data import AuthorizationScope
+from app.services.exceptions import PseudonymExchangeError
 from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 from tests.routers.conftest import (
@@ -91,7 +92,9 @@ class TestCreateRegistration:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         key_info_service.add_one("nvi-label", mechanism="AES_CBC")
-        monkeypatch.setattr(crypto_client, "exchange", Mock(side_effect=ValueError("Invalid pseudonym or oprf_key")))
+        monkeypatch.setattr(
+            crypto_client, "exchange", Mock(side_effect=PseudonymExchangeError("Invalid pseudonym or oprf_key"))
+        )
 
         with capture_records() as records:
             response = source_client.post("/registrations", json={"pseudonym": "pseu", "oprf_key": "key1"})

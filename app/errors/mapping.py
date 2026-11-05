@@ -2,12 +2,14 @@ from pydantic import BaseModel, ConfigDict
 
 from app.services.exceptions import (
     ConflictError,
+    CryptoServiceError,
     ForbiddenError,
     InvalidHeaderPropertyError,
     InvalidKeyInfoError,
     InvalidModelError,
     NotFoundError,
     PseudonymError,
+    PseudonymExchangeError,
     UnauthorizedError,
 )
 
@@ -32,6 +34,8 @@ EXCEPTION_MAP: dict[type[Exception], ErrorSpec] = {
     InvalidModelError: ErrorSpec(severity="error", fhir_code="structure", http_status=400),
     InvalidHeaderPropertyError: ErrorSpec(severity="error", fhir_code="invalid", http_status=401),
     PseudonymError: ErrorSpec(severity="error", fhir_code="invalid", http_status=422),
+    PseudonymExchangeError: ErrorSpec(severity="error", fhir_code="invalid", http_status=400, log=True),
+    CryptoServiceError: ErrorSpec(severity="error", fhir_code="transient", http_status=502, log=True),
     ValueError: ErrorSpec(severity="error", fhir_code="invalid", http_status=400, log=True),
 }
 
