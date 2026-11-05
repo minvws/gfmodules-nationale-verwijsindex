@@ -10,15 +10,25 @@ from gfmodules.logging.testing import assert_event_emitted, capture_records
 from pydantic import BaseModel, ValidationError
 
 from app.errors import handlers
-from app.errors.handlers import MAX_REASON_LENGTH, handle_unhandled_exception, register_exceptions, summarize_reason
+from app.errors.handlers import (
+    MAX_REASON_LENGTH,
+    handle_unhandled_exception,
+    log_invalid_request,
+    register_exceptions,
+    summarize_reason,
+)
 from app.logging.events import Log
 from app.models.auth.data import AuthorizationScope
 from app.services.exceptions import (
     ConflictError,
     ForbiddenError,
+    InvalidAuthHeadersError,
     InvalidKeyInfoError,
     InvalidModelError,
+    InvalidResourceError,
     NotFoundError,
+    PseudonymError,
+    PseudonymExchangeError,
     UnauthorizedScopeError,
     UnauthorizedSourceError,
 )
@@ -204,3 +214,49 @@ class TestUnhandledExceptionHandler:
             method="GET",
         )
         assert entry.record.exc_info is not None
+
+
+class TestInvalidRequestLogging:
+    def test_logs_a_request_validation_error(self) -> None:
+        with capture_records() as records:
+            _client().get("/rest/validated")
+
+        assert_event_emitted(
+            records, Log.INVALID_REQUEST, http_status=422, error_reason="query.required: Field required"
+        )
+
+    @pytest.mark.parametrize(
+        ("exc", "status"),
+        [(InvalidResourceError("bad"), 400), (PseudonymError("bad"), 422), (InvalidModelError("bad"), 400)],
+    )
+    def test_logs_invalid_input(self, exc: Exception, status: int) -> None:
+        _pending["exc"] = exc
+        with capture_records() as records:
+            _client().get("/rest/boom")
+
+        assert_event_emitted(records, Log.INVALID_REQUEST, http_status=status)
+
+    @pytest.mark.parametrize(
+        "exc",
+        [
+            NotFoundError(),
+            PseudonymExchangeError("rejected"),
+            UnauthorizedSourceError(),
+            InvalidAuthHeadersError("missing"),
+            ValueError("internal"),
+            RuntimeError("boom"),
+        ],
+    )
+    def test_does_not_log_other_failures_as_invalid_requests(self, exc: Exception) -> None:
+        _pending["exc"] = exc
+        with capture_records() as records:
+            _client().get("/rest/boom")
+
+        assert records.for_event(Log.INVALID_REQUEST) == []
+
+    def test_bounds_the_logged_reason(self) -> None:
+        with capture_records() as records:
+            log_invalid_request(422, "x" * (MAX_REASON_LENGTH * 4))
+
+        entry = assert_event_emitted(records, Log.INVALID_REQUEST)
+        assert len(entry.message["error_reason"]) == MAX_REASON_LENGTH

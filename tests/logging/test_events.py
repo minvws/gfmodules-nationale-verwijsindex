@@ -36,6 +36,7 @@ class TestCatalogue:
             ("SYS_UNHANDLED_EXCEPTION", "100604"),
             ("DB_SCHEMA_ERROR", "100605"),
             ("SYS_MISSING_CORRELATION_ID", "100606"),
+            ("INVALID_REQUEST", "100607"),
             ("REGISTERED_REFERRAL", "900400"),
             ("IDEMPOTENT_REGISTRATION", "900401"),
             ("REFERRAL_SEARCHED_ON_ID", "900402"),

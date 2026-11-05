@@ -116,6 +116,43 @@ class TestCreateRegistration:
         assert response.status_code == 422
         assert records.for_event(Log.REFERRAL_REGISTRATION_FAILED) == []
 
+    def test_logs_an_invalid_body_as_an_invalid_request(self, source_client: TestClient) -> None:
+        with capture_records() as records:
+            response = source_client.post("/registrations", json={})
+
+        assert response.status_code == 422
+        assert_event_emitted(records, Log.INVALID_REQUEST, organization_identifier=TEST_URA, http_status=422)
+
+    def test_logs_malformed_json_as_an_invalid_request_without_a_caller(self, source_client: TestClient) -> None:
+        with capture_records() as records:
+            response = source_client.post("/registrations", content=b"{", headers={"Content-Type": "application/json"})
+
+        assert response.status_code == 422
+        entry = assert_event_emitted(records, Log.INVALID_REQUEST, http_status=422)
+        assert not set(entry.message) & {
+            "organization_identifier",
+            "acting_organization_identifier",
+            "acting_organization_name",
+        }
+
+    def test_logs_a_rejected_exchange_only_as_a_failed_registration(
+        self,
+        source_client: TestClient,
+        crypto_client: CryptoServiceApiClientMock,
+        key_info_service: KeyInfoService,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        key_info_service.add_one("nvi-label", mechanism="AES_CBC")
+        rejected = PseudonymExchangeError("Invalid pseudonym or oprf_key")
+        monkeypatch.setattr(crypto_client, "exchange", Mock(side_effect=rejected))
+
+        with capture_records() as records:
+            response = source_client.post("/registrations", json={"pseudonym": "pseu", "oprf_key": "key1"})
+
+        assert response.status_code == 400
+        assert len(records.for_event(Log.REFERRAL_REGISTRATION_FAILED)) == 1
+        assert records.for_event(Log.INVALID_REQUEST) == []
+
     def test_requires_create_scope(
         self,
         referral_service: ReferralService,
