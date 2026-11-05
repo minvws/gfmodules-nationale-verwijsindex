@@ -25,6 +25,10 @@ def _log_failure(event: LogEvent, message: str, exc: Exception) -> None:
         )
 
 
+def _failure_event(exc: Exception, failed: LogEvent, error: LogEvent) -> LogEvent:
+    return failed if spec_for(exc).http_status < 500 else error
+
+
 class PseudonymReferralService:
     def __init__(self, referral_service: ReferralService, pseudonym_resolver: PseudonymResolver) -> None:
         self._referral_service = referral_service
@@ -40,7 +44,8 @@ class PseudonymReferralService:
             resolved = self._pseudonym_resolver.resolve(pseudonym)
             return self._referral_service.add_one(resolved.encrypted, ura_number, source, resolved.key_id)
         except Exception as exc:
-            _log_failure(Log.REFERRAL_REGISTRATION_FAILED, "Referral registration failed", exc)
+            event = _failure_event(exc, Log.REFERRAL_REGISTRATION_FAILED, Log.REFERRAL_REGISTRATION_ERROR)
+            _log_failure(event, "Referral registration failed", exc)
             raise
 
     def localize(
@@ -54,7 +59,7 @@ class PseudonymReferralService:
             encrypted = self._resolve_encrypted(pseudonym)
             return self._referral_service.localize(encrypted, requesting_ura, limit=limit, offset=offset)
         except Exception as exc:
-            event = Log.LOCALIZATION_FAILED if spec_for(exc).http_status < 500 else Log.LOCALIZATION_ERROR
+            event = _failure_event(exc, Log.LOCALIZATION_FAILED, Log.LOCALIZATION_ERROR)
             _log_failure(event, "Localization failed", exc)
             raise
 

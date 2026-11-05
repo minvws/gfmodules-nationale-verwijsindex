@@ -84,6 +84,21 @@ def test_register_logs_a_failure_when_the_pseudonym_is_invalid(
     assert fields["http_status"] == 400
 
 
+def test_register_logs_an_error_when_the_crypto_service_fails(
+    referral_service: ReferralService,
+    key_info_service: KeyInfoService,
+    ura_number: UraNumber,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    service = _service_with(UnavailableCryptoClient(), referral_service, key_info_service)
+    with caplog.at_level(logging.INFO), pytest.raises(CryptoServiceError):
+        service.register(PSEUDONYM, ura_number, SOURCE)
+
+    (fields,) = logged_fields(caplog, Log.REFERRAL_REGISTRATION_ERROR)
+    assert fields["levelno"] == logging.ERROR
+    assert fields["http_status"] == 502
+
+
 def test_register_does_not_log_an_expected_failure(
     pseudonym_referral_service: PseudonymReferralService,
     ura_number: UraNumber,
