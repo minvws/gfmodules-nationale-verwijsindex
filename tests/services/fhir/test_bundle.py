@@ -202,15 +202,19 @@ class TestEntryValidation:
 
 class TestBundleStructure:
     def test_empty_bundle_is_invalid(self, bundle_service: BundleService) -> None:
+        bundle: Bundle[Any] = Bundle(entry=[])
+
         with pytest.raises(InvalidModelError):
-            bundle_service.validate_entry_count(Bundle(entry=[]))
+            bundle_service.validate_entry_count(bundle)
 
     def test_bundle_up_to_the_maximum_is_valid(self, bundle_service: BundleService) -> None:
         bundle_service.validate_entry_count(Bundle(entry=[BundleEntry(), BundleEntry()]))
 
     def test_bundle_over_the_maximum_is_too_large(self, bundle_service: BundleService) -> None:
+        bundle: Bundle[Any] = Bundle(entry=[BundleEntry(), BundleEntry(), BundleEntry()])
+
         with pytest.raises(BundleTooLargeError, match="maximum of 2 entries"):
-            bundle_service.validate_entry_count(Bundle(entry=[BundleEntry(), BundleEntry(), BundleEntry()]))
+            bundle_service.validate_entry_count(bundle)
 
 
 class TestEntryOutcomes:
