@@ -34,7 +34,7 @@ def _scope_error() -> UnauthorizedScopeError:
         pytest.param(ConflictError(), _spec("conflict", 409), id="conflict"),
         pytest.param(ForbiddenError(), _spec("forbidden", 403), id="forbidden"),
         pytest.param(InvalidKeyInfoError(), _spec("transient", 503), id="invalid-key-info"),
-        pytest.param(InvalidHeaderPropertyError("aud", "x"), _spec("invalid", 401), id="invalid-header-property"),
+        pytest.param(InvalidHeaderPropertyError("aud", "x"), _spec("login", 401), id="invalid-header-property"),
         pytest.param(PseudonymError(), _spec("invalid", 422), id="pseudonym"),
         pytest.param(PseudonymExchangeError("rejected"), _spec("invalid", 400, log=True), id="pseudonym-exchange"),
         pytest.param(CryptoServiceError("down"), _spec("transient", 502, log=True), id="crypto-service"),

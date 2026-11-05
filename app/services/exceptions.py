@@ -60,7 +60,11 @@ class InvalidModelError(ValueError):
         super().__init__(msg)
 
 
-class InvalidHeaderPropertyError(Exception):
+class InvalidAuthHeadersError(Exception):
+    pass
+
+
+class InvalidHeaderPropertyError(InvalidAuthHeadersError):
     def __init__(self, prop: str, value: str) -> None:
         super().__init__(f"Invalid header property {prop}: unrecognized `{value}`")
 
