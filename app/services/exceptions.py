@@ -85,3 +85,7 @@ class PseudonymExchangeError(Exception):
 
 class CryptoServiceError(Exception):
     pass
+
+
+class BundleTooLargeError(Exception):
+    pass

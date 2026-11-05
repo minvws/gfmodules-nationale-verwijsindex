@@ -70,7 +70,7 @@ def container_config(binder: inject.Binder) -> None:
     )
     binder.bind(LocalizationListService, localization_list_service)
 
-    bundle_service = BundleService(localization_list_service)
+    bundle_service = BundleService(localization_list_service, max_entries=config.bundle.max_entries)
     binder.bind(BundleService, bundle_service)
 
     binder.bind(ConfigCryptoServiceApi, config.crypto_service_api)
