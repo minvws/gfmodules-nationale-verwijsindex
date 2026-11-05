@@ -44,18 +44,6 @@ class EntryResponse(FhirBaseModel):
     outcome: OperationOutcome | None = None
 
     @classmethod
-    def make_validation_response(
-        cls,
-        msg: str | None = None,
-        code: Literal["required", "structure", "invalid"] = "required",
-    ) -> Self:
-        message = msg if msg else "Structural data is invalid or missing required properties"
-        return cls(
-            status="422",
-            outcome=OperationOutcome.make_error_outcome(code=code, msg=message),
-        )
-
-    @classmethod
     def make_forbidden_response(cls, msg: str | None = None) -> Self:
         message = msg if msg else "URA number not allowed to perform requested operation"
         return cls(
