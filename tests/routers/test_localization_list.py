@@ -439,7 +439,7 @@ class TestDelete:
         assert response.json()["issue"][0]["code"] == "not-found"
 
 
-@pytest.fixture()
+@pytest.fixture
 def rejecting_exchange(crypto_client: CryptoServiceApiClientMock, monkeypatch: pytest.MonkeyPatch) -> None:
     rejected = PseudonymExchangeError("Invalid pseudonym or oprf_key")
     monkeypatch.setattr(crypto_client, "exchange", Mock(side_effect=rejected))
