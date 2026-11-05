@@ -3,6 +3,7 @@ from typing import Any, Literal
 from uuid import uuid4
 
 import pytest
+from gfmodules.logging.testing import capture_records
 
 from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.data import AuthorizationScope
@@ -114,6 +115,13 @@ def process(
         entry=entry,
         index=index,
     )
+
+
+def test_validates_the_query_of_a_search_entry_once(bundle_service: BundleService) -> None:
+    with capture_records("app") as records:
+        process(bundle_service, make_entry("GET", QUERY_URL), [AuthorizationScope.LOCALIZE])
+
+    assert len([entry for entry in records if entry.description.startswith("Validated subject identifier")]) == 1
 
 
 class TestRequiredScope:
