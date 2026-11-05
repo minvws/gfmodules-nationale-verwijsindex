@@ -10,7 +10,6 @@ from app.models.fhir.resources.localization_list.resource import LocalizationLis
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.response import FHIRJSONResponse
 from app.routers.dependencies import get_auth_context
-from app.services.exceptions import InvalidModelError
 from app.services.fhir.bundle import BundleService
 
 logger = logging.getLogger(__name__)
@@ -24,9 +23,7 @@ def register(
     ctx: Annotated[AuthContext, Depends(get_auth_context)],
 ) -> Any:
     results_bundle = Bundle[Any](entry=[])
-    valid_bundle = bundle_service.validate_localization_bundle_structure(data)
-    if not valid_bundle:
-        raise InvalidModelError("Bundle.entry is invalid")
+    bundle_service.validate_entry_count(data)
     for i, entry in enumerate(data.entry):
         result = bundle_service.process_entry(
             ctx=ctx,

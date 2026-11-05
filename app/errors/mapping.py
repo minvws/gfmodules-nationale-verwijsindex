@@ -3,6 +3,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 from app.services.exceptions import (
+    BundleTooLargeError,
     ConflictError,
     CryptoServiceError,
     ForbiddenError,
@@ -42,6 +43,7 @@ EXCEPTION_MAP: dict[type[Exception], ErrorSpec] = {
     PseudonymError: ErrorSpec(severity="error", fhir_code="invalid", http_status=422, log_as="invalid_request"),
     PseudonymExchangeError: ErrorSpec(severity="error", fhir_code="invalid", http_status=400, log_as="failure"),
     CryptoServiceError: ErrorSpec(severity="error", fhir_code="transient", http_status=502, log_as="failure"),
+    BundleTooLargeError: ErrorSpec(severity="error", fhir_code="too-costly", http_status=413, log_as="invalid_request"),
 }
 
 # Applied to any exception without a mapped type (rendered as HTTP 500). Unmapped

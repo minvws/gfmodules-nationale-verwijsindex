@@ -80,7 +80,7 @@ def service() -> LocalizationListServiceSpy:
 
 @pytest.fixture()
 def bundle_service(service: LocalizationListServiceSpy) -> BundleService:
-    return BundleService(service)  # type: ignore[arg-type]
+    return BundleService(service, max_entries=100)  # type: ignore[arg-type]
 
 
 HttpMethod = Literal["POST", "DELETE", "GET", "PUT"]
