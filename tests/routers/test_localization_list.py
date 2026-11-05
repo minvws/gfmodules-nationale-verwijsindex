@@ -1,10 +1,13 @@
+import json
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from gfmodules.logging.testing import capture_records
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.models.auth.data import AuthorizationScope
+from app.models.fhir.resources.data import PSEUDONYM_SYSTEM
 from app.models.pseudonym import EncryptedPseudonym
 from app.models.ura import UraNumber
 from app.services.key_info import KeyInfoService
@@ -202,6 +205,19 @@ class TestQuery:
         assert body["issue"][0]["code"] == "invalid"
         assert token not in response.text
 
+    def test_keeps_the_subject_token_out_of_the_logs(self, localize_client: TestClient) -> None:
+        with capture_records("app") as records:
+            response = localize_client.get("/fhir/List", params={"subject:identifier": "leaky-token-value"})
+
+        assert response.status_code == 422
+        assert not [entry for entry in records if "leaky-token-value" in json.dumps(entry.payload)]
+
+    def test_reports_an_invalid_subject_token_once(self, localize_client: TestClient) -> None:
+        response = localize_client.get("/fhir/List", params={"subject:identifier": f"{PSEUDONYM_SYSTEM}|not-a-token"})
+
+        assert response.status_code == 422
+        assert len(response.json()["issue"]) == 1
+
     def test_localize_query_requires_localize_scope(self, client: TestClient) -> None:
         response = client.get("/fhir/List", params={"subject:identifier": TEST_PSEUDONYM_TOKEN})
 
@@ -264,6 +280,12 @@ class TestQueryPagination:
 
 
 class TestDelete:
+    def test_reports_an_invalid_query_parameter_once(self, client: TestClient) -> None:
+        response = client.delete("/fhir/List", params={"source:identifier": "urn:wrong|SRC-001"})
+
+        assert response.status_code == 422
+        assert len(response.json()["issue"]) == 1
+
     def test_deletes_by_id(self, client: TestClient) -> None:
         created = client.post("/fhir/List", json=_body(), headers=FHIR_JSON).json()
 
