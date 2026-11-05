@@ -7,6 +7,7 @@ from gfmodules.logging import LogEvent
 from app.db.models.referral import ReferralEntity
 from app.errors.mapping import should_log, spec_for
 from app.logging.events import Log
+from app.logging.rejections import summarize_reason
 from app.models.pseudonym import EncryptedPseudonym, OprfPseudonym
 from app.models.ura import UraNumber
 from app.services.pseudonym_resolver import PseudonymResolver
@@ -21,7 +22,7 @@ def _log_failure(event: LogEvent, message: str, exc: Exception) -> None:
             logger,
             event,
             message,
-            fields={"http_status": spec_for(exc).http_status, "error_reason": str(exc)},
+            fields={"http_status": spec_for(exc).http_status, "error_reason": summarize_reason(exc)},
         )
 
 
