@@ -1,7 +1,9 @@
 import pytest
+from gfmodules.logging.testing import assert_event_emitted, capture_records
 from pydantic import BaseModel, ValidationError
 
-from app.logging.rejections import MAX_REASON_LENGTH, summarize_reason
+from app.logging.events import Log
+from app.logging.rejections import MAX_REASON_LENGTH, log_invalid_request, summarize_reason
 
 
 class _Model(BaseModel):
@@ -40,3 +42,11 @@ def test_keeps_a_reason_of_the_maximum_length_whole() -> None:
     message = "x" * MAX_REASON_LENGTH
 
     assert summarize_reason(RuntimeError(message)) == message
+
+
+def test_bounds_the_reason_of_a_logged_invalid_request() -> None:
+    with capture_records("app") as records:
+        log_invalid_request(422, "x" * (MAX_REASON_LENGTH * 4))
+
+    entry = assert_event_emitted(records, Log.INVALID_REQUEST)
+    assert len(entry.message["error_reason"]) == MAX_REASON_LENGTH
