@@ -20,25 +20,35 @@ URA = ("extension", 0, "valueReference", "identifier")
 
 
 def test_get_ura_rejects_a_missing_ura_identifier() -> None:
+    resource = _with((*URA, "system"), "urn:wrong")
+
     with pytest.raises(InvalidResourceError, match="Missing identifier"):
-        _with((*URA, "system"), "urn:wrong").get_ura()
+        resource.get_ura()
 
 
 def test_get_ura_rejects_an_invalid_ura() -> None:
+    resource = _with((*URA, "value"), "not-a-ura")
+
     with pytest.raises(InvalidResourceError, match="Invalid URA in List.extension"):
-        _with((*URA, "value"), "not-a-ura").get_ura()
+        resource.get_ura()
 
 
 def test_get_encoded_pseudonym_rejects_a_wrong_system() -> None:
+    resource = _with(("subject", "identifier", "system"), "urn:wrong")
+
     with pytest.raises(InvalidResourceError, match="List.subject.identifier.system"):
-        _with(("subject", "identifier", "system"), "urn:wrong").get_encoded_pseudonym()
+        resource.get_encoded_pseudonym()
 
 
 def test_get_encoded_pseudonym_rejects_a_missing_subject() -> None:
+    resource = make_list_resource(pseudonym=None)
+
     with pytest.raises(InvalidResourceError, match="List.subject is required"):
-        make_list_resource(pseudonym=None).get_encoded_pseudonym()
+        resource.get_encoded_pseudonym()
 
 
 def test_get_device_rejects_a_wrong_system() -> None:
+    resource = _with(("source", "identifier", "system"), "urn:wrong")
+
     with pytest.raises(InvalidResourceError, match="List.source.identifier"):
-        _with(("source", "identifier", "system"), "urn:wrong").get_device()
+        resource.get_device()
