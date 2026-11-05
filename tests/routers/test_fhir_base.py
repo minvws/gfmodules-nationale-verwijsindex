@@ -58,6 +58,17 @@ class TestRegisterBundle:
         assert len(records.for_event(Log.INVALID_REQUEST)) == 1
         assert records.for_event(Log.REGISTERED_REFERRAL) == []
 
+    @pytest.mark.parametrize("chunked", [False, True], ids=["content-length", "chunked"])
+    def test_rejects_a_body_over_the_size_limit_before_parsing_it(self, client: TestClient, chunked: bool) -> None:
+        body = b"x" * (get_test_config().app.max_request_body_bytes + 1)
+        content = iter([body]) if chunked else body
+        with capture_records("app") as records:
+            response = client.post("/fhir", content=content, headers=FHIR_JSON)
+
+        assert response.status_code == 413
+        assert response.json()["issue"][0]["code"] == "too-long"
+        assert_event_emitted(records, Log.INVALID_REQUEST, http_status=413)
+
     def test_rejects_an_empty_bundle(self, client: TestClient) -> None:
         response = client.post("/fhir", json=_bundle(), headers=FHIR_JSON)
 

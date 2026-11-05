@@ -76,3 +76,7 @@ def test_bundle_defaults_when_the_section_is_missing() -> None:
 def test_bundle_rejects_a_maximum_below_one() -> None:
     with pytest.raises(ValidationError):
         ConfigBundle(max_entries=0)
+
+
+def test_request_body_limit_defaults_to_one_mebibyte() -> None:
+    assert get_test_config().app.max_request_body_bytes == 1048576
