@@ -1,4 +1,7 @@
-from app.models.pseudonym import EncryptedPseudonym
+import pytest
+from pydantic import ValidationError
+
+from app.models.pseudonym import EncryptedPseudonym, OprfPseudonym
 
 
 def test_init_should_converts_value_to_string() -> None:
@@ -38,3 +41,13 @@ def test_inequality_should_succeed_with_different_value() -> None:
 def test_equality_should_return_false_when_compared_with_non_instance() -> None:
     pseudonym = EncryptedPseudonym("test", "mock")
     assert pseudonym != "test"
+
+
+def test_oprf_pseudonym_reads_the_api_field_names() -> None:
+    pseudonym = OprfPseudonym.model_validate({"pseudonym": "JWE", "oprf_key": "BF"})
+    assert (pseudonym.jwe, pseudonym.blind_factor) == ("JWE", "BF")
+
+
+def test_oprf_pseudonym_rejects_the_internal_field_names() -> None:
+    with pytest.raises(ValidationError):
+        OprfPseudonym.model_validate({"jwe": "JWE", "blind_factor": "BF"})

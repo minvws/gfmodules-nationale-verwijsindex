@@ -67,6 +67,8 @@ def test_fhir_path_renders_operation_outcome(exc: Exception, status: int, code: 
     resp = _client().get("/fhir/boom")
     assert resp.status_code == status
     body = resp.json()
+    assert body["resourceType"] == "OperationOutcome"
+    assert "resource_type" not in body
     assert body["issue"][0]["code"] == code
     assert resp.headers["Content-type"] == "application/fhir+json"
 

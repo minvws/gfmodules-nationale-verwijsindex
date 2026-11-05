@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Self
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PseudonymResponse(BaseModel):
@@ -9,22 +9,11 @@ class PseudonymResponse(BaseModel):
     iv: str
 
 
-@dataclass(frozen=True)
-class OprfPseudonym:
-    """Used in the REST routers"""
+class OprfPseudonym(BaseModel):
+    model_config = ConfigDict(frozen=True)
 
-    jwe: str
-    blind_factor: str
-
-
-@dataclass(frozen=True)
-class PseudonymToken:
-    """Used in the FHIR routers"""
-
-    value: str
-
-
-BlindedPseudonym = OprfPseudonym | PseudonymToken
+    jwe: str = Field(alias="pseudonym")
+    blind_factor: str = Field(alias="oprf_key")
 
 
 @dataclass

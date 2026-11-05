@@ -7,7 +7,7 @@ from gfmodules.logging import LogEvent
 from app.db.models.referral import ReferralEntity
 from app.errors.mapping import should_log, spec_for
 from app.logging.events import Log
-from app.models.pseudonym import BlindedPseudonym, EncryptedPseudonym
+from app.models.pseudonym import EncryptedPseudonym, OprfPseudonym
 from app.models.ura import UraNumber
 from app.services.pseudonym_resolver import PseudonymResolver
 from app.services.referral_service import ReferralService
@@ -32,7 +32,7 @@ class PseudonymReferralService:
 
     def register(
         self,
-        pseudonym: BlindedPseudonym,
+        pseudonym: OprfPseudonym,
         ura_number: UraNumber,
         source: str,
     ) -> tuple[ReferralEntity, bool]:
@@ -45,7 +45,7 @@ class PseudonymReferralService:
 
     def localize(
         self,
-        pseudonym: BlindedPseudonym,
+        pseudonym: OprfPseudonym,
         requesting_ura: UraNumber,
         limit: int | None = None,
         offset: int = 0,
@@ -61,7 +61,7 @@ class PseudonymReferralService:
     def query(
         self,
         ura_number: UraNumber,
-        pseudonym: BlindedPseudonym | None = None,
+        pseudonym: OprfPseudonym | None = None,
         source: str | None = None,
         limit: int | None = None,
         offset: int = 0,
@@ -74,11 +74,11 @@ class PseudonymReferralService:
     def delete_many(
         self,
         ura_number: UraNumber,
-        pseudonym: BlindedPseudonym | None = None,
+        pseudonym: OprfPseudonym | None = None,
         source: str | None = None,
     ) -> int:
         encrypted = self._resolve_encrypted(pseudonym) if pseudonym else None
         return self._referral_service.delete_many(ura_number, encrypted_pseudonym=encrypted, source=source)
 
-    def _resolve_encrypted(self, pseudonym: BlindedPseudonym) -> EncryptedPseudonym:
+    def _resolve_encrypted(self, pseudonym: OprfPseudonym) -> EncryptedPseudonym:
         return self._pseudonym_resolver.resolve(pseudonym).encrypted

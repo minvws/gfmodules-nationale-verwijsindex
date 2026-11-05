@@ -2,10 +2,17 @@ import logging
 from uuid import UUID, uuid4
 
 import pytest
+from pydantic import ValidationError
 
 from app.logging.events import Log
 from app.models.fhir.bundle import Bundle
-from app.models.fhir.resources.localization_list.request import LocalizationListSearchParams
+from app.models.fhir.resources.localization_list.request import (
+    COUNT_PARAM,
+    DEVICE_IDENTIFIER_PARAM,
+    OFFSET_PARAM,
+    SUBJECT_IDENTIFIER_PARAM,
+    LocalizationListSearchParams,
+)
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.ura import UraNumber
 from app.services.exceptions import NotFoundError, PseudonymError, UnauthorizedUraError
@@ -40,7 +47,9 @@ def _params(
     count: int | None = None,
     offset: int = 0,
 ) -> LocalizationListSearchParams:
-    return LocalizationListSearchParams.model_construct(subject=subject, source=source, count=count, offset=offset)
+    return LocalizationListSearchParams.model_validate(
+        {SUBJECT_IDENTIFIER_PARAM: subject, DEVICE_IDENTIFIER_PARAM: source, COUNT_PARAM: count, OFFSET_PARAM: offset}
+    )
 
 
 def _create_referrals(service: LocalizationListService, amount: int) -> None:
@@ -63,25 +72,26 @@ class TestCreate:
 
         assert result.id is not None
 
+    @pytest.mark.parametrize("pseudonym", [TEST_PSEUDONYM_TOKEN, INVALID_PSEUDONYM_TOKEN], ids=["valid", "invalid"])
     def test_rejects_a_resource_for_another_ura(
-        self, service: LocalizationListService, caplog: pytest.LogCaptureFixture
+        self, service: LocalizationListService, caplog: pytest.LogCaptureFixture, pseudonym: str
     ) -> None:
-        data = make_list_resource(ura=str(OTHER_URA))
+        data = make_list_resource(ura=str(OTHER_URA), pseudonym=pseudonym)
 
         with caplog.at_level(logging.INFO), pytest.raises(UnauthorizedUraError):
             service.create(data, AUTH_URA)
 
         assert _event_ids(caplog) == [Log.REFERRAL_ACCESS_DENIED.event_id]
 
-    def test_logs_a_failed_registration_for_an_invalid_pseudonym(
+    def test_rejects_an_invalid_pseudonym_without_a_failure_event(
         self, service: LocalizationListService, caplog: pytest.LogCaptureFixture
     ) -> None:
         data = make_list_resource(ura=str(AUTH_URA), pseudonym=INVALID_PSEUDONYM_TOKEN)
 
-        with caplog.at_level(logging.INFO), pytest.raises(PseudonymError):
+        with caplog.at_level(logging.INFO), pytest.raises(PseudonymError, match="List.subject.identifier.value"):
             service.create(data, AUTH_URA)
 
-        assert _event_ids(caplog) == [Log.REFERRAL_REGISTRATION_FAILED.event_id]
+        assert _event_ids(caplog) == []
 
     def test_is_idempotent(self, service: LocalizationListService) -> None:
         first, first_created = service.create(make_list_resource(ura=str(AUTH_URA)), AUTH_URA)
@@ -138,23 +148,12 @@ class TestQuery:
         assert bundle.total == 0
         assert Log.LOCALIZATION_NO_MATCH.event_id in _event_ids(caplog)
 
-    def test_localize_with_an_invalid_pseudonym_logs_a_localization_failure(
-        self, service: LocalizationListService, caplog: pytest.LogCaptureFixture
+    @pytest.mark.parametrize("source", [None, AUTH_SOURCE], ids=["localize", "own-source"])
+    def test_rejects_an_invalid_pseudonym_without_a_failure_event(
+        self, source: str | None, caplog: pytest.LogCaptureFixture
     ) -> None:
-        params = _params(subject=INVALID_PSEUDONYM_TOKEN)
-
-        with caplog.at_level(logging.INFO), pytest.raises(PseudonymError):
-            service.query(params, AUTH_URA)
-
-        assert _event_ids(caplog) == [Log.LOCALIZATION_FAILED.event_id]
-
-    def test_own_source_query_with_an_invalid_pseudonym_is_not_a_localization(
-        self, service: LocalizationListService, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        params = _params(subject=INVALID_PSEUDONYM_TOKEN, source=AUTH_SOURCE)
-
-        with caplog.at_level(logging.INFO), pytest.raises(PseudonymError):
-            service.query(params, AUTH_URA)
+        with caplog.at_level(logging.INFO), pytest.raises(ValidationError, match="subject:identifier"):
+            _params(subject=INVALID_PSEUDONYM_TOKEN, source=source)
 
         assert _event_ids(caplog) == []
 

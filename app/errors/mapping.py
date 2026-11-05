@@ -31,7 +31,7 @@ EXCEPTION_MAP: dict[type[Exception], ErrorSpec] = {
     InvalidKeyInfoError: ErrorSpec(severity="error", fhir_code="transient", http_status=503),
     InvalidModelError: ErrorSpec(severity="error", fhir_code="structure", http_status=400),
     InvalidHeaderPropertyError: ErrorSpec(severity="error", fhir_code="invalid", http_status=401),
-    PseudonymError: ErrorSpec(severity="error", fhir_code="invalid", http_status=422, log=True),
+    PseudonymError: ErrorSpec(severity="error", fhir_code="invalid", http_status=422),
     ValueError: ErrorSpec(severity="error", fhir_code="invalid", http_status=400, log=True),
 }
 

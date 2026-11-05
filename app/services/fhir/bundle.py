@@ -4,6 +4,7 @@ from typing import Any
 from uuid import UUID
 
 import gfmodules.logging as gflog
+from pydantic import ValidationError
 
 from app.errors.handlers import log_rejection
 from app.errors.mapping import DEFAULT_SPEC, UNEXPECTED_ERROR_MESSAGE, spec_for
@@ -11,10 +12,7 @@ from app.logging.events import Log
 from app.models.auth.context import AuthContext
 from app.models.auth.data import AuthorizationScope
 from app.models.fhir.bundle import Bundle, BundleEntry, EntryRequest, EntryRequestDto, EntryResponse
-from app.models.fhir.resources.localization_list.request import (
-    LocalizationListParams,
-    LocalizationListSearchParams,
-)
+from app.models.fhir.resources.localization_list.request import LocalizationListParams, LocalizationListSearchParams
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.ura import UraNumber
 from app.services.auth.auth_context import AuthContextService
@@ -184,9 +182,14 @@ class BundleService:
         try:
             return model.model_validate(resolved_url.params)
         except ValueError as e:
+            if isinstance(e, ValidationError):
+                missing = all(err["type"] == "missing" for err in e.errors())
+            else:
+                missing = True
             return BundleEntry(
                 response=EntryResponse.make_validation_response(
-                    f"Bundle.entry.{index}.request: invalid url parameter: {e}"
+                    f"Bundle.entry.{index}.request: invalid url parameter: {e}",
+                    code="required" if missing else "invalid",
                 )
             )
 

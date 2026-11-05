@@ -70,6 +70,19 @@ class TestCreate:
         assert response.status_code == 201
         assert response.json()["resourceType"] == "List"
 
+    def test_invalid_pseudonym_returns_422_without_the_token(self, client: TestClient) -> None:
+        token = "not-a-valid-token!!!"
+
+        response = client.post("/fhir/List", json=_body(pseudonym=token), headers=FHIR_JSON)
+
+        assert response.status_code == 422
+        body = response.json()
+        assert body["resourceType"] == "OperationOutcome"
+        assert body["issue"][0]["severity"] == "error"
+        assert body["issue"][0]["code"] == "invalid"
+        assert "List.subject.identifier.value" in body["issue"][0]["details"]["text"]
+        assert token not in response.text
+
     def test_is_idempotent(self, client: TestClient) -> None:
         first = client.post("/fhir/List", json=_body(), headers=FHIR_JSON)
         second = client.post("/fhir/List", json=_body(), headers=FHIR_JSON)
@@ -150,6 +163,14 @@ class TestGet:
 
 
 class TestQuery:
+    def test_subject_query_is_documented_as_a_string(self, client: TestClient) -> None:
+        document = client.get("/openapi.json").json()
+        parameters = document["paths"]["/fhir/List"]["get"]["parameters"]
+        subject = next(parameter for parameter in parameters if parameter["name"] == "subject:identifier")
+        schema = subject["schema"]
+
+        assert any(option.get("type") == "string" for option in schema.get("anyOf", [schema]))
+
     def test_returns_bundle_for_own_source(self, client: TestClient) -> None:
         client.post("/fhir/List", json=_body(), headers=FHIR_JSON)
 
@@ -168,6 +189,18 @@ class TestQuery:
 
         assert response.status_code == 200
         assert response.json()["resourceType"] == "Bundle"
+
+    def test_invalid_pseudonym_returns_422_without_the_token(self, localize_client: TestClient) -> None:
+        token = "not-a-valid-token!!!"
+
+        response = localize_client.get("/fhir/List", params={"subject:identifier": token})
+
+        assert response.status_code == 422
+        body = response.json()
+        assert body["resourceType"] == "OperationOutcome"
+        assert body["issue"][0]["severity"] == "error"
+        assert body["issue"][0]["code"] == "invalid"
+        assert token not in response.text
 
     def test_localize_query_requires_localize_scope(self, client: TestClient) -> None:
         response = client.get("/fhir/List", params={"subject:identifier": TEST_PSEUDONYM_TOKEN})
@@ -327,6 +360,18 @@ class TestDelete:
         response = client.delete("/fhir/List", params={"source:identifier": TEST_SOURCE_ID})
 
         assert response.status_code == 200
+
+    def test_invalid_pseudonym_returns_422_without_the_token(self, client: TestClient) -> None:
+        token = "not-a-valid-token!!!"
+
+        response = client.delete("/fhir/List", params={"subject:identifier": token})
+
+        assert response.status_code == 422
+        body = response.json()
+        assert body["resourceType"] == "OperationOutcome"
+        assert body["issue"][0]["severity"] == "error"
+        assert body["issue"][0]["code"] == "invalid"
+        assert token not in response.text
 
     def test_delete_by_query_reports_not_found_when_nothing_matched(self, client: TestClient) -> None:
         # Nothing was registered, so the bulk delete matches no rows.
