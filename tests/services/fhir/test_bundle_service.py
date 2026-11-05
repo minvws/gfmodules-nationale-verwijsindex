@@ -548,6 +548,20 @@ class TestSourceMatch:
         assert result.response.status == "403"
         assert service.calls == []
 
+    def test_rejects_a_post_naming_a_source_on_another_system(
+        self,
+        bundle_service: BundleService,
+        service: LocalizationListServiceSpy,
+    ) -> None:
+        resource = make_list_resource()
+        resource.source.identifier.system = "urn:wrong"
+
+        result = process(bundle_service, make_entry("POST", "List", resource), [AuthorizationScope.CREATE])
+
+        assert result.response is not None
+        assert result.response.status == "400"
+        assert service.calls == []
+
     def test_allows_a_post_naming_the_callers_own_source(
         self,
         bundle_service: BundleService,

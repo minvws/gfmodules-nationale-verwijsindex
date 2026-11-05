@@ -1,7 +1,10 @@
 import logging
 
+import gfmodules.logging as gflog
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
+
+from app.logging.events import Log
 
 logger = logging.getLogger(__name__)
 
@@ -33,3 +36,12 @@ def summarize_reason(exc: Exception) -> str:
 def log_rejection(status_code: int, exc: Exception, reason: str) -> None:
     level = logging.WARNING if status_code in _DENIAL_STATUSES else logging.INFO
     logger.log(level, "Request rejected with %s (%s): %s", status_code, type(exc).__name__, reason)
+
+
+def log_invalid_request(status_code: int, reason: str) -> None:
+    gflog.emit(
+        logger,
+        Log.INVALID_REQUEST,
+        "Invalid request rejected",
+        fields={"http_status": status_code, "error_reason": _bounded(reason)},
+    )

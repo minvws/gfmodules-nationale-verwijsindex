@@ -3,9 +3,10 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
-from gfmodules.logging.testing import capture_records
+from gfmodules.logging.testing import assert_event_emitted, capture_records
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
+from app.logging.events import Log
 from app.models.auth.data import AuthorizationScope
 from app.models.fhir.resources.data import PSEUDONYM_SYSTEM
 from app.models.pseudonym import EncryptedPseudonym
@@ -99,6 +100,29 @@ class TestCreate:
         response = client.post("/fhir/List", json=_body(source_id="SOMEONE-ELSE"), headers=FHIR_JSON)
 
         assert response.status_code == 403
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            ("extension", 0, "valueReference", "identifier", "system"),
+            ("source", "identifier", "system"),
+        ],
+        ids=["ura-system", "device-system"],
+    )
+    def test_logs_a_list_with_a_wrong_naming_system_as_an_invalid_request(
+        self, client: TestClient, path: tuple[str | int, ...]
+    ) -> None:
+        body = _body()
+        node: Any = body
+        for key in path[:-1]:
+            node = node[key]
+        node[path[-1]] = "urn:wrong"
+
+        with capture_records() as records:
+            response = client.post("/fhir/List", json=body, headers=FHIR_JSON)
+
+        assert response.status_code == 400
+        assert_event_emitted(records, Log.INVALID_REQUEST, organization_identifier=TEST_URA, http_status=400)
 
     def test_requires_create_scope(
         self,
@@ -210,7 +234,17 @@ class TestQuery:
             response = localize_client.get("/fhir/List", params={"subject:identifier": "leaky-token-value"})
 
         assert response.status_code == 422
+        assert_event_emitted(records, Log.INVALID_REQUEST, http_status=422)
         assert not [entry for entry in records if "leaky-token-value" in json.dumps(entry.payload)]
+
+    def test_logs_an_invalid_subject_token_reason_once(self, localize_client: TestClient) -> None:
+        with capture_records() as records:
+            localize_client.get("/fhir/List", params={"subject:identifier": f"{PSEUDONYM_SYSTEM}|not-a-token"})
+
+        entry = assert_event_emitted(records, Log.INVALID_REQUEST, http_status=422)
+        assert entry.message["error_reason"] == (
+            "query.subject:identifier: Value error, Invalid pseudonym in subject:identifier"
+        )
 
     def test_reports_an_invalid_subject_token_once(self, localize_client: TestClient) -> None:
         response = localize_client.get("/fhir/List", params={"subject:identifier": f"{PSEUDONYM_SYSTEM}|not-a-token"})
