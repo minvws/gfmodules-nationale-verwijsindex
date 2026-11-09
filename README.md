@@ -50,9 +50,10 @@ After this you can simply run `docker compose up`.
 
 The application will be available at `http://localhost:8501` when the startup is completed.
 
-## Interface Definitions
+## API Documentation
 
-See [interface definitions](docs/interface-definitions/README.md)
+- [Registration Endpoints](docs/registration-endpoints.md) - Documentation of all NVI API
+endpoints related to registration management, localization, and data discovery
 
 ## Models
 
