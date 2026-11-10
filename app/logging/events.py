@@ -8,7 +8,7 @@ _APP = LoggingStreams.APP
 _SIEM = LoggingStreams.SIEM
 _PUB = LoggingStreams.PUBLIC_INSPECT
 
-_CALLER = ("organization_identifier", "acting_organization_identifier", "acting_organization_name")
+_CALLER = ("represented_organization_identifier", "acting_organization_identifier", "acting_organization_name")
 
 _Base = DefaultEventCatalogue
 
@@ -52,7 +52,7 @@ class Log(_Base):
         logging.INFO,
         (_PUB, _APP),
         {
-            _PUB: ("organization_name", "organization_identifier", "pseudonym_hash"),
+            _PUB: ("represented_organization_name", "represented_organization_identifier", "pseudonym_hash"),
             _APP: _CALLER,
         },
     )
@@ -67,7 +67,7 @@ class Log(_Base):
         logging.INFO,
         (_PUB, _APP),
         {
-            _PUB: ("organization_name", "organization_identifier", "pseudonym_hash"),
+            _PUB: ("represented_organization_name", "represented_organization_identifier", "pseudonym_hash"),
             _APP: _CALLER,
         },
     )
@@ -103,7 +103,7 @@ class Log(_Base):
         logging.INFO,
         (_PUB, _APP),
         {
-            _PUB: ("organization_name", "organization_identifier", "pseudonym_hash"),
+            _PUB: ("represented_organization_name", "represented_organization_identifier", "pseudonym_hash"),
             _APP: _CALLER,
         },
     )
@@ -112,7 +112,12 @@ class Log(_Base):
         logging.WARNING,
         (_PUB, _APP, _SIEM),
         {
-            _PUB: ("organization_name", "organization_identifier", "pseudonym_hash", "deleted_count"),
+            _PUB: (
+                "represented_organization_name",
+                "represented_organization_identifier",
+                "pseudonym_hash",
+                "deleted_count",
+            ),
             _APP: (*_CALLER, "deleted_count"),
             _SIEM: (*_CALLER, "deleted_count"),
         },
@@ -122,7 +127,7 @@ class Log(_Base):
         logging.CRITICAL,
         (_PUB, _APP, _SIEM),
         {
-            _PUB: ("organization_name", "organization_identifier", "deleted_count"),
+            _PUB: ("represented_organization_name", "represented_organization_identifier", "deleted_count"),
             _APP: (*_CALLER, "deleted_count"),
             _SIEM: (*_CALLER, "deleted_count"),
         },
@@ -133,7 +138,7 @@ class Log(_Base):
         logging.INFO,
         (_PUB, _APP, _SIEM),
         {
-            _PUB: ("organization_name", "organization_identifier", "pseudonym_hash"),
+            _PUB: ("represented_organization_name", "represented_organization_identifier", "pseudonym_hash"),
             _APP: (*_CALLER, "pseudonym_hash"),
             _SIEM: (*_CALLER, "result_count"),
         },

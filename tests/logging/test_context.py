@@ -35,8 +35,8 @@ def test_sets_the_organizations_of_the_caller() -> None:
     assert_event_emitted(
         records,
         Log.IDEMPOTENT_REGISTRATION,
-        organization_name="Some Org",
-        organization_identifier="00000123",
+        represented_organization_name="Some Org",
+        represented_organization_identifier="00000123",
         acting_organization_identifier=_OIN,
         acting_organization_name=_ACTING_ORGANIZATION_NAME,
     )
@@ -49,8 +49,8 @@ def test_sets_nothing_without_an_auth_context() -> None:
 
     assert_fields_absent(
         [entry.message for entry in records],
-        "organization_name",
-        "organization_identifier",
+        "represented_organization_name",
+        "represented_organization_identifier",
         "acting_organization_identifier",
         "acting_organization_name",
     )
