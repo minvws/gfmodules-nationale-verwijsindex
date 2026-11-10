@@ -93,8 +93,8 @@ class Log(_Base):
         logging.WARNING,
         (_APP, _SIEM),
         {
-            _APP: (*_CALLER, "resource_ura"),
-            _SIEM: (*_CALLER, "resource_ura"),
+            _APP: (*_CALLER, "resource_organization_identifier"),
+            _SIEM: (*_CALLER, "resource_organization_identifier"),
         },
     )
 
@@ -117,7 +117,7 @@ class Log(_Base):
             _SIEM: (*_CALLER, "deleted_count"),
         },
     )
-    ALL_URA_REFERRALS_DELETED = LogEvent(  # NVI-DEL-004
+    ALL_ORGANIZATION_REFERRALS_DELETED = LogEvent(  # NVI-DEL-004
         "900503",
         logging.CRITICAL,
         (_PUB, _APP, _SIEM),

@@ -44,7 +44,7 @@ class TestCatalogue:
             ("REFERRAL_ACCESS_DENIED", "900405"),
             ("REFERRAL_DELETED", "900500"),
             ("ALL_PATIENT_REFERRALS_DELETED", "900501"),
-            ("ALL_URA_REFERRALS_DELETED", "900503"),
+            ("ALL_ORGANIZATION_REFERRALS_DELETED", "900503"),
             ("LOCALIZATION_SUCCESS", "900600"),
             ("LOCALIZATION_FAILED", "900601"),
             ("LOCALIZATION_ERROR", "900601"),

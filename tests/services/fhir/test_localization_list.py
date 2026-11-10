@@ -363,7 +363,7 @@ class TestDeleteByQuery:
             _, status = service.delete_by_query(_params(), AUTH_URA, AUTH_SOURCE)
 
         assert status == 200
-        assert Log.ALL_URA_REFERRALS_DELETED.event_id in _event_ids(caplog)
+        assert Log.ALL_ORGANIZATION_REFERRALS_DELETED.event_id in _event_ids(caplog)
 
     def test_is_scoped_to_the_callers_own_source(self, service: LocalizationListService) -> None:
         service.create(make_list_resource(ura=str(AUTH_URA), source_id=AUTH_SOURCE), AUTH_URA)
@@ -400,4 +400,4 @@ class TestDeleteByQuery:
             service.delete_by_query(_params(), AUTH_URA, "NOTHING")
 
         assert Log.ALL_PATIENT_REFERRALS_DELETED.event_id not in _event_ids(caplog)
-        assert Log.ALL_URA_REFERRALS_DELETED.event_id not in _event_ids(caplog)
+        assert Log.ALL_ORGANIZATION_REFERRALS_DELETED.event_id not in _event_ids(caplog)

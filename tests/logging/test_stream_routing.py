@@ -90,12 +90,12 @@ class TestReferralAccessDenied:
     @pytest.fixture
     def routed(self, route: Any) -> Routed:
         return dict(
-            route(Log.REFERRAL_ACCESS_DENIED, "access denied", resource_ura="87654321"),
+            route(Log.REFERRAL_ACCESS_DENIED, "access denied", resource_organization_identifier="87654321"),
         )
 
     def test_endpoint_reaches_every_stream(self, routed: Routed) -> None:
         assert routed[LoggingStreams.APP][0]["endpoint"] == "/token"
-        assert routed[LoggingStreams.SIEM][0]["resource_ura"] == "87654321"
+        assert routed[LoggingStreams.SIEM][0]["resource_organization_identifier"] == "87654321"
         assert routed[LoggingStreams.SIEM][0]["endpoint"] == "/token"
 
     def test_public_inspect_receives_nothing(self, routed: Routed) -> None:
@@ -145,7 +145,7 @@ class TestLocalization:
 class TestBulkDeletion:
     def test_all_ura_referrals_deleted_reaches_all_three_streams(self, route: Any) -> None:
         routed: Routed = route(
-            Log.ALL_URA_REFERRALS_DELETED,
+            Log.ALL_ORGANIZATION_REFERRALS_DELETED,
             "all referrals deleted",
             deleted_count=42,
         )
