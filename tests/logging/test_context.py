@@ -3,7 +3,7 @@ import logging
 import gfmodules.logging as gflog
 from gfmodules.logging.testing import assert_event_emitted, assert_fields_absent, capture_records
 
-from app.logging.context import bind_auth_claims
+from app.logging.context import set_auth_claims
 from app.logging.events import Log
 from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.data import AuthorizationScope
@@ -27,8 +27,9 @@ _AUTH = AuthContext(
 )
 
 
-def test_binds_the_organizations_of_the_caller() -> None:
-    with capture_records(_logger.name) as records, bind_auth_claims(_AUTH):
+def test_sets_the_organizations_of_the_caller() -> None:
+    with capture_records(_logger.name) as records, gflog.bind_context({}):
+        set_auth_claims(_AUTH)
         gflog.emit(_logger, Log.IDEMPOTENT_REGISTRATION, "registered")
 
     assert_event_emitted(
@@ -41,8 +42,9 @@ def test_binds_the_organizations_of_the_caller() -> None:
     )
 
 
-def test_binds_nothing_without_an_auth_context() -> None:
-    with capture_records(_logger.name) as records, bind_auth_claims(None):
+def test_sets_nothing_without_an_auth_context() -> None:
+    with capture_records(_logger.name) as records, gflog.bind_context({}):
+        set_auth_claims(None)
         gflog.emit(_logger, Log.IDEMPOTENT_REGISTRATION, "registered")
 
     assert_fields_absent(

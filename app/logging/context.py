@@ -1,6 +1,3 @@
-from collections.abc import Generator
-from contextlib import contextmanager
-
 import gfmodules.logging as gflog
 
 from app.models.auth.context import AuthContext
@@ -12,8 +9,7 @@ ACTING_ORGANIZATION_NAME = gflog.ContextField(name="acting_organization_name", h
 CLAIM_FIELDS = (ORGANIZATION_NAME, ORGANIZATION_IDENTIFIER, ACTING_ORGANIZATION_IDENTIFIER, ACTING_ORGANIZATION_NAME)
 
 
-@contextmanager
-def bind_auth_claims(auth: AuthContext | None) -> Generator[None]:
+def set_auth_claims(auth: AuthContext | None) -> None:
     claims = (
         {}
         if auth is None
@@ -24,5 +20,4 @@ def bind_auth_claims(auth: AuthContext | None) -> Generator[None]:
             ACTING_ORGANIZATION_NAME.name: auth.claims.acting_organization_name,
         }
     )
-    with gflog.update_context(claims):
-        yield
+    gflog.set_context(claims)

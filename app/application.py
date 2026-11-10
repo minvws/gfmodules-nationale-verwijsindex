@@ -20,7 +20,6 @@ from app.config import (
     get_config,
 )
 from app.errors.handlers import register_exceptions
-from app.logging.context import CLAIM_FIELDS
 from app.logging.events import Log
 from app.models.fhir.resources.localization_list.request import COUNT_PARAM
 from app.routers.default import router as default_router
@@ -62,7 +61,6 @@ def run() -> None:
 def application_init() -> None:
     setup_logging()
     gflog.install_excepthook(logger)
-    gflog.install_signal_handlers()
 
 
 def create_fastapi_app() -> FastAPI:
@@ -88,7 +86,6 @@ def setup_logging() -> None:
         config=config.logging,
         loglevel=config.app.loglevel,
         catalogue=Log,
-        extra_context_fields=CLAIM_FIELDS,
     )
 
 
@@ -199,10 +196,6 @@ def setup_fastapi() -> FastAPI:
     register_exceptions(fastapi)
     _document_page_sizes(fastapi, config.pagination.default_page_size, config.pagination.max_page_size)
 
-    fastapi.add_middleware(
-        RequestContextMiddleware,
-        correlation_id_expected=config.logging.correlation_id_expected,
-        trust_forwarded_for=config.logging.trust_forwarded_for,
-    )
+    fastapi.add_middleware(RequestContextMiddleware)
 
     return fastapi

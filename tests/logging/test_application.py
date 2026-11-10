@@ -10,7 +10,6 @@ from pytest_mock import MockerFixture
 
 from app import application
 from app.config import Config, set_config
-from app.logging.context import CLAIM_FIELDS
 from app.logging.events import Log
 from tests.test_config import get_test_config
 
@@ -87,22 +86,16 @@ class TestAppStarted:
 
 
 class TestApplicationInit:
-    def test_installs_the_logging_excepthook_and_signal_handlers(
-        self, use_config: Config, mocker: MockerFixture
-    ) -> None:
+    def test_installs_the_logging_excepthook(self, use_config: Config, mocker: MockerFixture) -> None:
         install_excepthook = mocker.patch("app.application.gflog.install_excepthook")
-        install_signal_handlers = mocker.patch("app.application.gflog.install_signal_handlers")
         configure = mocker.patch("app.application.gflog.configure")
 
         application.application_init()
 
         configure.assert_called_once()
         install_excepthook.assert_called_once_with(application.logger)
-        install_signal_handlers.assert_called_once_with()
 
-    def test_configures_logging_with_the_nvi_catalogue_and_claim_fields(
-        self, use_config: Config, mocker: MockerFixture
-    ) -> None:
+    def test_configures_logging_with_the_nvi_catalogue(self, use_config: Config, mocker: MockerFixture) -> None:
         configure = mocker.patch("app.application.gflog.configure")
 
         application.setup_logging()
@@ -111,14 +104,12 @@ class TestApplicationInit:
             config=use_config.logging,
             loglevel=use_config.app.loglevel,
             catalogue=Log,
-            extra_context_fields=CLAIM_FIELDS,
         )
 
     def test_the_installed_excepthook_is_not_the_interpreter_default(
         self, use_config: Config, mocker: MockerFixture
     ) -> None:
         mocker.patch("app.application.gflog.configure")
-        mocker.patch("app.application.gflog.install_signal_handlers")
         previous = sys.excepthook
         try:
             application.application_init()

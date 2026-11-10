@@ -2,6 +2,8 @@ import logging
 
 from gfmodules.logging import DefaultEventCatalogue, LogEvent, LoggingStreams
 
+from app.logging.context import CLAIM_FIELDS
+
 _APP = LoggingStreams.APP
 _SIEM = LoggingStreams.SIEM
 _PUB = LoggingStreams.PUBLIC_INSPECT
@@ -12,6 +14,8 @@ _Base = DefaultEventCatalogue
 
 
 class Log(_Base):
+    context_fields = CLAIM_FIELDS
+
     SYS_APP_STARTED = _Base.SYS_APP_STARTED.replace(  # NVI-SYS-001
         event_id="100601",
         fields={_APP: ("version", "config_path", "crypto_service_api_enabled")},
