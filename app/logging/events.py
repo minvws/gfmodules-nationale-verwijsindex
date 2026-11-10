@@ -32,13 +32,13 @@ class Log(_Base):
         {_APP: ("component", "status", "error_detail"), _SIEM: ("component", "status")},
     )
 
-    DB_CONNECTION_FAILED = LogEvent(  # NVI-SYS-003
+    SYS_DB_CONNECTION_FAILED = LogEvent(  # NVI-SYS-003
         "100603",
         logging.ERROR,
         (_APP, _SIEM),
         {_APP: ("error_type", "retry_attempt", "backoff_seconds"), _SIEM: ("error_type",)},
     )
-    DB_SCHEMA_ERROR = LogEvent(  # NVI-SYS-005
+    SYS_DB_SCHEMA_ERROR = LogEvent(  # NVI-SYS-005
         "100605",
         logging.ERROR,
         (_APP,),
