@@ -49,8 +49,8 @@ class LocalizationListService:
             gflog.emit(
                 logger,
                 Log.REFERRAL_ACCESS_DENIED,
-                "Referral registration denied: URA mismatch",
-                fields={"resource_ura": str(ura_number)},
+                "Referral registration denied: organization mismatch",
+                fields={"resource_organization_identifier": str(ura_number)},
             )
             raise UnauthorizedUraError("Registration not linked to the authorized URA")
 

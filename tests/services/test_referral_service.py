@@ -145,7 +145,7 @@ def test_read_hides_another_uras_referral_behind_not_found(
         referral_service.read(referral.id, REQUESTING_URA)
 
     (denied,) = logged_fields(caplog, Log.REFERRAL_ACCESS_DENIED)
-    assert denied["resource_ura"] == str(ura_number)
+    assert denied["resource_organization_identifier"] == str(ura_number)
     assert logged_fields(caplog, Log.REFERRAL_SEARCHED_ON_ID) == []
 
 
@@ -258,7 +258,7 @@ def test_delete_many_without_a_pseudonym_logs_ura_scope(
     with caplog.at_level(logging.INFO):
         referral_service.delete_many(ura_number, source=SOURCE)
 
-    (fields,) = logged_fields(caplog, Log.ALL_URA_REFERRALS_DELETED)
+    (fields,) = logged_fields(caplog, Log.ALL_ORGANIZATION_REFERRALS_DELETED)
     assert fields["deleted_count"] == 1
 
 
@@ -272,7 +272,7 @@ def test_delete_many_logs_nothing_when_nothing_matched(
 
     assert deleted == 0
     assert logged_fields(caplog, Log.ALL_PATIENT_REFERRALS_DELETED) == []
-    assert logged_fields(caplog, Log.ALL_URA_REFERRALS_DELETED) == []
+    assert logged_fields(caplog, Log.ALL_ORGANIZATION_REFERRALS_DELETED) == []
 
 
 def test_localize_logs_success_with_the_pseudonym_and_result_count(
