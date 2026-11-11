@@ -44,10 +44,7 @@ def require_managing_source(ctx: Annotated[AuthContext, Depends(get_auth_context
     return source_id
 
 
-def require_scope_for_localization_query(
-    params: Annotated[LocalizationListSearchParams, Query()],
-    ctx: Annotated[AuthContext, Depends(get_auth_context)],
-) -> AuthContext:
+def require_scope_for_localization_query(params: LocalizationListSearchParams, ctx: AuthContext) -> AuthContext:
     """Require LOCALIZE scope for localization queries, READ scope for other queries."""
     required_scope = AuthorizationScope.LOCALIZE if params.is_localize_params() else AuthorizationScope.READ
     if required_scope not in ctx.scope:
@@ -66,16 +63,22 @@ def require_source_matches_body(
     return AuthContextService.assert_source_matches(ctx, data.get_device())
 
 
-def require_source_matches_query(
-    params: Annotated[LocalizationListParams, Query()],
-    ctx: Annotated[AuthContext, Depends(get_auth_context)],
-) -> AuthContext:
+def require_source_matches_query(params: LocalizationListParams, ctx: AuthContext) -> AuthContext:
     return AuthContextService.assert_source_matches(ctx, params.source)
 
 
-def require_source_matches_search_query(
-    # The query models forbid unknown parameters, so a search needs the model that knows the paging parameters
+def authorized_search_params(
     params: Annotated[LocalizationListSearchParams, Query()],
     ctx: Annotated[AuthContext, Depends(get_auth_context)],
-) -> AuthContext:
-    return AuthContextService.assert_source_matches(ctx, params.source)
+) -> LocalizationListSearchParams:
+    require_scope_for_localization_query(params, ctx)
+    require_source_matches_query(params, ctx)
+    return params
+
+
+def source_matched_params(
+    params: Annotated[LocalizationListParams, Query()],
+    ctx: Annotated[AuthContext, Depends(get_auth_context)],
+) -> LocalizationListParams:
+    require_source_matches_query(params, ctx)
+    return params

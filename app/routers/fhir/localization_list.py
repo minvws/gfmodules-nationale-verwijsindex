@@ -4,7 +4,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, Request, Response
 from fastapi.encoders import jsonable_encoder
-from fastapi.params import Query
 
 from app.dependencies import (
     get_localization_list_service,
@@ -30,12 +29,12 @@ from app.models.fhir.resources.operation_outcome.resource import OperationOutcom
 from app.models.response import DeleteResponse, FHIRJSONResponse
 from app.models.ura import UraNumber
 from app.routers.dependencies import (
+    authorized_search_params,
+    get_auth_context,
     require_managing_source,
     require_scope,
-    require_scope_for_localization_query,
     require_source_matches_body,
-    require_source_matches_query,
-    require_source_matches_search_query,
+    source_matched_params,
 )
 from app.services.fhir.localization_list import LocalizationListService
 
@@ -183,10 +182,9 @@ def get(
 )
 def query(
     request: Request,
-    params: Annotated[LocalizationListSearchParams, Query()],
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
-    ctx: Annotated[AuthContext, Depends(require_scope_for_localization_query)],
-    _source_match: Annotated[AuthContext, Depends(require_source_matches_search_query)],
+    ctx: Annotated[AuthContext, Depends(get_auth_context)],
+    params: Annotated[LocalizationListSearchParams, Depends(authorized_search_params)],
 ) -> Any:
     authorized_ura = ctx.claims.ura_number
     return service.query(params, authorized_ura, request_url=str(request.url))
@@ -236,11 +234,10 @@ def delete(
     response_class=DeleteResponse,
 )
 def delete_for_query(
-    params: Annotated[LocalizationListParams, Query()],
     service: Annotated[LocalizationListService, Depends(get_localization_list_service)],
     ctx: Annotated[AuthContext, Depends(require_scope(AuthorizationScope.DELETE))],
     source: Annotated[str, Depends(require_managing_source)],
-    _source_match: Annotated[AuthContext, Depends(require_source_matches_query)],
+    params: Annotated[LocalizationListParams, Depends(source_matched_params)],
 ) -> Any:
     authenticated_ura = ctx.claims.ura_number
     outcome, status_code = service.delete_by_query(params, authenticated_ura, source)

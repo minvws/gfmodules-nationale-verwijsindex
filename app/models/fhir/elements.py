@@ -63,13 +63,13 @@ class Identifier(FhirBaseModel):
     def from_query(cls, query: str, system: str) -> Self:
         data = query.split("|")
         if len(data) == 1:
-            logger.debug(f"Parsing identifier from query: {query} with implicit system: {system}")
+            logger.debug("Parsing identifier from query with implicit system: %s", system)
             return cls(system=system, value=query)
         if len(data) != 2:
-            logger.debug(f"Invalid identifier query format: {query}")
+            logger.debug("Invalid identifier query format")
             raise ValueError("Invalid query format, unable to determine System for Identifier")
         if data[0] and data[0] != system:
-            logger.debug(f"Unrecognized system in identifier query: {query}")
+            logger.debug("Unrecognized system in identifier query")
             raise ValueError(f"Unrecognized system, value must be {system}")
         return cls(system=data[0], value=data[1])
 
