@@ -8,7 +8,7 @@ _APP = LoggingStreams.APP
 _SIEM = LoggingStreams.SIEM
 _PUB = LoggingStreams.PUBLIC_INSPECT
 
-_CALLER = ("organization_identifier", "acting_organization_identifier", "acting_organization_name")
+_CALLER = ("represented_organization_identifier", "acting_organization_identifier", "acting_organization_name")
 
 _Base = DefaultEventCatalogue
 
@@ -23,7 +23,7 @@ class Log(_Base):
     SYS_APP_STOPPED = _Base.SYS_APP_STOPPED.with_id("100602")  # NVI-SYS-002
     SYS_APP_CRASHED = _Base.SYS_APP_CRASHED.with_id("100602")  # NVI-SYS-002
     SYS_UNHANDLED_EXCEPTION = _Base.SYS_UNHANDLED_EXCEPTION.with_id("100604")  # NVI-SYS-004
-    SYS_MISSING_CORRELATION_ID = _Base.SYS_MISSING_CORRELATION_ID.with_id("100606")  # NVI-SYS-006
+    SYS_MISSING_CORRELATION_ID = _Base.SYS_MISSING_CORRELATION_ID.with_id("100628")
 
     HEALTH_UNHEALTHY = LogEvent(  # NVI-HEALTH-001
         "100600",
@@ -32,13 +32,13 @@ class Log(_Base):
         {_APP: ("component", "status", "error_detail"), _SIEM: ("component", "status")},
     )
 
-    DB_CONNECTION_FAILED = LogEvent(  # NVI-SYS-003
+    SYS_DB_CONNECTION_FAILED = LogEvent(  # NVI-SYS-003
         "100603",
         logging.ERROR,
         (_APP, _SIEM),
         {_APP: ("error_type", "retry_attempt", "backoff_seconds"), _SIEM: ("error_type",)},
     )
-    DB_SCHEMA_ERROR = LogEvent(  # NVI-SYS-005
+    SYS_DB_SCHEMA_ERROR = LogEvent(  # NVI-SYS-005
         "100605",
         logging.ERROR,
         (_APP,),
@@ -52,7 +52,7 @@ class Log(_Base):
         logging.INFO,
         (_PUB, _APP),
         {
-            _PUB: ("organization_name", "organization_identifier", "pseudonym_hash"),
+            _PUB: ("represented_organization_name", "represented_organization_identifier", "pseudonym_hash"),
             _APP: _CALLER,
         },
     )
@@ -67,7 +67,7 @@ class Log(_Base):
         logging.INFO,
         (_PUB, _APP),
         {
-            _PUB: ("organization_name", "organization_identifier", "pseudonym_hash"),
+            _PUB: ("represented_organization_name", "represented_organization_identifier", "pseudonym_hash"),
             _APP: _CALLER,
         },
     )
@@ -93,8 +93,8 @@ class Log(_Base):
         logging.WARNING,
         (_APP, _SIEM),
         {
-            _APP: (*_CALLER, "resource_ura"),
-            _SIEM: (*_CALLER, "resource_ura"),
+            _APP: (*_CALLER, "resource_organization_identifier"),
+            _SIEM: (*_CALLER, "resource_organization_identifier"),
         },
     )
 
@@ -103,7 +103,7 @@ class Log(_Base):
         logging.INFO,
         (_PUB, _APP),
         {
-            _PUB: ("organization_name", "organization_identifier", "pseudonym_hash"),
+            _PUB: ("represented_organization_name", "represented_organization_identifier", "pseudonym_hash"),
             _APP: _CALLER,
         },
     )
@@ -112,17 +112,22 @@ class Log(_Base):
         logging.WARNING,
         (_PUB, _APP, _SIEM),
         {
-            _PUB: ("organization_name", "organization_identifier", "pseudonym_hash", "deleted_count"),
+            _PUB: (
+                "represented_organization_name",
+                "represented_organization_identifier",
+                "pseudonym_hash",
+                "deleted_count",
+            ),
             _APP: (*_CALLER, "deleted_count"),
             _SIEM: (*_CALLER, "deleted_count"),
         },
     )
-    ALL_URA_REFERRALS_DELETED = LogEvent(  # NVI-DEL-004
+    ALL_ORGANIZATION_REFERRALS_DELETED = LogEvent(  # NVI-DEL-004
         "900503",
         logging.CRITICAL,
         (_PUB, _APP, _SIEM),
         {
-            _PUB: ("organization_name", "organization_identifier", "deleted_count"),
+            _PUB: ("represented_organization_name", "represented_organization_identifier", "deleted_count"),
             _APP: (*_CALLER, "deleted_count"),
             _SIEM: (*_CALLER, "deleted_count"),
         },
@@ -133,7 +138,7 @@ class Log(_Base):
         logging.INFO,
         (_PUB, _APP, _SIEM),
         {
-            _PUB: ("organization_name", "organization_identifier", "pseudonym_hash"),
+            _PUB: ("represented_organization_name", "represented_organization_identifier", "pseudonym_hash"),
             _APP: (*_CALLER, "pseudonym_hash"),
             _SIEM: (*_CALLER, "result_count"),
         },

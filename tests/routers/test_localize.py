@@ -122,8 +122,8 @@ class TestLocalize:
         assert_event_emitted(
             records,
             Log.LOCALIZATION_FAILED,
-            organization_name=TEST_ORG_NAME,
-            organization_identifier=TEST_URA,
+            represented_organization_name=TEST_ORG_NAME,
+            represented_organization_identifier=TEST_URA,
             acting_organization_identifier=TEST_OIN,
             http_status=400,
         )

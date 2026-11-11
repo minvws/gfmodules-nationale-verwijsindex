@@ -29,7 +29,7 @@ def test_retry_emits_db_connection_failed_on_operational_error(mocker: MockerFix
 
     log_event.assert_called_once()
     args, kwargs = log_event.call_args
-    assert args[1] is Log.DB_CONNECTION_FAILED
+    assert args[1] is Log.SYS_DB_CONNECTION_FAILED
     assert kwargs["fields"]["error_type"] == "OperationalError"
     assert kwargs["fields"]["retry_attempt"] == 1
     assert kwargs["fields"]["backoff_seconds"] == 0.5
@@ -71,7 +71,7 @@ def test_retry_emits_db_schema_error_on_data_error_and_reraises(mocker: MockerFi
 
     log_event.assert_called_once()
     args, kwargs = log_event.call_args
-    assert args[1] is Log.DB_SCHEMA_ERROR
+    assert args[1] is Log.SYS_DB_SCHEMA_ERROR
     assert kwargs["fields"]["exception_type"] == "DataError"
     assert kwargs["fields"]["value_length"] == 11
     assert kwargs["fields"]["column_limit"] == 8
