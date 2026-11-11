@@ -22,7 +22,7 @@ opentelemetry-sdk = "^1.45.1"
 opentelemetry-exporter-otlp-proto-grpc = "^1.45.1"
 requests = "^2.32.5"
 pyopenssl = "^26.0.0"
-gfmodules-python-logging-library = { git = "https://github.com/minvws/gfmodules-python-logging-library", tag = "v0.5.0", extras = ["fastapi"] }
+gfmodules-python-logging-library = { git = "https://github.com/minvws/gfmodules-python-logging-library", tag = "v0.8.0", extras = ["fastapi"] }
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"

@@ -4,7 +4,12 @@ import gfmodules.logging as gflog
 import pytest
 from gfmodules.logging import DefaultEventCatalogue, LoggingStreams
 from gfmodules.logging.events import declared_events
-from gfmodules.logging.testing import assert_catalogue_complete, assert_event_emitted, capture_records
+from gfmodules.logging.testing import (
+    assert_catalogue_complete,
+    assert_event_emitted,
+    assert_event_overview_current,
+    capture_records,
+)
 
 from app.logging.events import Log
 
@@ -16,6 +21,9 @@ _PUB = LoggingStreams.PUBLIC_INSPECT
 class TestCatalogue:
     def test_defines_every_required_event(self) -> None:
         assert_catalogue_complete(Log)
+
+    def test_the_event_overview_is_current(self) -> None:
+        assert_event_overview_current(Log, "docs/log-events.md")
 
     @pytest.mark.parametrize(
         "name,event_id",

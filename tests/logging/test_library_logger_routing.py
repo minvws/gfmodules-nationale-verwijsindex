@@ -1,13 +1,24 @@
 import logging
 
 import gfmodules.logging as gflog
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from gfmodules.logging import CORRELATION_ID_HEADER, LoggingStreams
+from gfmodules.logging import CORRELATION_ID_HEADER, ConfigLogging, LoggingStreams
 from gfmodules.logging.middleware import RequestContextMiddleware
 from gfmodules.logging.testing import capture_stream
 
 from app.logging.events import Log
+
+
+@pytest.fixture(autouse=True)
+def correlation_id_expected() -> None:
+    gflog.configure(
+        config=ConfigLogging(console_streams=["debug"], access_logs=True, correlation_id_expected=True),
+        loglevel="DEBUG",
+        catalogue=Log,
+        strict_fields=True,
+    )
 
 
 def _app() -> FastAPI:
@@ -17,7 +28,7 @@ def _app() -> FastAPI:
     def ping() -> dict[str, str]:
         return {"status": "ok"}
 
-    fastapi.add_middleware(RequestContextMiddleware, correlation_id_expected=True)
+    fastapi.add_middleware(RequestContextMiddleware)
     return fastapi
 
 

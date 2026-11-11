@@ -1,12 +1,11 @@
 import logging
-from collections.abc import AsyncIterator
 from typing import Annotated
 
 from fastapi import Depends
 from starlette.requests import Request
 
 from app import dependencies
-from app.logging.context import bind_auth_claims
+from app.logging.context import set_auth_claims
 from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.headers import AuthHeaders
 from app.models.ura import UraNumber
@@ -54,6 +53,5 @@ def get_auth_ctx(
     return ctx
 
 
-async def auth_log_context(ctx: Annotated[AuthContext, Depends(get_auth_ctx)]) -> AsyncIterator[None]:
-    with bind_auth_claims(ctx):
-        yield
+def auth_log_context(ctx: Annotated[AuthContext, Depends(get_auth_ctx)]) -> None:
+    set_auth_claims(ctx)
