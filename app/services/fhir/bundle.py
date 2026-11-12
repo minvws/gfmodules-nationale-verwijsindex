@@ -17,6 +17,7 @@ from app.models.fhir.resources.localization_list.resource import LocalizationLis
 from app.models.ura import UraNumber
 from app.services.auth.auth_context import AuthContextService
 from app.services.exceptions import (
+    InvalidResourceError,
     UnauthorizedManagingRequestError,
     UnauthorizedScopeError,
     UnauthorizedSourceError,
@@ -205,7 +206,7 @@ class BundleService:
         """
         try:
             entry_source = resource.get_device() if resource is not None else (params.source if params else None)
-        except ValueError as e:
+        except InvalidResourceError as e:
             # A source built on the wrong naming system, which the standalone route rejects
             # before it reaches the service too.
             spec = spec_for(e)
