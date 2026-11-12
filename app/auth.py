@@ -1,17 +1,15 @@
-import logging
 from typing import Annotated
 
 from fastapi import Depends
 from starlette.requests import Request
 
 from app import dependencies
+from app.errors.handlers import summarize_reason
 from app.logging.context import set_auth_claims
 from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.headers import AuthHeaders
 from app.models.ura import UraNumber
 from app.services.auth.header import AuthHeaderService
-
-logger = logging.getLogger(__name__)
 
 
 class OAuthError(Exception):
@@ -33,8 +31,7 @@ def get_auth_ctx(
     try:
         auth_headers = AuthHeaders.from_request(request)
     except ValueError as e:
-        logger.exception("Failed to extract AuthHeaders")
-        raise ValueError(f"Invalid Authorization Headers in request: {e}")
+        raise ValueError(f"Invalid Authorization Headers in request: {summarize_reason(e)}") from e
 
     validated_auth_headers = auth_headers_service.validate(auth_headers)
     claims = AuthenticationClaims(

@@ -6,6 +6,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from gfmodules.logging.exceptions import log_unhandled_exception
 from gfmodules.logging.middleware import restore_request_context
+from pydantic import ValidationError
 
 from app.errors.fhir import FHIRError
 from app.errors.mapping import DEFAULT_SPEC, EXCEPTION_MAP, UNEXPECTED_ERROR_MESSAGE, spec_for
@@ -18,16 +19,19 @@ from app.models.fhir.resources.operation_outcome.resource import (
 logger = logging.getLogger(__name__)
 
 _DENIAL_STATUSES = frozenset({401, 403})
+MAX_REASON_LENGTH = 500
 
 
-def _summarize_reason(exc: Exception) -> str:
-    if isinstance(exc, RequestValidationError):
+def summarize_reason(exc: Exception) -> str:
+    if isinstance(exc, (RequestValidationError, ValidationError)):
         reasons = [
             f"{'.'.join(str(loc) for loc in err.get('loc', ()))}: {err.get('msg', '')}".strip(" :")
             for err in exc.errors()
         ]
-        return "; ".join(r for r in reasons if r) or "validation error"
-    return str(exc)
+        reason = "; ".join(r for r in reasons if r) or "validation error"
+    else:
+        reason = str(exc)
+    return reason[:MAX_REASON_LENGTH]
 
 
 def log_rejection(status_code: int, exc: Exception) -> None:
@@ -37,7 +41,7 @@ def log_rejection(status_code: int, exc: Exception) -> None:
         "Request rejected with %s (%s): %s",
         status_code,
         type(exc).__name__,
-        _summarize_reason(exc),
+        summarize_reason(exc),
     )
 
 
