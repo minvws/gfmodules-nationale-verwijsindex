@@ -19,6 +19,7 @@ from app.models.fhir.resources.operation_outcome.resource import (
 logger = logging.getLogger(__name__)
 
 _DENIAL_STATUSES = frozenset({401, 403})
+MAX_REASON_LENGTH = 500
 
 
 def summarize_reason(exc: Exception) -> str:
@@ -27,8 +28,10 @@ def summarize_reason(exc: Exception) -> str:
             f"{'.'.join(str(loc) for loc in err.get('loc', ()))}: {err.get('msg', '')}".strip(" :")
             for err in exc.errors()
         ]
-        return "; ".join(r for r in reasons if r) or "validation error"
-    return str(exc)
+        reason = "; ".join(r for r in reasons if r) or "validation error"
+    else:
+        reason = str(exc)
+    return reason[:MAX_REASON_LENGTH]
 
 
 def log_rejection(status_code: int, exc: Exception) -> None:

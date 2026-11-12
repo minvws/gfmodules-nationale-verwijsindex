@@ -10,7 +10,7 @@ from gfmodules.logging.testing import assert_event_emitted, capture_records
 from pydantic import BaseModel, ValidationError
 
 from app.errors import handlers
-from app.errors.handlers import handle_unhandled_exception, register_exceptions, summarize_reason
+from app.errors.handlers import MAX_REASON_LENGTH, handle_unhandled_exception, register_exceptions, summarize_reason
 from app.logging.events import Log
 from app.models.auth.data import AuthorizationScope
 from app.services.exceptions import (
@@ -129,6 +129,9 @@ class TestSummarizeReason:
 
     def test_summarizes_a_plain_exception_by_its_message(self) -> None:
         assert summarize_reason(RuntimeError("boom")) == "boom"
+
+    def test_cuts_a_reason_off_at_the_maximum_length(self) -> None:
+        assert summarize_reason(RuntimeError("x" * (MAX_REASON_LENGTH + 1))) == "x" * MAX_REASON_LENGTH
 
 
 class TestRequestValidationHandler:
