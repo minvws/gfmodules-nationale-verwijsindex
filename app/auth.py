@@ -10,6 +10,7 @@ from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.headers import AuthHeaders
 from app.models.ura import UraNumber
 from app.services.auth.header import AuthHeaderService
+from app.services.exceptions import InvalidAuthHeadersError
 
 
 class OAuthError(Exception):
@@ -31,7 +32,7 @@ def get_auth_ctx(
     try:
         auth_headers = AuthHeaders.from_request(request)
     except ValueError as e:
-        raise ValueError(f"Invalid Authorization Headers in request: {summarize_reason(e)}") from e
+        raise InvalidAuthHeadersError(f"Invalid Authorization Headers in request: {summarize_reason(e)}") from e
 
     validated_auth_headers = auth_headers_service.validate(auth_headers)
     claims = AuthenticationClaims(
