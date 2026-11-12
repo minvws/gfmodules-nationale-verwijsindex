@@ -12,6 +12,7 @@ from app.models.fhir.resources.localization_list.request import LocalizationList
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.ura import UraNumber
+from app.services.exceptions import BundleTooLargeError, InvalidModelError
 from app.services.fhir.bundle import BundleService
 from app.services.fhir.localization_list import LocalizationListService
 from app.services.key_info import KeyInfoService
@@ -54,7 +55,7 @@ def bundle_service(
     localization_service = LocalizationListService(
         referral_service=referral_service, pseudonym_referral_service=pseudonym_referral_service
     )
-    return BundleService(localization_service)
+    return BundleService(localization_service, max_entries=2)
 
 
 def _entry(method: Literal["POST", "DELETE", "GET", "PUT"], url: str) -> BundleEntry[LocalizationList]:
@@ -200,11 +201,20 @@ class TestEntryValidation:
 
 
 class TestBundleStructure:
-    def test_empty_bundle_is_invalid(self) -> None:
-        assert BundleService.validate_localization_bundle_structure(Bundle(entry=[])) is False
+    def test_empty_bundle_is_invalid(self, bundle_service: BundleService) -> None:
+        bundle: Bundle[Any] = Bundle(entry=[])
 
-    def test_bundle_with_entries_is_valid(self) -> None:
-        assert BundleService.validate_localization_bundle_structure(Bundle(entry=[BundleEntry()])) is True
+        with pytest.raises(InvalidModelError):
+            bundle_service.validate_entry_count(bundle)
+
+    def test_bundle_up_to_the_maximum_is_valid(self, bundle_service: BundleService) -> None:
+        bundle_service.validate_entry_count(Bundle(entry=[BundleEntry(), BundleEntry()]))
+
+    def test_bundle_over_the_maximum_is_too_large(self, bundle_service: BundleService) -> None:
+        bundle: Bundle[Any] = Bundle(entry=[BundleEntry(), BundleEntry(), BundleEntry()])
+
+        with pytest.raises(BundleTooLargeError, match="maximum of 2 entries"):
+            bundle_service.validate_entry_count(bundle)
 
 
 class TestEntryOutcomes:
