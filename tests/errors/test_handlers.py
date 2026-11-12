@@ -7,9 +7,10 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from gfmodules.logging.middleware import RequestContext
 from gfmodules.logging.testing import assert_event_emitted, capture_records
+from pydantic import BaseModel, ValidationError
 
 from app.errors import handlers
-from app.errors.handlers import handle_unhandled_exception, register_exceptions
+from app.errors.handlers import handle_unhandled_exception, register_exceptions, summarize_reason
 from app.logging.events import Log
 from app.models.auth.data import AuthorizationScope
 from app.services.exceptions import (
@@ -111,6 +112,23 @@ class TestRejectionLogging:
             _client().get("/fhir/boom")
 
         assert "Record not found" in caplog.text
+
+
+class _Model(BaseModel):
+    values: list[int]
+
+
+class TestSummarizeReason:
+    def test_summarizes_a_validation_error_without_its_input(self) -> None:
+        with pytest.raises(ValidationError) as caught:
+            _Model.model_validate({"values": ["secret-input"]})
+
+        assert summarize_reason(caught.value) == (
+            "values.0: Input should be a valid integer, unable to parse string as an integer"
+        )
+
+    def test_summarizes_a_plain_exception_by_its_message(self) -> None:
+        assert summarize_reason(RuntimeError("boom")) == "boom"
 
 
 class TestRequestValidationHandler:

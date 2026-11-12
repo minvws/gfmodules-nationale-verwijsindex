@@ -6,6 +6,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from gfmodules.logging.exceptions import log_unhandled_exception
 from gfmodules.logging.middleware import restore_request_context
+from pydantic import ValidationError
 
 from app.errors.fhir import FHIRError
 from app.errors.mapping import DEFAULT_SPEC, EXCEPTION_MAP, UNEXPECTED_ERROR_MESSAGE, spec_for
@@ -20,8 +21,8 @@ logger = logging.getLogger(__name__)
 _DENIAL_STATUSES = frozenset({401, 403})
 
 
-def _summarize_reason(exc: Exception) -> str:
-    if isinstance(exc, RequestValidationError):
+def summarize_reason(exc: Exception) -> str:
+    if isinstance(exc, (RequestValidationError, ValidationError)):
         reasons = [
             f"{'.'.join(str(loc) for loc in err.get('loc', ()))}: {err.get('msg', '')}".strip(" :")
             for err in exc.errors()
@@ -37,7 +38,7 @@ def log_rejection(status_code: int, exc: Exception) -> None:
         "Request rejected with %s (%s): %s",
         status_code,
         type(exc).__name__,
-        _summarize_reason(exc),
+        summarize_reason(exc),
     )
 
 
