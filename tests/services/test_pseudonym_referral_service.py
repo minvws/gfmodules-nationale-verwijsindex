@@ -8,7 +8,7 @@ from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.logging.events import Log
 from app.models.pseudonym import OprfPseudonym, PseudonymResponse
 from app.models.ura import UraNumber
-from app.services.exceptions import InvalidKeyInfoError
+from app.services.exceptions import CryptoServiceError, InvalidKeyInfoError, PseudonymExchangeError
 from app.services.key_info import KeyInfoService
 from app.services.pseudonym_referral_service import PseudonymReferralService
 from app.services.pseudonym_resolver import PseudonymResolver
@@ -26,9 +26,14 @@ class FailingCryptoClient(CryptoServiceApiClientMock):
         raise RuntimeError("boom")
 
 
+class UnavailableCryptoClient(CryptoServiceApiClientMock):
+    def exchange(self, pseudonym: OprfPseudonym, label: str, mechanism: str) -> PseudonymResponse:
+        raise CryptoServiceError("down")
+
+
 class RejectingCryptoClient(CryptoServiceApiClientMock):
     def exchange(self, pseudonym: OprfPseudonym, label: str, mechanism: str) -> PseudonymResponse:
-        raise ValueError("Invalid pseudonym or oprf_key")
+        raise PseudonymExchangeError("Invalid pseudonym or oprf_key")
 
 
 def logged_fields(caplog: pytest.LogCaptureFixture, event: LogEvent) -> list[dict[str, Any]]:
@@ -72,11 +77,26 @@ def test_register_logs_a_failure_when_the_pseudonym_is_invalid(
     ura_number: UraNumber,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    with caplog.at_level(logging.INFO), pytest.raises(ValueError):
+    with caplog.at_level(logging.INFO), pytest.raises(PseudonymExchangeError):
         rejecting_service.register(PSEUDONYM, ura_number, SOURCE)
 
     (fields,) = logged_fields(caplog, Log.REFERRAL_REGISTRATION_FAILED)
     assert fields["http_status"] == 400
+
+
+def test_register_logs_an_error_when_the_crypto_service_fails(
+    referral_service: ReferralService,
+    key_info_service: KeyInfoService,
+    ura_number: UraNumber,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    service = _service_with(UnavailableCryptoClient(), referral_service, key_info_service)
+    with caplog.at_level(logging.INFO), pytest.raises(CryptoServiceError):
+        service.register(PSEUDONYM, ura_number, SOURCE)
+
+    (fields,) = logged_fields(caplog, Log.REFERRAL_REGISTRATION_ERROR)
+    assert fields["levelno"] == logging.ERROR
+    assert fields["http_status"] == 502
 
 
 def test_register_does_not_log_an_expected_failure(
@@ -107,7 +127,7 @@ def test_localize_logs_a_failure_when_the_pseudonym_is_invalid(
     rejecting_service: PseudonymReferralService,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    with caplog.at_level(logging.INFO), pytest.raises(ValueError):
+    with caplog.at_level(logging.INFO), pytest.raises(PseudonymExchangeError):
         rejecting_service.localize(PSEUDONYM, REQUESTING_URA)
 
     (fields,) = logged_fields(caplog, Log.LOCALIZATION_FAILED)
@@ -126,6 +146,20 @@ def test_localize_logs_an_error_when_it_breaks(
     assert fields["levelno"] == logging.ERROR
     assert fields["http_status"] == 500
     assert fields["error_reason"] == "boom"
+
+
+def test_localize_logs_an_error_when_the_crypto_service_fails(
+    referral_service: ReferralService,
+    key_info_service: KeyInfoService,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    service = _service_with(UnavailableCryptoClient(), referral_service, key_info_service)
+    with caplog.at_level(logging.INFO), pytest.raises(CryptoServiceError):
+        service.localize(PSEUDONYM, REQUESTING_URA)
+
+    (fields,) = logged_fields(caplog, Log.LOCALIZATION_ERROR)
+    assert fields["levelno"] == logging.ERROR
+    assert fields["http_status"] == 502
 
 
 def test_localize_does_not_log_an_expected_failure(

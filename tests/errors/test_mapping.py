@@ -4,12 +4,14 @@ from app.errors.mapping import ErrorSpec, should_log, spec_for
 from app.models.auth.data import AuthorizationScope
 from app.services.exceptions import (
     ConflictError,
+    CryptoServiceError,
     ForbiddenError,
     InvalidHeaderPropertyError,
     InvalidKeyInfoError,
     InvalidModelError,
     NotFoundError,
     PseudonymError,
+    PseudonymExchangeError,
     UnauthorizedManagingRequestError,
     UnauthorizedScopeError,
     UnauthorizedUraError,
@@ -33,6 +35,8 @@ def _scope_error() -> UnauthorizedScopeError:
         pytest.param(InvalidKeyInfoError(), _spec("transient", 503), id="invalid-key-info"),
         pytest.param(InvalidHeaderPropertyError("aud", "x"), _spec("invalid", 401), id="invalid-header-property"),
         pytest.param(PseudonymError(), _spec("invalid", 422), id="pseudonym"),
+        pytest.param(PseudonymExchangeError("rejected"), _spec("invalid", 400, log=True), id="pseudonym-exchange"),
+        pytest.param(CryptoServiceError("down"), _spec("transient", 502, log=True), id="crypto-service"),
         pytest.param(ValueError("boom"), _spec("invalid", 400, log=True), id="value-error"),
         pytest.param(InvalidModelError("bad"), _spec("structure", 400), id="invalid-model-outranks-value-error"),
         pytest.param(_scope_error(), _spec("security", 403), id="unauthorized-scope-via-mro"),
@@ -50,6 +54,7 @@ def test_spec_for_resolves_the_expected_spec(exc: Exception, expected: ErrorSpec
     [
         pytest.param(PseudonymError(), False, id="pseudonym"),
         pytest.param(ValueError("boom"), True, id="value-error"),
+        pytest.param(PseudonymExchangeError("rejected"), True, id="pseudonym-exchange"),
         pytest.param(RuntimeError("unexpected"), True, id="unmapped"),
         pytest.param(NotFoundError(), False, id="not-found"),
         pytest.param(_scope_error(), False, id="unauthorized-scope"),

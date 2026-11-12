@@ -9,6 +9,7 @@ from app.logging.events import Log
 from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.data import AuthorizationScope
 from app.models.ura import UraNumber
+from app.services.exceptions import PseudonymExchangeError
 from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 from tests.routers.conftest import (
@@ -113,7 +114,9 @@ class TestLocalize:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         key_info_service.add_one("nvi-label", "AES_CBC")
-        monkeypatch.setattr(crypto_client, "exchange", Mock(side_effect=ValueError("Invalid pseudonym or oprf_key")))
+        monkeypatch.setattr(
+            crypto_client, "exchange", Mock(side_effect=PseudonymExchangeError("Invalid pseudonym or oprf_key"))
+        )
 
         with capture_records() as records:
             response = localize_client.post("/localize", json={"pseudonym": "pseu", "oprf_key": "k"})

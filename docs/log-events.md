@@ -57,6 +57,7 @@ The request context also holds these, but an event carries them only on the stre
 | `REFERRAL_SEARCHED_ON_ID` | 900402 | INFO | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name` |
 | `REFERRALS_QUERIED` | 900403 | INFO | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `result_count` |
 | `REFERRAL_REGISTRATION_FAILED` | 900404 | WARNING | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
+| `REFERRAL_REGISTRATION_ERROR` | 900404 | ERROR | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `REFERRAL_ACCESS_DENIED` | 900405 | WARNING | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `resource_ura` |
 | `REFERRAL_DELETED` | 900500 | INFO | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name` |
 | `ALL_PATIENT_REFERRALS_DELETED` | 900501 | WARNING | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `deleted_count` |
@@ -77,6 +78,7 @@ The request context also holds these, but an event carries them only on the stre
 | `HEALTH_UNHEALTHY` | 100600 | ERROR | `component`, `status` |
 | `DB_CONNECTION_FAILED` | 100603 | ERROR | `error_type` |
 | `REFERRAL_REGISTRATION_FAILED` | 900404 | WARNING | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
+| `REFERRAL_REGISTRATION_ERROR` | 900404 | ERROR | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `REFERRAL_ACCESS_DENIED` | 900405 | WARNING | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `resource_ura` |
 | `ALL_PATIENT_REFERRALS_DELETED` | 900501 | WARNING | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `deleted_count` |
 | `ALL_URA_REFERRALS_DELETED` | 900503 | CRITICAL | `organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `deleted_count` |
