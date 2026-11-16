@@ -1,5 +1,6 @@
 import logging
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 
 import gfmodules.logging as gflog
 from gfmodules.logging import LogEvent
@@ -16,18 +17,20 @@ from app.services.referral_service import ReferralService
 logger = logging.getLogger(__name__)
 
 
-def _log_failure(event: LogEvent, message: str, exc: Exception) -> None:
-    if should_log_failure(exc):
-        gflog.emit(
-            logger,
-            event,
-            message,
-            fields={"http_status": spec_for(exc).http_status, "error_reason": summarize_reason(exc)},
-        )
-
-
-def _failure_event(exc: Exception, failed: LogEvent, error: LogEvent) -> LogEvent:
-    return failed if spec_for(exc).http_status < 500 else error
+@contextmanager
+def _failures_logged(message: str, failed: LogEvent, error: LogEvent) -> Iterator[None]:
+    try:
+        yield
+    except Exception as exc:
+        if should_log_failure(exc):
+            status = spec_for(exc).http_status
+            gflog.emit(
+                logger,
+                failed if status < 500 else error,
+                message,
+                fields={"http_status": status, "error_reason": summarize_reason(exc)},
+            )
+        raise
 
 
 class PseudonymReferralService:
@@ -41,13 +44,11 @@ class PseudonymReferralService:
         ura_number: UraNumber,
         source: str,
     ) -> tuple[ReferralEntity, bool]:
-        try:
+        with _failures_logged(
+            "Referral registration failed", Log.REFERRAL_REGISTRATION_FAILED, Log.REFERRAL_REGISTRATION_ERROR
+        ):
             resolved = self._pseudonym_resolver.resolve(pseudonym)
             return self._referral_service.add_one(resolved.encrypted, ura_number, source, resolved.key_id)
-        except Exception as exc:
-            event = _failure_event(exc, Log.REFERRAL_REGISTRATION_FAILED, Log.REFERRAL_REGISTRATION_ERROR)
-            _log_failure(event, "Referral registration failed", exc)
-            raise
 
     def localize(
         self,
@@ -56,13 +57,9 @@ class PseudonymReferralService:
         limit: int | None = None,
         offset: int = 0,
     ) -> tuple[int, Sequence[ReferralEntity]]:
-        try:
+        with _failures_logged("Localization failed", Log.LOCALIZATION_FAILED, Log.LOCALIZATION_ERROR):
             encrypted = self._resolve_encrypted(pseudonym)
             return self._referral_service.localize(encrypted, requesting_ura, limit=limit, offset=offset)
-        except Exception as exc:
-            event = _failure_event(exc, Log.LOCALIZATION_FAILED, Log.LOCALIZATION_ERROR)
-            _log_failure(event, "Localization failed", exc)
-            raise
 
     def query(
         self,
@@ -72,15 +69,11 @@ class PseudonymReferralService:
         limit: int | None = None,
         offset: int = 0,
     ) -> tuple[int, Sequence[ReferralEntity]]:
-        try:
+        with _failures_logged("Referral query failed", Log.REFERRAL_QUERY_FAILED, Log.REFERRAL_QUERY_ERROR):
             encrypted = self._resolve_encrypted(pseudonym) if pseudonym else None
             return self._referral_service.query(
                 ura_number, encrypted_pseudonym=encrypted, source=source, limit=limit, offset=offset
             )
-        except Exception as exc:
-            event = _failure_event(exc, Log.REFERRAL_QUERY_FAILED, Log.REFERRAL_QUERY_ERROR)
-            _log_failure(event, "Referral query failed", exc)
-            raise
 
     def delete_many(
         self,
@@ -88,13 +81,9 @@ class PseudonymReferralService:
         pseudonym: OprfPseudonym | None = None,
         source: str | None = None,
     ) -> int:
-        try:
+        with _failures_logged("Referral deletion failed", Log.REFERRALS_DELETE_FAILED, Log.REFERRALS_DELETE_ERROR):
             encrypted = self._resolve_encrypted(pseudonym) if pseudonym else None
             return self._referral_service.delete_many(ura_number, encrypted_pseudonym=encrypted, source=source)
-        except Exception as exc:
-            event = _failure_event(exc, Log.REFERRALS_DELETE_FAILED, Log.REFERRALS_DELETE_ERROR)
-            _log_failure(event, "Referral deletion failed", exc)
-            raise
 
     def _resolve_encrypted(self, pseudonym: OprfPseudonym) -> EncryptedPseudonym:
         return self._pseudonym_resolver.resolve(pseudonym).encrypted
