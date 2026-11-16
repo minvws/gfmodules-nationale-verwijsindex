@@ -34,6 +34,8 @@ from app.services.exceptions import (
 )
 
 _pending: dict[str, Exception] = {}
+_JSON = {"Content-Type": "application/json"}
+_UNDECODABLE_BODY = b'{"values": "\xff"}'
 
 
 def _client() -> TestClient:
@@ -54,6 +56,12 @@ def _client() -> TestClient:
     @app.get("/rest/validated")
     def rest_validated(required: int) -> None:
         return None
+
+    def accept(body: _Model) -> None:
+        return None
+
+    app.post("/fhir/body")(accept)
+    app.post("/rest/body")(accept)
 
     return TestClient(app, raise_server_exceptions=False)
 
@@ -252,6 +260,31 @@ class TestInvalidRequestLogging:
         with capture_records() as records:
             _client().get("/rest/boom")
 
+        assert records.for_event(Log.INVALID_REQUEST) == []
+
+    @pytest.mark.parametrize("path", ["/fhir/body", "/rest/body"])
+    def test_logs_a_body_that_cannot_be_decoded(self, path: str) -> None:
+        with capture_records() as records:
+            response = _client().post(path, content=_UNDECODABLE_BODY, headers=_JSON)
+
+        assert response.status_code == 400
+        assert_event_emitted(
+            records, Log.INVALID_REQUEST, http_status=400, error_reason="There was an error parsing the body"
+        )
+
+    def test_renders_a_fhir_body_that_cannot_be_decoded_as_an_operation_outcome(self) -> None:
+        response = _client().post("/fhir/body", content=_UNDECODABLE_BODY, headers=_JSON)
+
+        body = response.json()
+        assert body["resourceType"] == "OperationOutcome"
+        assert body["issue"][0]["code"] == "structure"
+
+    def test_leaves_a_missing_route_to_the_default_handler(self) -> None:
+        with capture_records() as records:
+            response = _client().get("/rest/missing")
+
+        assert response.status_code == 404
+        assert response.json() == {"detail": "Not Found"}
         assert records.for_event(Log.INVALID_REQUEST) == []
 
     def test_bounds_the_logged_reason(self) -> None:

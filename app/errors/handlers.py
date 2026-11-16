@@ -3,11 +3,13 @@ from typing import no_type_check
 
 import gfmodules.logging as gflog
 from fastapi import FastAPI, Request
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from gfmodules.logging.exceptions import log_unhandled_exception
 from gfmodules.logging.middleware import restore_request_context
 from pydantic import ValidationError
+from starlette.exceptions import HTTPException
 
 from app.errors.fhir import FHIRError
 from app.errors.mapping import DEFAULT_SPEC, EXCEPTION_MAP, UNEXPECTED_ERROR_MESSAGE, LogAs, spec_for
@@ -17,6 +19,7 @@ from app.models.fhir.resources.operation_outcome.resource import (
     OperationOutcomeDetail,
     OperationOutcomeIssue,
 )
+from app.services.exceptions import InvalidModelError
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +81,12 @@ def handle_mapped_exception(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(status_code=status_code, content=str(exc))
 
 
+async def handle_http_exception(request: Request, exc: HTTPException) -> Response:
+    if exc.status_code == 400:
+        return handle_mapped_exception(request, InvalidModelError(exc.detail))
+    return await http_exception_handler(request, exc)
+
+
 def handle_request_validation_exception(req: Request, exc: RequestValidationError) -> JSONResponse:
     path = req.url.path
     status_code = 422
@@ -131,5 +140,6 @@ def register_exceptions(app: FastAPI) -> None:
     for exception_type in EXCEPTION_MAP:
         app.add_exception_handler(exception_type, handle_mapped_exception)
 
+    app.add_exception_handler(HTTPException, handle_http_exception)
     app.add_exception_handler(RequestValidationError, handle_request_validation_exception)
     app.add_exception_handler(Exception, handle_unhandled_exception)
