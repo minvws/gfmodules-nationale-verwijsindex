@@ -138,7 +138,9 @@ class TestInvalidEntryLogging:
             response = client.post("/fhir", json=_bundle(entry), headers=FHIR_JSON)
 
         assert response.json()["entry"][0]["response"]["status"] == str(status)
-        assert_event_emitted(records, Log.INVALID_REQUEST, organization_identifier=TEST_URA, http_status=status)
+        assert_event_emitted(
+            records, Log.INVALID_REQUEST, represented_organization_identifier=TEST_URA, http_status=status
+        )
 
     def test_logs_only_the_invalid_entries_of_a_mixed_bundle(self, client: TestClient) -> None:
         with capture_records() as records:
