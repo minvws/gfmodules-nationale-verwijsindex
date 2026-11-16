@@ -13,7 +13,7 @@ from fastapi.security import APIKeyHeader
 from gfmodules.logging.middleware import RequestContextMiddleware
 
 from app import container
-from app.auth import auth_log_context, get_auth_ctx
+from app.auth import auth_log_context, authenticate, get_auth_ctx
 from app.config import (
     _ENVIRONMENT_CONFIG_PATH_NAME,
     _PATH,
@@ -194,7 +194,7 @@ def setup_fastapi() -> FastAPI:
     for router in routers:
         fastapi.include_router(router, dependencies=[Depends(get_auth_ctx), Depends(auth_log_context)])
 
-    register_exceptions(fastapi)
+    register_exceptions(fastapi, authenticate)
     _document_page_sizes(fastapi, config.pagination.default_page_size, config.pagination.max_page_size)
 
     fastapi.add_middleware(RequestBodyLimitMiddleware, max_bytes=config.app.max_request_body_bytes)

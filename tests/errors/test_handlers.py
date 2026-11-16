@@ -3,7 +3,7 @@ import logging
 from unittest.mock import MagicMock
 
 import pytest
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.testclient import TestClient
 from gfmodules.logging.middleware import RequestContext
 from gfmodules.logging.testing import assert_event_emitted, capture_records
@@ -12,6 +12,7 @@ from pydantic import BaseModel, ValidationError
 from app.errors import handlers
 from app.errors.handlers import (
     MAX_REASON_LENGTH,
+    Authenticate,
     handle_unhandled_exception,
     log_invalid_request,
     register_exceptions,
@@ -38,9 +39,21 @@ _JSON = {"Content-Type": "application/json"}
 _UNDECODABLE_BODY = b'{"values": "\xff"}'
 
 
-def _client() -> TestClient:
+def _trust(request: Request) -> None:
+    return None
+
+
+def _refuse(request: Request) -> None:
+    raise InvalidAuthHeadersError("missing")
+
+
+def _authenticated_already(request: Request) -> None:
+    request.state.auth = object()
+
+
+def _client(authenticate: Authenticate = _trust) -> TestClient:
     app = FastAPI()
-    register_exceptions(app)
+    register_exceptions(app, authenticate)
 
     def boom() -> None:
         raise _pending["exc"]
@@ -55,6 +68,10 @@ def _client() -> TestClient:
 
     @app.get("/rest/validated")
     def rest_validated(required: int) -> None:
+        return None
+
+    @app.get("/rest/authenticated", dependencies=[Depends(_authenticated_already)])
+    def authenticated(required: int) -> None:
         return None
 
     def accept(body: _Model) -> None:
@@ -281,7 +298,7 @@ class TestInvalidRequestLogging:
 
     def test_leaves_a_missing_route_to_the_default_handler(self) -> None:
         with capture_records() as records:
-            response = _client().get("/rest/missing")
+            response = _client(_refuse).get("/rest/missing")
 
         assert response.status_code == 404
         assert response.json() == {"detail": "Not Found"}
@@ -293,3 +310,19 @@ class TestInvalidRequestLogging:
 
         entry = assert_event_emitted(records, Log.INVALID_REQUEST)
         assert len(entry.message["error_reason"]) == MAX_REASON_LENGTH
+
+
+class TestAuthenticationBeforeRejection:
+    @pytest.mark.parametrize("body", [_UNDECODABLE_BODY, b"{not json"], ids=["undecodable", "malformed-json"])
+    def test_rejects_an_unreadable_body_from_an_unauthenticated_caller_as_unauthenticated(self, body: bytes) -> None:
+        with capture_records() as records:
+            response = _client(_refuse).post("/fhir/body", content=body, headers=_JSON)
+
+        assert response.status_code == 401
+        assert response.json()["issue"][0]["code"] == "login"
+        assert records.for_event(Log.INVALID_REQUEST) == []
+
+    def test_does_not_authenticate_an_authenticated_caller_again(self) -> None:
+        response = _client(_refuse).get("/rest/authenticated")
+
+        assert response.status_code == 422

@@ -53,3 +53,7 @@ def get_auth_ctx(
 
 def auth_log_context(ctx: Annotated[AuthContext, Depends(get_auth_ctx)]) -> None:
     set_auth_claims(ctx)
+
+
+def authenticate(request: Request) -> None:
+    auth_log_context(get_auth_ctx(request, dependencies.get_auth_header_service()))

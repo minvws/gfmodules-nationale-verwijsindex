@@ -116,17 +116,14 @@ class TestCreateRegistration:
             records, Log.INVALID_REQUEST, represented_organization_identifier=TEST_URA, http_status=422
         )
 
-    def test_logs_malformed_json_as_an_invalid_request_without_a_caller(self, source_client: TestClient) -> None:
+    def test_logs_malformed_json_as_an_invalid_request_with_the_caller(self, source_client: TestClient) -> None:
         with capture_records() as records:
             response = source_client.post("/registrations", content=b"{", headers={"Content-Type": "application/json"})
 
         assert response.status_code == 422
-        entry = assert_event_emitted(records, Log.INVALID_REQUEST, http_status=422)
-        assert not set(entry.message) & {
-            "represented_organization_identifier",
-            "acting_organization_identifier",
-            "acting_organization_name",
-        }
+        assert_event_emitted(
+            records, Log.INVALID_REQUEST, represented_organization_identifier=TEST_URA, http_status=422
+        )
 
     @pytest.mark.usefixtures("rejecting_exchange")
     def test_logs_a_rejected_exchange_only_as_a_failed_registration(

@@ -109,6 +109,22 @@ def rejecting_exchange(crypto_client: CryptoServiceApiClientMock, monkeypatch: p
     monkeypatch.setattr(crypto_client, "exchange", Mock(side_effect=rejected))
 
 
+def auth_headers(auth_context: AuthContext) -> dict[str, str]:
+    claims = auth_context.claims
+    headers = {
+        "x-gf-act-sub": claims.oin,
+        "x-gf-act-cn": claims.acting_organization_name,
+        "x-gf-sub": str(claims.ura_number),
+        "x-gf-audience": get_test_config().authorization_headers.expected_audiences[0],
+        "x-gf-scope": " ".join(scope.value for scope in auth_context.scope),
+        "x-gf-cert-type": "uzi",
+        "x-gf-organization-name": claims.organization_name,
+    }
+    if claims.source_id is not None:
+        headers["x-gf-source-id"] = claims.source_id
+    return headers
+
+
 def make_test_client(
     referral_service: ReferralService,
     crypto_client: CryptoServiceApiClientMock,
@@ -142,4 +158,4 @@ def make_test_client(
 
     app.dependency_overrides[get_auth_ctx] = override_auth_ctx
 
-    return TestClient(app, raise_server_exceptions=True)
+    return TestClient(app, raise_server_exceptions=True, headers=auth_headers(auth_context))

@@ -1,5 +1,6 @@
 import logging
-from typing import no_type_check
+from collections.abc import Callable
+from typing import Any, no_type_check
 
 import gfmodules.logging as gflog
 from fastapi import FastAPI, Request
@@ -18,9 +19,13 @@ from app.models.fhir.resources.operation_outcome.resource import (
     OperationOutcomeDetail,
     OperationOutcomeIssue,
 )
-from app.services.exceptions import InvalidModelError
+from app.request_body_limit import RequestBodyTooLargeError
+from app.services.exceptions import InvalidAuthHeadersError, InvalidModelError
 
 logger = logging.getLogger(__name__)
+
+Authenticate = Callable[[Request], None]
+ExceptionHandler = Callable[[Request, Any], JSONResponse]
 
 _DENIAL_STATUSES = frozenset({401, 403})
 MAX_REASON_LENGTH = 500
@@ -132,11 +137,26 @@ def handle_unhandled_exception(req: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(status_code=status_code, content={"error": "Internal server error"})
 
 
+def _authenticated_first(authenticate: Authenticate, handler: ExceptionHandler) -> ExceptionHandler:
+    def handle(request: Request, exc: Exception) -> JSONResponse:
+        if getattr(request.state, "auth", None) is None:
+            try:
+                authenticate(request)
+            except InvalidAuthHeadersError as unauthenticated:
+                return handle_mapped_exception(request, unauthenticated)
+        return handler(request, exc)
+
+    return handle
+
+
 @no_type_check
-def register_exceptions(app: FastAPI) -> None:
+def register_exceptions(app: FastAPI, authenticate: Authenticate) -> None:
     for exception_type in EXCEPTION_MAP:
         app.add_exception_handler(exception_type, handle_mapped_exception)
 
-    app.add_exception_handler(400, handle_unreadable_body)
-    app.add_exception_handler(RequestValidationError, handle_request_validation_exception)
+    app.add_exception_handler(RequestBodyTooLargeError, _authenticated_first(authenticate, handle_mapped_exception))
+    app.add_exception_handler(400, _authenticated_first(authenticate, handle_unreadable_body))
+    app.add_exception_handler(
+        RequestValidationError, _authenticated_first(authenticate, handle_request_validation_exception)
+    )
     app.add_exception_handler(Exception, handle_unhandled_exception)
