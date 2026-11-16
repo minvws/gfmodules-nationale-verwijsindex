@@ -1,6 +1,5 @@
 import json
 from typing import Any
-from unittest.mock import Mock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -12,7 +11,6 @@ from app.models.auth.data import AuthorizationScope
 from app.models.fhir.resources.data import PSEUDONYM_SYSTEM
 from app.models.pseudonym import EncryptedPseudonym
 from app.models.ura import UraNumber
-from app.services.exceptions import PseudonymExchangeError
 from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 from tests.conftest import TEST_PSEUDONYM_TOKEN, make_list_resource
@@ -427,12 +425,6 @@ class TestDelete:
 
         assert response.status_code == 404
         assert response.json()["issue"][0]["code"] == "not-found"
-
-
-@pytest.fixture
-def rejecting_exchange(crypto_client: CryptoServiceApiClientMock, monkeypatch: pytest.MonkeyPatch) -> None:
-    rejected = PseudonymExchangeError("Invalid pseudonym or oprf_key")
-    monkeypatch.setattr(crypto_client, "exchange", Mock(side_effect=rejected))
 
 
 @pytest.mark.usefixtures("rejecting_exchange")
