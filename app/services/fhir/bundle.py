@@ -275,7 +275,7 @@ class BundleService:
 
         if request_dto.resource != "List":
             return _reject_invalid_entry(
-                f"Bundle.entry.{index}.request.url unsupported {request_dto.resource} resource", "not-supported"
+                f"Bundle.entry.{index}.request.url names an unsupported resource", "not-supported"
             )
 
         if request_dto.id is not None and request_dto.params is not None:

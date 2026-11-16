@@ -160,6 +160,15 @@ class TestInvalidEntryLogging:
         assert_event_emitted(records, Log.INVALID_REQUEST, http_status=422)
         assert not [entry for entry in records if "leaky-token-value" in json.dumps(entry.payload)]
 
+    def test_keeps_the_requested_resource_out_of_the_logs_of_a_rejected_entry(self, client: TestClient) -> None:
+        entry = {"request": {"method": "GET", "url": "LeakyResource?x=1"}}
+        with capture_records("app") as records:
+            response = client.post("/fhir", json=_bundle(entry), headers=FHIR_JSON)
+
+        assert response.json()["entry"][0]["response"]["status"] == "422"
+        assert_event_emitted(records, Log.INVALID_REQUEST, http_status=422)
+        assert not [entry for entry in records if "LeakyResource" in json.dumps(entry.payload)]
+
     @pytest.mark.parametrize(
         "entry",
         [
