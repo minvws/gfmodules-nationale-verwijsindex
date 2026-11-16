@@ -7,7 +7,7 @@ from gfmodules.logging import LogEvent
 
 from app.db.models.referral import ReferralEntity
 from app.errors.handlers import summarize_reason
-from app.errors.mapping import should_log_failure, spec_for
+from app.errors.mapping import DEFAULT_SPEC, UNEXPECTED_ERROR_MESSAGE, should_log_failure, spec_for
 from app.logging.events import Log
 from app.models.pseudonym import EncryptedPseudonym, OprfPseudonym
 from app.models.ura import UraNumber
@@ -23,12 +23,13 @@ def _failures_logged(message: str, failed: LogEvent, error: LogEvent) -> Iterato
         yield
     except Exception as exc:
         if should_log_failure(exc):
-            status = spec_for(exc).http_status
+            spec = spec_for(exc)
+            reason = UNEXPECTED_ERROR_MESSAGE if spec is DEFAULT_SPEC else summarize_reason(exc)
             gflog.emit(
                 logger,
-                failed if status < 500 else error,
+                failed if spec.http_status < 500 else error,
                 message,
-                fields={"http_status": status, "error_reason": summarize_reason(exc)},
+                fields={"http_status": spec.http_status, "error_reason": reason},
             )
         raise
 

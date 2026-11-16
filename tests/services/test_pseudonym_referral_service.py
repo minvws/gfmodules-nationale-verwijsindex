@@ -145,7 +145,7 @@ def test_localize_logs_an_error_when_it_breaks(
     (fields,) = logged_fields(caplog, Log.LOCALIZATION_ERROR)
     assert fields["levelno"] == logging.ERROR
     assert fields["http_status"] == 500
-    assert fields["error_reason"] == "boom"
+    assert "boom" not in fields["error_reason"]
 
 
 def test_localize_logs_an_error_when_the_crypto_service_fails(
@@ -283,7 +283,7 @@ def test_delete_many_logs_an_error_when_it_breaks(
     (fields,) = logged_fields(caplog, Log.REFERRALS_DELETE_ERROR)
     assert fields["levelno"] == logging.ERROR
     assert fields["http_status"] == 500
-    assert fields["error_reason"] == "boom"
+    assert "boom" not in fields["error_reason"]
 
 
 def test_delete_many_logs_no_failure_when_nothing_matches(
