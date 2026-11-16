@@ -107,7 +107,7 @@ class Log(_Base):
             _SIEM: (*_CALLER, "resource_organization_identifier"),
         },
     )
-    REFERRAL_QUERY_FAILED = LogEvent(  # NVI-REF-007
+    REFERRAL_QUERY_FAILED = LogEvent(
         "900406",
         logging.WARNING,
         (_APP, _SIEM),
@@ -151,7 +151,7 @@ class Log(_Base):
             _SIEM: (*_CALLER, "deleted_count"),
         },
     )
-    REFERRALS_DELETE_FAILED = LogEvent(  # NVI-DEL-005
+    REFERRALS_DELETE_FAILED = LogEvent(
         "900504",
         logging.WARNING,
         (_APP, _SIEM),
