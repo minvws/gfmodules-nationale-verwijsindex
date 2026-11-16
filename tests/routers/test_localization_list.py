@@ -122,7 +122,9 @@ class TestCreate:
             response = client.post("/fhir/List", json=body, headers=FHIR_JSON)
 
         assert response.status_code == 400
-        assert_event_emitted(records, Log.INVALID_REQUEST, organization_identifier=TEST_URA, http_status=400)
+        assert_event_emitted(
+            records, Log.INVALID_REQUEST, represented_organization_identifier=TEST_URA, http_status=400
+        )
 
     def test_requires_create_scope(
         self,
