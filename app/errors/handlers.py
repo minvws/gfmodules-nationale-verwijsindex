@@ -3,9 +3,8 @@ from typing import no_type_check
 
 import gfmodules.logging as gflog
 from fastapi import FastAPI, Request
-from fastapi.exception_handlers import http_exception_handler
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse
 from gfmodules.logging.exceptions import log_unhandled_exception
 from gfmodules.logging.middleware import restore_request_context
 from pydantic import ValidationError
@@ -81,10 +80,8 @@ def handle_mapped_exception(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(status_code=status_code, content=str(exc))
 
 
-async def handle_http_exception(request: Request, exc: HTTPException) -> Response:
-    if exc.status_code == 400:
-        return handle_mapped_exception(request, InvalidModelError(exc.detail))
-    return await http_exception_handler(request, exc)
+def handle_unreadable_body(request: Request, exc: HTTPException) -> JSONResponse:
+    return handle_mapped_exception(request, InvalidModelError(exc.detail))
 
 
 def handle_request_validation_exception(req: Request, exc: RequestValidationError) -> JSONResponse:
@@ -140,6 +137,6 @@ def register_exceptions(app: FastAPI) -> None:
     for exception_type in EXCEPTION_MAP:
         app.add_exception_handler(exception_type, handle_mapped_exception)
 
-    app.add_exception_handler(HTTPException, handle_http_exception)
+    app.add_exception_handler(400, handle_unreadable_body)
     app.add_exception_handler(RequestValidationError, handle_request_validation_exception)
     app.add_exception_handler(Exception, handle_unhandled_exception)
