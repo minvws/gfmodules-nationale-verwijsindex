@@ -1,5 +1,3 @@
-from unittest.mock import Mock
-
 import pytest
 from fastapi.testclient import TestClient
 from gfmodules.logging.testing import assert_event_emitted, capture_records
@@ -9,7 +7,6 @@ from app.logging.events import Log
 from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.data import AuthorizationScope
 from app.models.ura import UraNumber
-from app.services.exceptions import PseudonymExchangeError
 from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 from tests.routers.conftest import (
@@ -106,17 +103,11 @@ class TestLocalize:
         assert response.status_code == 200
         assert len(response.json()) == 2
 
+    @pytest.mark.usefixtures("rejecting_exchange")
     def test_logs_a_failed_localization_with_the_callers_claims(
-        self,
-        localize_client: TestClient,
-        crypto_client: CryptoServiceApiClientMock,
-        key_info_service: KeyInfoService,
-        monkeypatch: pytest.MonkeyPatch,
+        self, localize_client: TestClient, key_info_service: KeyInfoService
     ) -> None:
         key_info_service.add_one("nvi-label", "AES_CBC")
-        monkeypatch.setattr(
-            crypto_client, "exchange", Mock(side_effect=PseudonymExchangeError("Invalid pseudonym or oprf_key"))
-        )
 
         with capture_records() as records:
             response = localize_client.post("/localize", json={"pseudonym": "pseu", "oprf_key": "k"})

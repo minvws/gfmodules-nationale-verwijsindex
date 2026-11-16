@@ -1,5 +1,3 @@
-from unittest.mock import Mock
-
 import pytest
 from fastapi.testclient import TestClient
 from gfmodules.logging.testing import assert_event_emitted, capture_records
@@ -7,7 +5,6 @@ from gfmodules.logging.testing import assert_event_emitted, capture_records
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.logging.events import Log
 from app.models.auth.data import AuthorizationScope
-from app.services.exceptions import PseudonymExchangeError
 from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 from tests.routers.conftest import (
@@ -84,17 +81,11 @@ class TestCreateRegistration:
             acting_organization_identifier=TEST_OIN,
         )
 
+    @pytest.mark.usefixtures("rejecting_exchange")
     def test_logs_a_failed_registration_with_the_callers_claims(
-        self,
-        source_client: TestClient,
-        crypto_client: CryptoServiceApiClientMock,
-        key_info_service: KeyInfoService,
-        monkeypatch: pytest.MonkeyPatch,
+        self, source_client: TestClient, key_info_service: KeyInfoService
     ) -> None:
         key_info_service.add_one("nvi-label", mechanism="AES_CBC")
-        monkeypatch.setattr(
-            crypto_client, "exchange", Mock(side_effect=PseudonymExchangeError("Invalid pseudonym or oprf_key"))
-        )
 
         with capture_records() as records:
             response = source_client.post("/registrations", json={"pseudonym": "pseu", "oprf_key": "key1"})
@@ -137,16 +128,11 @@ class TestCreateRegistration:
             "acting_organization_name",
         }
 
+    @pytest.mark.usefixtures("rejecting_exchange")
     def test_logs_a_rejected_exchange_only_as_a_failed_registration(
-        self,
-        source_client: TestClient,
-        crypto_client: CryptoServiceApiClientMock,
-        key_info_service: KeyInfoService,
-        monkeypatch: pytest.MonkeyPatch,
+        self, source_client: TestClient, key_info_service: KeyInfoService
     ) -> None:
         key_info_service.add_one("nvi-label", mechanism="AES_CBC")
-        rejected = PseudonymExchangeError("Invalid pseudonym or oprf_key")
-        monkeypatch.setattr(crypto_client, "exchange", Mock(side_effect=rejected))
 
         with capture_records() as records:
             response = source_client.post("/registrations", json={"pseudonym": "pseu", "oprf_key": "key1"})
