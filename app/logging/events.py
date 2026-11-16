@@ -46,7 +46,7 @@ class Log(_Base):
             _APP: ("exception_type", "table", "column", "value_length", "column_limit"),
         },
     )
-    INVALID_REQUEST = LogEvent(  # NVI-SYS-007
+    INVALID_REQUEST = LogEvent(
         "100607",
         logging.WARNING,
         (_APP, _SIEM),
