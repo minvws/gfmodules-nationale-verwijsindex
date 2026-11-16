@@ -3,6 +3,7 @@ from typing import Any, Literal
 from uuid import uuid4
 
 import pytest
+from gfmodules.logging.testing import assert_event_emitted, capture_records
 
 from app.logging.events import Log
 from app.models.auth.context import AuthContext, AuthenticationClaims
@@ -457,19 +458,18 @@ def _event_ids(caplog: pytest.LogCaptureFixture) -> list[str]:
 
 
 class TestEntryFailureLogging:
-    def test_unexpected_error_is_logged_with_its_traceback(
+    def test_unexpected_error_is_logged_as_an_unhandled_exception(
         self,
         bundle_service: BundleService,
         service: LocalizationListServiceSpy,
-        caplog: pytest.LogCaptureFixture,
     ) -> None:
         service.delete_error = RuntimeError("boom")
 
-        with caplog.at_level(logging.INFO):
+        with capture_records() as records:
             process(bundle_service, make_entry("DELETE", ID_URL), [AuthorizationScope.DELETE])
 
-        (unexpected,) = [r for r in caplog.records if r.exc_info is not None]
-        assert unexpected.levelno == logging.ERROR
+        entry = assert_event_emitted(records, Log.SYS_UNHANDLED_EXCEPTION, exception_type="RuntimeError")
+        assert [e.record for e in records if e.record.exc_info is not None] == [entry.record]
 
     def test_expected_error_is_logged_without_a_traceback(
         self,

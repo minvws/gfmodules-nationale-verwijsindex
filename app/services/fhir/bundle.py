@@ -150,9 +150,15 @@ class BundleService:
         """Run an entry's service call, mapping any raised exception to an error entry."""
         try:
             return action()
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             if spec_for(exc) is DEFAULT_SPEC:
-                logger.exception("Bundle entry action failed")
+                gflog.emit(
+                    logger,
+                    Log.SYS_UNHANDLED_EXCEPTION,
+                    "Bundle entry action failed",
+                    fields={"exception_type": type(exc).__name__},
+                    exc_info=exc,
+                )
             return _entry_for_exception(index, exc)
 
     def _create_entry(self, resource: LocalizationList, authenticated_ura: UraNumber) -> BundleEntry[Any]:
