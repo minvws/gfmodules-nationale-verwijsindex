@@ -12,6 +12,7 @@ from app.config import (
     ConfigTelemetry,
     ConfigUvicorn,
     LogLevel,
+    read_ini_file,
 )
 
 
@@ -66,3 +67,10 @@ def test_pagination_defaults_when_the_section_is_missing() -> None:
 def test_pagination_rejects_a_default_larger_than_the_maximum() -> None:
     with pytest.raises(ValidationError):
         ConfigPagination(default_page_size=200, max_page_size=100)
+
+
+def test_the_example_config_reads_the_logging_streams() -> None:
+    logging = ConfigLogging.model_validate(read_ini_file("app.conf.example")["logging"])
+
+    assert logging.syslog_streams == ["app", "siem", "public_inspect"]
+    assert logging.console_streams == ["debug"]

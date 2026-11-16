@@ -49,8 +49,8 @@ class ReferralService:
             gflog.emit(
                 logger,
                 Log.REFERRAL_ACCESS_DENIED,
-                "Referral access denied: URA mismatch",
-                fields={"resource_ura": referral.ura_number},
+                "Referral access denied: organization mismatch",
+                fields={"resource_organization_identifier": referral.ura_number},
             )
             raise NotFoundError()
         return referral
@@ -200,8 +200,8 @@ class ReferralService:
         else:
             gflog.emit(
                 logger,
-                Log.ALL_URA_REFERRALS_DELETED,
-                "All URA referrals deleted",
+                Log.ALL_ORGANIZATION_REFERRALS_DELETED,
+                "All organization referrals deleted",
                 fields={"deleted_count": deleted_count},
             )
         return deleted_count

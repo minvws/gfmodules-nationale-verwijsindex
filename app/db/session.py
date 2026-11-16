@@ -208,7 +208,7 @@ class DbSession:
                 attempt += 1
                 gflog.emit(
                     logger,
-                    Log.DB_CONNECTION_FAILED,
+                    Log.SYS_DB_CONNECTION_FAILED,
                     "Database connection failed; retrying operation",
                     fields={
                         "error_type": type(e).__name__,
@@ -219,7 +219,7 @@ class DbSession:
             except DataError as e:
                 gflog.emit(
                     logger,
-                    Log.DB_SCHEMA_ERROR,
+                    Log.SYS_DB_SCHEMA_ERROR,
                     "Database schema error during operation",
                     fields={**_schema_error_fields(e)},
                     exc_info=e,

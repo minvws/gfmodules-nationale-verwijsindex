@@ -39,8 +39,8 @@ def route() -> Iterator[Any]:
             "endpoint": "/token",
             "method": "POST",
             "correlation_id": "corr-1",
-            "organization_name": _ORGANIZATION,
-            "organization_identifier": _URA,
+            "represented_organization_name": _ORGANIZATION,
+            "represented_organization_identifier": _URA,
             "acting_organization_identifier": _OIN,
             "acting_organization_name": _ACTING_ORGANIZATION_NAME,
         }
@@ -61,8 +61,8 @@ class TestReferralRegistration:
 
     def test_public_inspect_receives_the_organization_and_pseudonym_hash(self, routed: Routed) -> None:
         message = routed[LoggingStreams.PUBLIC_INSPECT][0]
-        assert message["organization_name"] == _ORGANIZATION
-        assert message["organization_identifier"] == _URA
+        assert message["represented_organization_name"] == _ORGANIZATION
+        assert message["represented_organization_identifier"] == _URA
         assert message["pseudonym_hash"] == _PSEUDONYM_HASH
         assert_fields_absent(
             routed[LoggingStreams.PUBLIC_INSPECT], "acting_organization_identifier", "acting_organization_name"
@@ -70,10 +70,10 @@ class TestReferralRegistration:
 
     def test_app_receives_the_organizations_but_not_the_pseudonym_hash(self, routed: Routed) -> None:
         message = routed[LoggingStreams.APP][0]
-        assert message["organization_identifier"] == _URA
+        assert message["represented_organization_identifier"] == _URA
         assert message["acting_organization_identifier"] == _OIN
         assert message["acting_organization_name"] == _ACTING_ORGANIZATION_NAME
-        assert_fields_absent(routed[LoggingStreams.APP], "pseudonym_hash", "organization_name")
+        assert_fields_absent(routed[LoggingStreams.APP], "pseudonym_hash", "represented_organization_name")
 
     def test_siem_receives_nothing_at_all(self, routed: Routed) -> None:
         assert routed[LoggingStreams.SIEM] == []
@@ -90,12 +90,12 @@ class TestReferralAccessDenied:
     @pytest.fixture
     def routed(self, route: Any) -> Routed:
         return dict(
-            route(Log.REFERRAL_ACCESS_DENIED, "access denied", resource_ura="87654321"),
+            route(Log.REFERRAL_ACCESS_DENIED, "access denied", resource_organization_identifier="87654321"),
         )
 
     def test_endpoint_reaches_every_stream(self, routed: Routed) -> None:
         assert routed[LoggingStreams.APP][0]["endpoint"] == "/token"
-        assert routed[LoggingStreams.SIEM][0]["resource_ura"] == "87654321"
+        assert routed[LoggingStreams.SIEM][0]["resource_organization_identifier"] == "87654321"
         assert routed[LoggingStreams.SIEM][0]["endpoint"] == "/token"
 
     def test_public_inspect_receives_nothing(self, routed: Routed) -> None:
@@ -116,7 +116,7 @@ class TestLocalization:
 
     def test_public_inspect_receives_the_organization_but_not_the_result_count(self, routed: Routed) -> None:
         message = routed[LoggingStreams.PUBLIC_INSPECT][0]
-        assert message["organization_name"] == _ORGANIZATION
+        assert message["represented_organization_name"] == _ORGANIZATION
         assert message["pseudonym_hash"] == _PSEUDONYM_HASH
         assert_fields_absent(
             routed[LoggingStreams.PUBLIC_INSPECT],
@@ -127,33 +127,33 @@ class TestLocalization:
 
     def test_app_receives_the_pseudonym_hash_but_not_the_organization_name(self, routed: Routed) -> None:
         message = routed[LoggingStreams.APP][0]
-        assert message["organization_identifier"] == _URA
+        assert message["represented_organization_identifier"] == _URA
         assert message["acting_organization_identifier"] == _OIN
         assert message["acting_organization_name"] == _ACTING_ORGANIZATION_NAME
         assert message["pseudonym_hash"] == _PSEUDONYM_HASH
-        assert_fields_absent(routed[LoggingStreams.APP], "result_count", "organization_name")
+        assert_fields_absent(routed[LoggingStreams.APP], "result_count", "represented_organization_name")
 
     def test_the_pseudonym_hash_never_reaches_siem(self, routed: Routed) -> None:
         message = routed[LoggingStreams.SIEM][0]
-        assert message["organization_identifier"] == _URA
+        assert message["represented_organization_identifier"] == _URA
         assert message["acting_organization_identifier"] == _OIN
         assert message["acting_organization_name"] == _ACTING_ORGANIZATION_NAME
         assert message["result_count"] == 3
-        assert_fields_absent(routed[LoggingStreams.SIEM], "pseudonym_hash", "organization_name")
+        assert_fields_absent(routed[LoggingStreams.SIEM], "pseudonym_hash", "represented_organization_name")
 
 
 class TestBulkDeletion:
     def test_all_ura_referrals_deleted_reaches_all_three_streams(self, route: Any) -> None:
         routed: Routed = route(
-            Log.ALL_URA_REFERRALS_DELETED,
+            Log.ALL_ORGANIZATION_REFERRALS_DELETED,
             "all referrals deleted",
             deleted_count=42,
         )
 
         for stream in LoggingStreams:
             assert routed[stream][0]["deleted_count"] == 42
-        assert_fields_absent(routed[LoggingStreams.APP], "organization_name")
-        assert_fields_absent(routed[LoggingStreams.SIEM], "organization_name")
+        assert_fields_absent(routed[LoggingStreams.APP], "represented_organization_name")
+        assert_fields_absent(routed[LoggingStreams.SIEM], "represented_organization_name")
 
 
 class TestAccessRequest:
