@@ -116,6 +116,7 @@ class Log(_Base):
             _SIEM: (*_CALLER, "http_status", "error_reason"),
         },
     )
+    REFERRAL_QUERY_ERROR = REFERRAL_QUERY_FAILED.replace(level=logging.ERROR)
 
     REFERRAL_DELETED = LogEvent(  # NVI-DEL-001
         "900500",
@@ -160,6 +161,7 @@ class Log(_Base):
             _SIEM: (*_CALLER, "http_status", "error_reason"),
         },
     )
+    REFERRALS_DELETE_ERROR = REFERRALS_DELETE_FAILED.replace(level=logging.ERROR)
 
     LOCALIZATION_SUCCESS = LogEvent(  # NVI-LOC-001
         "900600",

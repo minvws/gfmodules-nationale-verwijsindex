@@ -235,7 +235,23 @@ def test_query_logs_a_failure_when_the_pseudonym_is_rejected(
         rejecting_service.query(ura_number, pseudonym=PSEUDONYM)
 
     (fields,) = logged_fields(caplog, Log.REFERRAL_QUERY_FAILED)
+    assert fields["levelno"] == logging.WARNING
     assert fields["http_status"] == 400
+
+
+def test_query_logs_an_error_when_the_crypto_service_fails(
+    referral_service: ReferralService,
+    key_info_service: KeyInfoService,
+    ura_number: UraNumber,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    service = _service_with(UnavailableCryptoClient(), referral_service, key_info_service)
+    with caplog.at_level(logging.INFO), pytest.raises(CryptoServiceError):
+        service.query(ura_number, pseudonym=PSEUDONYM)
+
+    (fields,) = logged_fields(caplog, Log.REFERRAL_QUERY_ERROR)
+    assert fields["levelno"] == logging.ERROR
+    assert fields["http_status"] == 502
 
 
 def test_query_without_a_pseudonym_logs_no_failure(
@@ -247,13 +263,25 @@ def test_query_without_a_pseudonym_logs_no_failure(
     assert logged_fields(caplog, Log.REFERRAL_QUERY_FAILED) == []
 
 
-def test_delete_many_logs_a_failure_when_it_breaks(
+def test_delete_many_logs_a_failure_when_the_pseudonym_is_rejected(
+    rejecting_service: PseudonymReferralService, ura_number: UraNumber, caplog: pytest.LogCaptureFixture
+) -> None:
+    with caplog.at_level(logging.INFO), pytest.raises(PseudonymExchangeError):
+        rejecting_service.delete_many(ura_number, pseudonym=PSEUDONYM, source=SOURCE)
+
+    (fields,) = logged_fields(caplog, Log.REFERRALS_DELETE_FAILED)
+    assert fields["levelno"] == logging.WARNING
+    assert fields["http_status"] == 400
+
+
+def test_delete_many_logs_an_error_when_it_breaks(
     failing_service: PseudonymReferralService, ura_number: UraNumber, caplog: pytest.LogCaptureFixture
 ) -> None:
     with caplog.at_level(logging.INFO), pytest.raises(RuntimeError):
         failing_service.delete_many(ura_number, pseudonym=PSEUDONYM, source=SOURCE)
 
-    (fields,) = logged_fields(caplog, Log.REFERRALS_DELETE_FAILED)
+    (fields,) = logged_fields(caplog, Log.REFERRALS_DELETE_ERROR)
+    assert fields["levelno"] == logging.ERROR
     assert fields["http_status"] == 500
     assert fields["error_reason"] == "boom"
 

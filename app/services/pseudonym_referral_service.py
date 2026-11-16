@@ -78,7 +78,8 @@ class PseudonymReferralService:
                 ura_number, encrypted_pseudonym=encrypted, source=source, limit=limit, offset=offset
             )
         except Exception as exc:
-            _log_failure(Log.REFERRAL_QUERY_FAILED, "Referral query failed", exc)
+            event = _failure_event(exc, Log.REFERRAL_QUERY_FAILED, Log.REFERRAL_QUERY_ERROR)
+            _log_failure(event, "Referral query failed", exc)
             raise
 
     def delete_many(
@@ -91,7 +92,8 @@ class PseudonymReferralService:
             encrypted = self._resolve_encrypted(pseudonym) if pseudonym else None
             return self._referral_service.delete_many(ura_number, encrypted_pseudonym=encrypted, source=source)
         except Exception as exc:
-            _log_failure(Log.REFERRALS_DELETE_FAILED, "Referral deletion failed", exc)
+            event = _failure_event(exc, Log.REFERRALS_DELETE_FAILED, Log.REFERRALS_DELETE_ERROR)
+            _log_failure(event, "Referral deletion failed", exc)
             raise
 
     def _resolve_encrypted(self, pseudonym: OprfPseudonym) -> EncryptedPseudonym:

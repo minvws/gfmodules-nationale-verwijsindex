@@ -61,10 +61,12 @@ The request context also holds these, but an event carries them only on the stre
 | `REFERRAL_REGISTRATION_ERROR` | 900404 | ERROR | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `REFERRAL_ACCESS_DENIED` | 900405 | WARNING | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `resource_organization_identifier` |
 | `REFERRAL_QUERY_FAILED` | 900406 | WARNING | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
+| `REFERRAL_QUERY_ERROR` | 900406 | ERROR | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `REFERRAL_DELETED` | 900500 | INFO | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name` |
 | `ALL_PATIENT_REFERRALS_DELETED` | 900501 | WARNING | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `deleted_count` |
 | `ALL_ORGANIZATION_REFERRALS_DELETED` | 900503 | CRITICAL | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `deleted_count` |
 | `REFERRALS_DELETE_FAILED` | 900504 | WARNING | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
+| `REFERRALS_DELETE_ERROR` | 900504 | ERROR | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `LOCALIZATION_SUCCESS` | 900600 | INFO | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `pseudonym_hash` |
 | `LOCALIZATION_FAILED` | 900601 | WARNING | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `error_reason`, `http_status` |
 | `LOCALIZATION_ERROR` | 900601 | ERROR | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `error_reason`, `http_status` |
@@ -85,9 +87,11 @@ The request context also holds these, but an event carries them only on the stre
 | `REFERRAL_REGISTRATION_ERROR` | 900404 | ERROR | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `REFERRAL_ACCESS_DENIED` | 900405 | WARNING | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `resource_organization_identifier` |
 | `REFERRAL_QUERY_FAILED` | 900406 | WARNING | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
+| `REFERRAL_QUERY_ERROR` | 900406 | ERROR | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `ALL_PATIENT_REFERRALS_DELETED` | 900501 | WARNING | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `deleted_count` |
 | `ALL_ORGANIZATION_REFERRALS_DELETED` | 900503 | CRITICAL | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `deleted_count` |
 | `REFERRALS_DELETE_FAILED` | 900504 | WARNING | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
+| `REFERRALS_DELETE_ERROR` | 900504 | ERROR | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `LOCALIZATION_SUCCESS` | 900600 | INFO | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `result_count` |
 | `LOCALIZATION_FAILED` | 900601 | WARNING | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `error_reason`, `http_status` |
 | `LOCALIZATION_ERROR` | 900601 | ERROR | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `error_reason`, `http_status` |
