@@ -1,6 +1,5 @@
 import json
 from typing import Any
-from unittest.mock import Mock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,7 +7,6 @@ from gfmodules.logging.testing import assert_event_emitted, capture_records
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.logging.events import Log
-from app.services.exceptions import PseudonymExchangeError
 from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 from tests.conftest import make_list_resource
@@ -189,12 +187,8 @@ class TestInvalidEntryLogging:
         assert "\n" not in reported
         assert "errors.pydantic.dev" not in reported
 
-    def test_logs_a_rejected_exchange_in_an_entry_only_as_a_failed_registration(
-        self, client: TestClient, crypto_client: CryptoServiceApiClientMock, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        rejected = PseudonymExchangeError("Invalid pseudonym or oprf_key")
-        monkeypatch.setattr(crypto_client, "exchange", Mock(side_effect=rejected))
-
+    @pytest.mark.usefixtures("rejecting_exchange")
+    def test_logs_a_rejected_exchange_in_an_entry_only_as_a_failed_registration(self, client: TestClient) -> None:
         with capture_records() as records:
             response = client.post("/fhir", json=_bundle(_post_entry()), headers=FHIR_JSON)
 
