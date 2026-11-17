@@ -54,23 +54,6 @@ def copy_table(source: psycopg.Connection, target: psycopg.Connection, table: st
             dst.write(block)
 
 
-def report_referrals(target: psycopg.Connection) -> None:
-    without_org, only_deleted = target.execute(
-        """
-        SELECT
-            count(*) FILTER (WHERE NOT EXISTS (
-                SELECT 1 FROM admin.organizations o WHERE o.external_id = r.ura_number)),
-            count(*) FILTER (WHERE EXISTS (
-                SELECT 1 FROM admin.organizations o WHERE o.external_id = r.ura_number)
-                AND NOT EXISTS (
-                SELECT 1 FROM admin.organizations o WHERE o.external_id = r.ura_number AND o.deleted_at IS NULL))
-        FROM public.referrals r
-        """
-    ).fetchone() or (0, 0)
-    print(f"Referrals without any organization: {without_org}")
-    print(f"Referrals with only deleted organizations: {only_deleted}")
-
-
 def main() -> int:
     target_dsn = os.environ.get("DSN")
     source_dsn = os.environ.get("SOURCE_DSN")
@@ -117,7 +100,6 @@ def copy(target_dsn: str, source_dsn: str) -> None:
             "SELECT setval(pg_get_serial_sequence('admin.scopes', 'id'), coalesce(max(id), 0) + 1, false) "
             "FROM admin.scopes"
         )
-        report_referrals(target)
         target.execute("INSERT INTO migrations (name, checksum) VALUES (%s, %s)", (MARKER, "-"))
 
     print("Beheer data copied")

@@ -28,6 +28,7 @@ from app.services.key_info import KeyInfoService
 from app.services.pseudonym_referral_service import PseudonymReferralService
 from app.services.pseudonym_resolver import PseudonymResolver
 from app.services.referral_service import ReferralService
+from tests.conftest import register_organizations
 from tests.test_config import get_test_config
 
 TEST_URA = "00000001"
@@ -80,6 +81,7 @@ def db() -> Generator[Database, Any, None]:
     config_database = ConfigDatabase(dsn=SecretStr("sqlite:///:memory:"), retry_backoff=[])
     db = Database(config_database=config_database)
     db.generate_tables()
+    register_organizations(db)
     try:
         yield db
     finally:

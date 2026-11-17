@@ -6,6 +6,7 @@ from app.db.models.referral import ReferralEntity
 from app.db.repository.key_info_repository import KeyInfoRepository
 from app.services.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.services.key_info import KeyInfoService
+from tests.conftest import OrganizationFor
 
 
 def test_add_one_should_succeed(key_info_service: KeyInfoService, mock_key_info: KeyInfoEntity) -> None:
@@ -81,12 +82,15 @@ def test_delete_should_raise_when_no_label_exists(
 
 
 def test_delete_should_raise_when_key_has_referrals(
-    key_info_service: KeyInfoService, mock_key_info: KeyInfoEntity, database: Database
+    key_info_service: KeyInfoService,
+    mock_key_info: KeyInfoEntity,
+    database: Database,
+    organization_for: OrganizationFor,
 ) -> None:
     new_key = key_info_service.add_one(mock_key_info.label, mock_key_info.mechanism)
     with database.get_db_session() as session:
         mock_referral = ReferralEntity(
-            ura_number="90000101",
+            organization=organization_for("90000101"),
             pseudonym="some-pseudonym",
             source="some-source",
             key_id=new_key.id,
