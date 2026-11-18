@@ -1,5 +1,6 @@
 from collections.abc import Generator
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 from fastapi import Request
@@ -22,6 +23,7 @@ from app.metrics import UsageMetrics
 from app.models.auth.context import AuthContext, AuthenticationClaims
 from app.models.auth.data import AuthorizationScope
 from app.models.ura import UraNumber
+from app.services.exceptions import PseudonymExchangeError
 from app.services.fhir.bundle import BundleService
 from app.services.fhir.localization_list import LocalizationListService
 from app.services.key_info import KeyInfoService
@@ -99,6 +101,12 @@ def crypto_client() -> CryptoServiceApiClientMock:
 @pytest.fixture()
 def key_info_service(db: Database) -> KeyInfoService:
     return KeyInfoService(db)
+
+
+@pytest.fixture
+def rejecting_exchange(crypto_client: CryptoServiceApiClientMock, monkeypatch: pytest.MonkeyPatch) -> None:
+    rejected = PseudonymExchangeError("Invalid pseudonym or oprf_key")
+    monkeypatch.setattr(crypto_client, "exchange", Mock(side_effect=rejected))
 
 
 def make_test_client(

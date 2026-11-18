@@ -10,20 +10,32 @@ from gfmodules.logging.testing import assert_event_emitted, capture_records
 from pydantic import BaseModel, ValidationError
 
 from app.errors import handlers
-from app.errors.handlers import MAX_REASON_LENGTH, handle_unhandled_exception, register_exceptions, summarize_reason
+from app.errors.handlers import (
+    MAX_REASON_LENGTH,
+    handle_unhandled_exception,
+    log_invalid_request,
+    register_exceptions,
+    summarize_reason,
+)
 from app.logging.events import Log
 from app.models.auth.data import AuthorizationScope
 from app.services.exceptions import (
     ConflictError,
     ForbiddenError,
+    InvalidAuthHeadersError,
     InvalidKeyInfoError,
     InvalidModelError,
+    InvalidResourceError,
     NotFoundError,
+    PseudonymError,
+    PseudonymExchangeError,
     UnauthorizedScopeError,
     UnauthorizedSourceError,
 )
 
 _pending: dict[str, Exception] = {}
+_JSON = {"Content-Type": "application/json"}
+_UNDECODABLE_BODY = b'{"values": "\xff"}'
 
 
 def _client() -> TestClient:
@@ -44,6 +56,12 @@ def _client() -> TestClient:
     @app.get("/rest/validated")
     def rest_validated(required: int) -> None:
         return None
+
+    def accept(body: _Model) -> None:
+        return None
+
+    app.post("/fhir/body")(accept)
+    app.post("/rest/body")(accept)
 
     return TestClient(app, raise_server_exceptions=False)
 
@@ -204,3 +222,74 @@ class TestUnhandledExceptionHandler:
             method="GET",
         )
         assert entry.record.exc_info is not None
+
+
+class TestInvalidRequestLogging:
+    def test_logs_a_request_validation_error(self) -> None:
+        with capture_records() as records:
+            _client().get("/rest/validated")
+
+        assert_event_emitted(
+            records, Log.INVALID_REQUEST, http_status=422, error_reason="query.required: Field required"
+        )
+
+    @pytest.mark.parametrize(
+        ("exc", "status"),
+        [(InvalidResourceError("bad"), 400), (PseudonymError("bad"), 422), (InvalidModelError("bad"), 400)],
+    )
+    def test_logs_invalid_input(self, exc: Exception, status: int) -> None:
+        _pending["exc"] = exc
+        with capture_records() as records:
+            _client().get("/rest/boom")
+
+        assert_event_emitted(records, Log.INVALID_REQUEST, http_status=status)
+
+    @pytest.mark.parametrize(
+        "exc",
+        [
+            NotFoundError(),
+            PseudonymExchangeError("rejected"),
+            UnauthorizedSourceError(),
+            InvalidAuthHeadersError("missing"),
+            ValueError("internal"),
+            RuntimeError("boom"),
+        ],
+    )
+    def test_does_not_log_other_failures_as_invalid_requests(self, exc: Exception) -> None:
+        _pending["exc"] = exc
+        with capture_records() as records:
+            _client().get("/rest/boom")
+
+        assert records.for_event(Log.INVALID_REQUEST) == []
+
+    @pytest.mark.parametrize("path", ["/fhir/body", "/rest/body"])
+    def test_logs_a_body_that_cannot_be_decoded(self, path: str) -> None:
+        with capture_records() as records:
+            response = _client().post(path, content=_UNDECODABLE_BODY, headers=_JSON)
+
+        assert response.status_code == 400
+        assert_event_emitted(
+            records, Log.INVALID_REQUEST, http_status=400, error_reason="There was an error parsing the body"
+        )
+
+    def test_renders_a_fhir_body_that_cannot_be_decoded_as_an_operation_outcome(self) -> None:
+        response = _client().post("/fhir/body", content=_UNDECODABLE_BODY, headers=_JSON)
+
+        body = response.json()
+        assert body["resourceType"] == "OperationOutcome"
+        assert body["issue"][0]["code"] == "structure"
+
+    def test_leaves_a_missing_route_to_the_default_handler(self) -> None:
+        with capture_records() as records:
+            response = _client().get("/rest/missing")
+
+        assert response.status_code == 404
+        assert response.json() == {"detail": "Not Found"}
+        assert records.for_event(Log.INVALID_REQUEST) == []
+
+    def test_bounds_the_logged_reason(self) -> None:
+        with capture_records() as records:
+            log_invalid_request(422, "x" * (MAX_REASON_LENGTH * 4))
+
+        entry = assert_event_emitted(records, Log.INVALID_REQUEST)
+        assert len(entry.message["error_reason"]) == MAX_REASON_LENGTH

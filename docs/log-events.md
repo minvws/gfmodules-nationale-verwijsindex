@@ -52,6 +52,7 @@ The request context also holds these, but an event carries them only on the stre
 | `HEALTH_UNHEALTHY` | 100600 | ERROR | `component`, `status`, `error_detail` |
 | `SYS_DB_CONNECTION_FAILED` | 100603 | ERROR | `error_type`, `retry_attempt`, `backoff_seconds` |
 | `SYS_DB_SCHEMA_ERROR` | 100605 | ERROR | `exception_type`, `table`, `column`, `value_length`, `column_limit` |
+| `INVALID_REQUEST` | 100607 | WARNING | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `REGISTERED_REFERRAL` | 900400 | INFO | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name` |
 | `IDEMPOTENT_REGISTRATION` | 900401 | INFO | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name` |
 | `REFERRAL_SEARCHED_ON_ID` | 900402 | INFO | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name` |
@@ -77,6 +78,7 @@ The request context also holds these, but an event carries them only on the stre
 | `SYS_UNHANDLED_EXCEPTION` | 100604 | ERROR | `exception_type`, `endpoint`, `method` |
 | `HEALTH_UNHEALTHY` | 100600 | ERROR | `component`, `status` |
 | `SYS_DB_CONNECTION_FAILED` | 100603 | ERROR | `error_type` |
+| `INVALID_REQUEST` | 100607 | WARNING | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `REFERRAL_REGISTRATION_FAILED` | 900404 | WARNING | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `REFERRAL_REGISTRATION_ERROR` | 900404 | ERROR | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `http_status`, `error_reason` |
 | `REFERRAL_ACCESS_DENIED` | 900405 | WARNING | `represented_organization_identifier`, `acting_organization_identifier`, `acting_organization_name`, `resource_organization_identifier` |

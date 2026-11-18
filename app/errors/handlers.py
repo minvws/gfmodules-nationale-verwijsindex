@@ -1,20 +1,24 @@
 import logging
 from typing import no_type_check
 
+import gfmodules.logging as gflog
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from gfmodules.logging.exceptions import log_unhandled_exception
 from gfmodules.logging.middleware import restore_request_context
 from pydantic import ValidationError
+from starlette.exceptions import HTTPException
 
 from app.errors.fhir import FHIRError
-from app.errors.mapping import DEFAULT_SPEC, EXCEPTION_MAP, UNEXPECTED_ERROR_MESSAGE, spec_for
+from app.errors.mapping import DEFAULT_SPEC, EXCEPTION_MAP, UNEXPECTED_ERROR_MESSAGE, LogAs, spec_for
+from app.logging.events import Log
 from app.models.fhir.resources.operation_outcome.resource import (
     OperationOutcome,
     OperationOutcomeDetail,
     OperationOutcomeIssue,
 )
+from app.services.exceptions import InvalidModelError
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +49,25 @@ def log_rejection(status_code: int, exc: Exception) -> None:
     )
 
 
+def log_invalid_request(status_code: int, reason: str) -> None:
+    gflog.emit(
+        logger,
+        Log.INVALID_REQUEST,
+        "Invalid request rejected",
+        fields={"http_status": status_code, "error_reason": reason[:MAX_REASON_LENGTH]},
+    )
+
+
+def _log_rejected_request(status_code: int, exc: Exception, log_as: LogAs | None) -> None:
+    log_rejection(status_code, exc)
+    if log_as == "invalid_request":
+        log_invalid_request(status_code, summarize_reason(exc))
+
+
 def handle_mapped_exception(request: Request, exc: Exception) -> JSONResponse:
     spec = spec_for(exc)
     status_code = spec.http_status
-    log_rejection(status_code, exc)
+    _log_rejected_request(status_code, exc, spec.log_as)
 
     if "fhir" in request.url.path:
         fhir_error = FHIRError(severity=spec.severity, code=spec.fhir_code, msg=str(exc))
@@ -61,10 +80,14 @@ def handle_mapped_exception(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(status_code=status_code, content=str(exc))
 
 
+def handle_unreadable_body(request: Request, exc: HTTPException) -> JSONResponse:
+    return handle_mapped_exception(request, InvalidModelError(exc.detail))
+
+
 def handle_request_validation_exception(req: Request, exc: RequestValidationError) -> JSONResponse:
     path = req.url.path
     status_code = 422
-    log_rejection(status_code, exc)
+    _log_rejected_request(status_code, exc, "invalid_request")
     if "fhir" in path:
         issues = []
 
@@ -114,5 +137,6 @@ def register_exceptions(app: FastAPI) -> None:
     for exception_type in EXCEPTION_MAP:
         app.add_exception_handler(exception_type, handle_mapped_exception)
 
+    app.add_exception_handler(400, handle_unreadable_body)
     app.add_exception_handler(RequestValidationError, handle_request_validation_exception)
     app.add_exception_handler(Exception, handle_unhandled_exception)

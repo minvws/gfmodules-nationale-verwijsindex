@@ -1,5 +1,3 @@
-from unittest.mock import Mock
-
 import pytest
 from fastapi.testclient import TestClient
 from gfmodules.logging.testing import assert_event_emitted, capture_records
@@ -7,7 +5,6 @@ from gfmodules.logging.testing import assert_event_emitted, capture_records
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.logging.events import Log
 from app.models.auth.data import AuthorizationScope
-from app.services.exceptions import PseudonymExchangeError
 from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 from tests.routers.conftest import (
@@ -84,17 +81,11 @@ class TestCreateRegistration:
             acting_organization_identifier=TEST_OIN,
         )
 
+    @pytest.mark.usefixtures("rejecting_exchange")
     def test_logs_a_failed_registration_with_the_callers_claims(
-        self,
-        source_client: TestClient,
-        crypto_client: CryptoServiceApiClientMock,
-        key_info_service: KeyInfoService,
-        monkeypatch: pytest.MonkeyPatch,
+        self, source_client: TestClient, key_info_service: KeyInfoService
     ) -> None:
         key_info_service.add_one("nvi-label", mechanism="AES_CBC")
-        monkeypatch.setattr(
-            crypto_client, "exchange", Mock(side_effect=PseudonymExchangeError("Invalid pseudonym or oprf_key"))
-        )
 
         with capture_records() as records:
             response = source_client.post("/registrations", json={"pseudonym": "pseu", "oprf_key": "key1"})
@@ -115,6 +106,40 @@ class TestCreateRegistration:
 
         assert response.status_code == 422
         assert records.for_event(Log.REFERRAL_REGISTRATION_FAILED) == []
+
+    def test_logs_an_invalid_body_as_an_invalid_request(self, source_client: TestClient) -> None:
+        with capture_records() as records:
+            response = source_client.post("/registrations", json={})
+
+        assert response.status_code == 422
+        assert_event_emitted(
+            records, Log.INVALID_REQUEST, represented_organization_identifier=TEST_URA, http_status=422
+        )
+
+    def test_logs_malformed_json_as_an_invalid_request_without_a_caller(self, source_client: TestClient) -> None:
+        with capture_records() as records:
+            response = source_client.post("/registrations", content=b"{", headers={"Content-Type": "application/json"})
+
+        assert response.status_code == 422
+        entry = assert_event_emitted(records, Log.INVALID_REQUEST, http_status=422)
+        assert not set(entry.message) & {
+            "represented_organization_identifier",
+            "acting_organization_identifier",
+            "acting_organization_name",
+        }
+
+    @pytest.mark.usefixtures("rejecting_exchange")
+    def test_logs_a_rejected_exchange_only_as_a_failed_registration(
+        self, source_client: TestClient, key_info_service: KeyInfoService
+    ) -> None:
+        key_info_service.add_one("nvi-label", mechanism="AES_CBC")
+
+        with capture_records() as records:
+            response = source_client.post("/registrations", json={"pseudonym": "pseu", "oprf_key": "key1"})
+
+        assert response.status_code == 400
+        assert len(records.for_event(Log.REFERRAL_REGISTRATION_FAILED)) == 1
+        assert records.for_event(Log.INVALID_REQUEST) == []
 
     def test_requires_create_scope(
         self,

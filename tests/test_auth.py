@@ -2,9 +2,11 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from gfmodules.logging.testing import capture_records
 
 from app.application import setup_fastapi
 from app.config import set_config
+from app.logging.events import Log
 from tests.test_config import get_test_config
 
 VALID_HEADERS = {
@@ -30,9 +32,11 @@ def client() -> TestClient:
     ids=["missing", "invalid-ura", "unknown-scope"],
 )
 def test_rejects_invalid_auth_headers_as_unauthenticated(client: TestClient, headers: dict[str, Any]) -> None:
-    response = client.post("/registrations", json={"pseudonym": "p", "oprf_key": "k"}, headers=headers)
+    with capture_records("app") as records:
+        response = client.post("/registrations", json={"pseudonym": "p", "oprf_key": "k"}, headers=headers)
 
     assert response.status_code == 401
+    assert records.for_event(Log.INVALID_REQUEST) == []
 
 
 def test_reports_invalid_auth_headers_on_a_single_line(client: TestClient) -> None:

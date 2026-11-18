@@ -6,7 +6,7 @@ from gfmodules.logging import LogEvent
 
 from app.db.models.referral import ReferralEntity
 from app.errors.handlers import summarize_reason
-from app.errors.mapping import should_log, spec_for
+from app.errors.mapping import should_log_failure, spec_for
 from app.logging.events import Log
 from app.models.pseudonym import EncryptedPseudonym, OprfPseudonym
 from app.models.ura import UraNumber
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 def _log_failure(event: LogEvent, message: str, exc: Exception) -> None:
-    if should_log(exc):
+    if should_log_failure(exc):
         gflog.emit(
             logger,
             event,
