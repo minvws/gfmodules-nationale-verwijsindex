@@ -1,5 +1,6 @@
 from collections.abc import Callable, Generator
 from typing import Any
+from uuid import uuid4
 
 import gfmodules.logging as gflog
 import pytest
@@ -12,6 +13,7 @@ from pydantic import SecretStr
 from app.config import ConfigDatabase
 from app.db.db import Database
 from app.db.models.key_info import KeyInfoEntity
+from app.db.models.organization import OrganizationEntity
 from app.db.models.referral import ReferralEntity
 from app.db.repository.key_info_repository import KeyInfoRepository
 from app.db.repository.referral_repository import ReferralRepository
@@ -47,6 +49,19 @@ from tests.test_config import get_test_config
 # A url-safe base64 token decoding to {"evaluated_output": "JWE", "blind_factor": "BF"},
 # which is the shape `decode_url_safe_token` expects of List.subject.
 TEST_PSEUDONYM_TOKEN = "eyJldmFsdWF0ZWRfb3V0cHV0IjogIkpXRSIsICJibGluZF9mYWN0b3IiOiAiQkYifQ"
+
+# URA numbers the tests register referrals for. Registering requires an active organization with the URA number.
+REGISTERED_URAS = ("00000001", "00000002", "00000003", "00000123", "00000456", "99999999")
+
+type OrganizationFor = Callable[[str], OrganizationEntity]
+
+
+def register_organizations(database: Database) -> None:
+    with database.get_db_session() as session:
+        for ura in REGISTERED_URAS:
+            session.add(OrganizationEntity(id=uuid4(), external_id=ura))
+        session.commit()
+
 
 type MetricPoints = Callable[[str], list[DataPointT]]
 type CounterValue = Callable[[str, dict[str, str]], int]
@@ -96,23 +111,24 @@ def database() -> Generator[Database, Any, None]:
     config_database = ConfigDatabase(dsn=SecretStr("sqlite:///:memory:"), retry_backoff=[])
     db = Database(config_database=config_database)
     db.generate_tables()
+    register_organizations(db)
     try:
         yield db
     finally:
         db.engine.dispose()
 
 
-@pytest.fixture()
+@pytest.fixture
 def referral_repository(database: Database) -> ReferralRepository:
     return ReferralRepository(db_session=database.get_db_session())
 
 
-@pytest.fixture()
+@pytest.fixture
 def key_info_repository(database: Database) -> KeyInfoRepository:
     return KeyInfoRepository(db_session=database.get_db_session())
 
 
-@pytest.fixture()
+@pytest.fixture
 def http_service() -> HttpService:
     config = get_test_config()
     return HttpService(
@@ -134,16 +150,32 @@ def mock_key_info() -> KeyInfoEntity:
     return KeyInfoEntity(label="label-1", mechanism="AES_CBC", active=True)
 
 
-@pytest.fixture()
-def mock_referral_entity() -> ReferralEntity:
+@pytest.fixture
+def organization_for() -> OrganizationFor:
+    """
+    An unsaved active organization per URA number, the same one for every call within a test. It is stored together
+    with the first referral that is linked to it.
+    """
+    organizations: dict[str, OrganizationEntity] = {}
+
+    def get(ura_number: str) -> OrganizationEntity:
+        if ura_number not in organizations:
+            organizations[ura_number] = OrganizationEntity(id=uuid4(), external_id=ura_number)
+        return organizations[ura_number]
+
+    return get
+
+
+@pytest.fixture
+def mock_referral_entity(organization_for: OrganizationFor) -> ReferralEntity:
     return ReferralEntity(
-        ura_number="0000123",
+        organization=organization_for("0000123"),
         pseudonym="some-pseudonym",
         source="Some-Device",
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def metric_reader() -> InMemoryMetricReader:
     return InMemoryMetricReader()
 
@@ -193,7 +225,7 @@ def referral_service(database: Database, usage_metrics: UsageMetrics) -> Referra
     return ReferralService(database=database, usage_metrics=usage_metrics)
 
 
-@pytest.fixture()
+@pytest.fixture
 def key_info_service(database: Database) -> KeyInfoService:
     return KeyInfoService(database)
 
@@ -206,7 +238,7 @@ def pseudonym_referral_service(
     return PseudonymReferralService(referral_service=referral_service, pseudonym_resolver=resolver)
 
 
-@pytest.fixture()
+@pytest.fixture
 def auth_header_service() -> AuthHeaderService:
     config = get_test_config()
     return AuthHeaderService(expected_audiences=config.authorization_headers.expected_audiences)

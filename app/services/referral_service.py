@@ -6,6 +6,7 @@ import gfmodules.logging as gflog
 
 from app.db.db import Database
 from app.db.models.referral import ReferralEntity
+from app.db.repository.organization_repository import OrganizationRepository
 from app.db.repository.referral_repository import ReferralRepository
 from app.logging.events import Log
 from app.metrics import UsageMetrics
@@ -13,6 +14,7 @@ from app.models.pseudonym import EncryptedPseudonym
 from app.models.ura import UraNumber
 from app.services.exceptions import (
     NotFoundError,
+    UnknownOrganizationError,
 )
 
 logger = logging.getLogger(__name__)
@@ -65,14 +67,19 @@ class ReferralService:
         """
         Store a referral, or return the stored one when it already exists.
 
+        The referral is linked to the active organization with the URA number, which must be registered.
         Returns the referral and whether it was created by this call.
         """
         with self.database.get_db_session() as session:
+            organization = session.get_repository(OrganizationRepository).find_active(str(ura_number))
+            if organization is None:
+                raise UnknownOrganizationError()
+
             referral_repository = session.get_repository(ReferralRepository)
 
             existing = referral_repository.find_one(
                 pseudonym=encrypted_pseudonym.value,
-                ura_number=str(ura_number),
+                organization_id=organization.id,
                 source=source,
             )
             if existing is not None:
@@ -82,7 +89,7 @@ class ReferralService:
             new_referral: ReferralEntity = referral_repository.add_one(
                 ReferralEntity(
                     pseudonym=encrypted_pseudonym.value,
-                    ura_number=str(ura_number),
+                    organization=organization,
                     source=source,
                     key_id=key_id,
                 )

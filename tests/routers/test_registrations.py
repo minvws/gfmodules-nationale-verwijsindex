@@ -163,6 +163,18 @@ class TestCreateRegistration:
         response = client.post("/registrations", json={"pseudonym": "pseu", "oprf_key": "key1"})
         assert response.status_code == 403
 
+    def test_rejects_an_unregistered_organization(
+        self,
+        referral_service: ReferralService,
+        crypto_client: CryptoServiceApiClientMock,
+        key_info_service: KeyInfoService,
+    ) -> None:
+        key_info_service.add_one("nvi-label", mechanism="AES_CBC")
+        ctx = make_auth_context(ura="10000001")
+        client = make_test_client(referral_service, crypto_client, key_info_service, ctx)
+        response = client.post("/registrations", json={"pseudonym": "pseu", "oprf_key": "key1"})
+        assert response.status_code == 403
+
 
 # ---------------------------------------------------------------------------
 # GET /registrations
