@@ -1,7 +1,7 @@
 -- Link referrals to the owning organization by its id instead of the URA number (external_id).
 --
 -- The organizations are filled by tools/migrate_beheer_data.py, which runs after the migrations. Without that copy
--- every referral would look orphaned and be removed below, so abort when referrals exist but the copy has not run.
+-- every referral would look orphaned, so abort when referrals exist but the copy has not run.
 -- Deploy the release that performs the copy first.
 DO $$
 BEGIN
@@ -26,8 +26,19 @@ SET organization_id = (
     LIMIT 1
 );
 
--- Referrals without any organization cannot be linked and are removed
-DELETE FROM referrals WHERE organization_id IS NULL;
+-- Referrals without any organization cannot be linked. Abort instead of removing them, so they are dealt with on
+-- purpose.
+DO $$
+DECLARE
+    unlinked bigint;
+BEGIN
+    SELECT count(*) INTO unlinked FROM referrals WHERE organization_id IS NULL;
+    IF unlinked > 0 THEN
+        RAISE EXCEPTION '% referral(s) have a URA number without any organization in admin.organizations', unlinked
+            USING HINT = 'Register the organizations or remove these referrals before this migration';
+    END IF;
+END
+$$;
 
 ALTER TABLE referrals
     ALTER COLUMN organization_id SET NOT NULL,
