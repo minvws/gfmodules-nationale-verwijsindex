@@ -149,6 +149,28 @@ def test_post_without_resource_returns_validation(bundle_service: BundleService)
     assert result.response.status == "422"
 
 
+@pytest.mark.parametrize(
+    ("entry", "code"),
+    [
+        (BundleEntry(), "required"),
+        (_entry("POST", "List"), "required"),
+        (_entry("GET", "http://["), "invalid"),
+        (_entry("GET", f"Patient/{uuid4()}"), "not-supported"),
+        (_entry("GET", f"List/{uuid4()}?source:identifier=SRC-001"), "not-supported"),
+    ],
+    ids=["missing-request", "missing-resource", "malformed-url", "unsupported-resource", "id-and-params"],
+)
+def test_rejects_an_invalid_entry_with_its_issue_code(
+    bundle_service: BundleService, entry: BundleEntry[LocalizationList], code: str
+) -> None:
+    result = _process(bundle_service, entry, index=0)
+
+    assert result.response is not None
+    assert result.response.status == "422"
+    assert result.response.outcome is not None
+    assert result.response.outcome.issue[0].code == code
+
+
 class TestUrlResolution:
     def test_malformed_url_returns_validation_response(self, bundle_service: BundleService) -> None:
         result = _process(bundle_service, _entry("GET", "http://["), index=0)
