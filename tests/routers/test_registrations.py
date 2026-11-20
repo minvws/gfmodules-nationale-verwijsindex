@@ -196,6 +196,20 @@ class TestGetRegistrations:
         assert response.status_code == 200
         assert response.json()["total"] == 1
 
+    @pytest.mark.usefixtures("rejecting_exchange")
+    def test_logs_a_rejected_exchange_as_a_failed_query(
+        self, source_client: TestClient, key_info_service: KeyInfoService
+    ) -> None:
+        key_info_service.add_one("nvi-label", "AES_CBC")
+
+        with capture_records() as records:
+            response = source_client.get("/registrations", params={"pseudonym": "pseu", "oprf_key": "k"})
+
+        assert response.status_code == 400
+        assert_event_emitted(
+            records, Log.REFERRAL_QUERY_FAILED, represented_organization_identifier=TEST_URA, http_status=400
+        )
+
     def test_does_not_return_other_ura_registrations(
         self,
         referral_service: ReferralService,
@@ -252,6 +266,20 @@ class TestDeleteRegistrations:
 
         assert source_client.get("/registrations", params={"pseudonym": "p1", "oprf_key": "k"}).json()["total"] == 0
         assert source_client.get("/registrations", params={"pseudonym": "p2", "oprf_key": "k"}).json()["total"] == 1
+
+    @pytest.mark.usefixtures("rejecting_exchange")
+    def test_logs_a_rejected_exchange_as_a_failed_delete(
+        self, source_client: TestClient, key_info_service: KeyInfoService
+    ) -> None:
+        key_info_service.add_one("nvi-label", "AES_CBC")
+
+        with capture_records() as records:
+            response = source_client.delete("/registrations", params={"pseudonym": "pseu", "oprf_key": "k"})
+
+        assert response.status_code == 400
+        assert_event_emitted(
+            records, Log.REFERRALS_DELETE_FAILED, represented_organization_identifier=TEST_URA, http_status=400
+        )
 
     def test_does_not_delete_other_ura_registrations(
         self,
