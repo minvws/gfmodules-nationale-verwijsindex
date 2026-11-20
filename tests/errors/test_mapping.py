@@ -2,7 +2,9 @@ import pytest
 
 from app.errors.mapping import DEFAULT_SPEC, ErrorSpec, LogAs, should_log_failure, spec_for
 from app.models.auth.data import AuthorizationScope
+from app.request_body_limit import RequestBodyTooLargeError
 from app.services.exceptions import (
+    BundleTooLargeError,
     ConflictError,
     CryptoServiceError,
     ForbiddenError,
@@ -40,6 +42,12 @@ def _scope_error() -> UnauthorizedScopeError:
         pytest.param(ValueError("boom"), DEFAULT_SPEC, id="value-error-is-unexpected"),
         pytest.param(PseudonymExchangeError("rejected"), _spec("invalid", 400, "failure"), id="pseudonym-exchange"),
         pytest.param(CryptoServiceError("down"), _spec("transient", 502, "failure"), id="crypto-service"),
+        pytest.param(
+            BundleTooLargeError("too many"), _spec("too-costly", 413, "invalid_request"), id="bundle-too-large"
+        ),
+        pytest.param(
+            RequestBodyTooLargeError(10), _spec("too-long", 413, "invalid_request"), id="request-body-too-large"
+        ),
         pytest.param(InvalidModelError("bad"), _spec("structure", 400, "invalid_request"), id="invalid-model"),
         pytest.param(_scope_error(), _spec("security", 403), id="unauthorized-scope-via-mro"),
         pytest.param(UnauthorizedManagingRequestError(), _spec("security", 403), id="unauthorized-managing-via-mro"),
