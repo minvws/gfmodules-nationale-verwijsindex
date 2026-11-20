@@ -35,6 +35,13 @@ def _reject_invalid_entry(msg: str, code: str, status: int = 422) -> BundleEntry
 def _entry_for_exception(index: int, exc: Exception) -> BundleEntry[Any]:
     spec = spec_for(exc)
     if spec is DEFAULT_SPEC:
+        gflog.emit(
+            logger,
+            Log.SYS_UNHANDLED_EXCEPTION,
+            "Bundle entry action failed",
+            fields={"exception_type": type(exc).__name__},
+            exc_info=exc,
+        )
         reason = UNEXPECTED_ERROR_MESSAGE
     else:
         reason = summarize_reason(exc)
@@ -151,14 +158,6 @@ class BundleService:
         try:
             return action()
         except Exception as exc:  # noqa: BLE001
-            if spec_for(exc) is DEFAULT_SPEC:
-                gflog.emit(
-                    logger,
-                    Log.SYS_UNHANDLED_EXCEPTION,
-                    "Bundle entry action failed",
-                    fields={"exception_type": type(exc).__name__},
-                    exc_info=exc,
-                )
             return _entry_for_exception(index, exc)
 
     def _create_entry(self, resource: LocalizationList, authenticated_ura: UraNumber) -> BundleEntry[Any]:
