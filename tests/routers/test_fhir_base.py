@@ -3,14 +3,15 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from gfmodules.logging import LogEvent
 from gfmodules.logging.testing import assert_event_emitted, capture_records
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
 from app.logging.events import Log
 from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
-from tests.conftest import make_list_resource
-from tests.routers.conftest import TEST_URA, make_auth_context, make_test_client
+from tests.conftest import TEST_PSEUDONYM_TOKEN, make_list_resource
+from tests.routers.conftest import TEST_SOURCE_ID, TEST_URA, make_auth_context, make_test_client
 
 FHIR_JSON = {"Content-Type": "application/fhir+json"}
 
@@ -98,6 +99,24 @@ class TestRegisterBundle:
         entry = response.json()["entry"][0]
         assert entry["response"]["status"] == "200"
         assert entry["resource"]["resourceType"] == "Bundle"
+
+    @pytest.mark.usefixtures("rejecting_exchange")
+    @pytest.mark.parametrize(
+        ("method", "event"),
+        [("GET", Log.REFERRAL_QUERY_FAILED), ("DELETE", Log.REFERRALS_DELETE_FAILED)],
+        ids=["query", "delete"],
+    )
+    def test_logs_a_rejected_exchange_in_a_query_entry_as_a_failed_operation(
+        self, client: TestClient, method: str, event: LogEvent
+    ) -> None:
+        url = f"List?subject:identifier={TEST_PSEUDONYM_TOKEN}&source:identifier={TEST_SOURCE_ID}"
+        with capture_records() as records:
+            response = client.post(
+                "/fhir", json=_bundle({"request": {"method": method, "url": url}}), headers=FHIR_JSON
+            )
+
+        assert response.json()["entry"][0]["response"]["status"] == "400"
+        assert_event_emitted(records, event, represented_organization_identifier=TEST_URA, http_status=400)
 
 
 _NO_RESOURCE = {"request": {"method": "POST", "url": "List"}}
