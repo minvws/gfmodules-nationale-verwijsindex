@@ -3,13 +3,15 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
-from gfmodules.logging.testing import capture_records
+from gfmodules.logging.testing import assert_event_emitted, capture_records
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
+from app.logging.events import Log
 from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 from tests.conftest import make_list_resource
 from tests.routers.conftest import TEST_URA, make_auth_context, make_test_client
+from tests.test_config import get_test_config
 
 FHIR_JSON = {"Content-Type": "application/fhir+json"}
 
@@ -51,6 +53,36 @@ class TestRegisterBundle:
 
         assert response.json()["entry"][0]["response"]["status"] == "422"
         assert not [entry for entry in records if "leaky-token-value" in json.dumps(entry.payload)]
+
+    def test_rejects_a_bundle_over_the_entry_limit_without_processing_it(self, client: TestClient) -> None:
+        entries = [_post_entry()] * (get_test_config().bundle.max_entries + 1)
+        with capture_records("app") as records:
+            response = client.post("/fhir", json=_bundle(*entries), headers=FHIR_JSON)
+
+        assert response.status_code == 413
+        assert response.json()["issue"][0]["code"] == "too-costly"
+        assert len(records.for_event(Log.INVALID_REQUEST)) == 1
+        assert records.for_event(Log.REGISTERED_REFERRAL) == []
+
+    @pytest.mark.parametrize("chunked", [False, True], ids=["content-length", "chunked"])
+    def test_rejects_a_body_over_the_size_limit_before_parsing_it(self, client: TestClient, chunked: bool) -> None:
+        body = b"x" * (get_test_config().app.max_request_body_bytes + 1)
+        content = iter([body]) if chunked else body
+        with capture_records("app") as records:
+            response = client.post("/fhir", content=content, headers=FHIR_JSON)
+
+        assert response.status_code == 413
+        assert response.json()["issue"][0]["code"] == "too-long"
+        assert_event_emitted(records, Log.INVALID_REQUEST, http_status=413)
+
+    @pytest.mark.parametrize("chunked", [False, True], ids=["content-length", "chunked"])
+    def test_accepts_a_body_of_exactly_the_size_limit(self, client: TestClient, chunked: bool) -> None:
+        body = json.dumps(_bundle(_post_entry())).encode().ljust(get_test_config().app.max_request_body_bytes)
+        content = iter([body]) if chunked else body
+        response = client.post("/fhir", content=content, headers=FHIR_JSON)
+
+        assert response.status_code == 200
+        assert response.json()["entry"][0]["response"]["status"] == "201"
 
     def test_rejects_an_empty_bundle(self, client: TestClient) -> None:
         response = client.post("/fhir", json=_bundle(), headers=FHIR_JSON)
