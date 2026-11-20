@@ -425,3 +425,27 @@ class TestDelete:
 
         assert response.status_code == 404
         assert response.json()["issue"][0]["code"] == "not-found"
+
+
+@pytest.mark.usefixtures("rejecting_exchange")
+def test_logs_a_failed_search_as_a_failed_query(client: TestClient) -> None:
+    params = {"subject:identifier": TEST_PSEUDONYM_TOKEN, "source:identifier": TEST_SOURCE_ID}
+    with capture_records() as records:
+        response = client.get("/fhir/List", params=params)
+
+    assert response.status_code == 400
+    assert_event_emitted(
+        records, Log.REFERRAL_QUERY_FAILED, represented_organization_identifier=TEST_URA, http_status=400
+    )
+    assert records.for_event(Log.LOCALIZATION_FAILED) == []
+
+
+@pytest.mark.usefixtures("rejecting_exchange")
+def test_logs_a_failed_bulk_delete(client: TestClient) -> None:
+    with capture_records() as records:
+        response = client.delete("/fhir/List", params={"subject:identifier": TEST_PSEUDONYM_TOKEN})
+
+    assert response.status_code == 400
+    assert_event_emitted(
+        records, Log.REFERRALS_DELETE_FAILED, represented_organization_identifier=TEST_URA, http_status=400
+    )
