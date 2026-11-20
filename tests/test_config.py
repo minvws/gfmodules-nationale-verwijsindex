@@ -5,6 +5,7 @@ from app.config import (
     Config,
     ConfigApp,
     ConfigAuthorizationHeaders,
+    ConfigBundle,
     ConfigCryptoServiceApi,
     ConfigDatabase,
     ConfigLogging,
@@ -74,3 +75,16 @@ def test_the_example_config_reads_the_logging_streams() -> None:
 
     assert logging.syslog_streams == ["app", "siem", "public_inspect"]
     assert logging.console_streams == ["debug"]
+
+
+def test_bundle_defaults_when_the_section_is_missing() -> None:
+    assert get_test_config().bundle.max_entries == 100
+
+
+def test_bundle_rejects_a_maximum_below_one() -> None:
+    with pytest.raises(ValidationError):
+        ConfigBundle(max_entries=0)
+
+
+def test_request_body_limit_defaults_to_one_mebibyte() -> None:
+    assert get_test_config().app.max_request_body_bytes == 1048576

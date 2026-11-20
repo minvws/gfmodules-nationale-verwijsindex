@@ -22,6 +22,7 @@ from app.config import (
 from app.errors.handlers import register_exceptions
 from app.logging.events import Log
 from app.models.fhir.resources.localization_list.request import COUNT_PARAM
+from app.request_body_limit import RequestBodyLimitMiddleware
 from app.routers.default import router as default_router
 from app.routers.fhir.base import router as fhir_base_router
 from app.routers.fhir.localization_list import router as fhir_list_router
@@ -196,6 +197,7 @@ def setup_fastapi() -> FastAPI:
     register_exceptions(fastapi)
     _document_page_sizes(fastapi, config.pagination.default_page_size, config.pagination.max_page_size)
 
+    fastapi.add_middleware(RequestBodyLimitMiddleware, max_bytes=config.app.max_request_body_bytes)
     fastapi.add_middleware(RequestContextMiddleware)
 
     return fastapi
