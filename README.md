@@ -96,6 +96,19 @@ an app.conf mount.
 Both containers only differ in their init script and the default version will usually mount its own local src directory
 into the container's /src dir.
 
+## HSM key provisioning
+
+After database migrations, run from the application root (or `/src` in an image containing this tool):
+
+```bash
+python -m tools.provision_hsm_keys
+```
+
+Requires HSM mTLS and a database `DSN` with `SELECT`/`INSERT` on `public.keys_info`.
+Reruns preserve existing keys and registrations. Missing AES/HMAC material in initialized databases
+requires restoration, not regeneration.
+See [the script](tools/provision_hsm_keys.py) for configuration details.
+
 ## Contribution
 
 As stated in the [Disclaimer](#disclaimer) this project and all associated code serve solely as documentation and
