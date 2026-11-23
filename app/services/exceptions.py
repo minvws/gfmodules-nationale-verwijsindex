@@ -17,6 +17,11 @@ class ForbiddenError(Exception):
         super().__init__(msg)
 
 
+class UnknownOrganizationError(ForbiddenError):
+    def __init__(self) -> None:
+        super().__init__("No active organization is registered for the URA number")
+
+
 class InvalidKeyInfoError(Exception):
     def __init__(self, msg: str | None = None) -> None:
         msg = msg if msg else "Inconsistency found in KeyInfo"

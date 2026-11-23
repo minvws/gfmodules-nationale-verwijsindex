@@ -1,16 +1,20 @@
 import logging
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
 from gfmodules.logging import LogEvent
 
+from app.db.db import Database
+from app.db.models.organization import OrganizationEntity
 from app.db.models.referral import ReferralEntity
 from app.logging.events import Log
 from app.models.pseudonym import EncryptedPseudonym
 from app.models.ura import UraNumber
 from app.services.exceptions import (
     NotFoundError,
+    UnknownOrganizationError,
 )
 from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
@@ -86,6 +90,49 @@ def test_add_one_should_succeed(
     actual = referral_service.get_by_id(expected.id)
 
     assert_eq(expected, actual)
+
+
+@pytest.mark.parametrize(
+    "deleted_at",
+    [pytest.param(None, id="no-organization"), pytest.param(datetime(2026, 1, 1, tzinfo=UTC), id="deleted")],
+)
+def test_add_one_requires_an_active_organization(
+    referral_service: ReferralService,
+    key_info_service: KeyInfoService,
+    database: Database,
+    deleted_at: datetime | None,
+) -> None:
+    ura_number = UraNumber("10000001")
+    if deleted_at is not None:
+        with database.get_db_session() as session:
+            session.add(OrganizationEntity(id=uuid4(), external_id=ura_number.value, deleted_at=deleted_at))
+            session.commit()
+    key_info = key_info_service.add_one("some-label", "AES_CBC")
+
+    with pytest.raises(UnknownOrganizationError):
+        referral_service.add_one(
+            encrypted_pseudonym=PSEUDONYM, ura_number=ura_number, source=SOURCE, key_id=key_info.id
+        )
+
+    assert referral_service.count() == 0
+
+
+def test_add_one_links_the_referral_to_the_active_organization(
+    referral_service: ReferralService,
+    key_info_service: KeyInfoService,
+    database: Database,
+) -> None:
+    ura_number = UraNumber("10000001")
+    active_id = uuid4()
+    with database.get_db_session() as session:
+        session.add(OrganizationEntity(id=uuid4(), external_id=ura_number.value, deleted_at=datetime(2026, 1, 1)))
+        session.add(OrganizationEntity(id=active_id, external_id=ura_number.value))
+        session.commit()
+
+    referral = store_referral(referral_service, key_info_service, ura_number)
+
+    assert referral.organization_id == active_id
+    assert referral.ura_number == ura_number.value
 
 
 def test_add_referral_is_idempotent_for_duplicates(

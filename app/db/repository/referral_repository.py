@@ -1,32 +1,33 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, and_, delete, exists, func, not_, or_, select
+from sqlalchemy import ColumnElement, and_, delete, exists, func, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db.decorator import repository
 from app.db.models.organization import OrganizationEntity
 from app.db.models.referral import ReferralEntity
+from app.db.repository.organization_repository import active_organization_id
 from app.db.repository.respository_base import RepositoryBase
 
 
 def _organization_not_deleted() -> ColumnElement[bool]:
     """
-    Hide referrals whose organization is soft-deleted, unless an active organization with the same
-    URA number exists (deleted and recreated). Referrals without any organization stay visible.
+    Hide referrals whose organization is soft-deleted. Referrals are not transferred to an organization that is
+    recreated with the same URA number.
     """
-    same_ura = OrganizationEntity.external_id == ReferralEntity.ura_number
-    return or_(
-        exists().where(same_ura, OrganizationEntity.deleted_at.is_(None)),
-        not_(exists().where(same_ura)),
-    )
+    return ReferralEntity.organization.has(OrganizationEntity.deleted_at.is_(None))
+
+
+def _owned_by(ura_number: str) -> ColumnElement[bool]:
+    return ReferralEntity.organization_id == active_organization_id(ura_number)
 
 
 @repository(ReferralEntity)
 class ReferralRepository(RepositoryBase):
-    def find_one(self, pseudonym: str, ura_number: str, source: str) -> ReferralEntity | None:
+    def find_one(self, pseudonym: str, organization_id: UUID, source: str) -> ReferralEntity | None:
         stmt = select(ReferralEntity).where(
-            ReferralEntity.ura_number == str(ura_number),
+            ReferralEntity.organization_id == organization_id,
             ReferralEntity.pseudonym == str(pseudonym),
             ReferralEntity.source == str(source),
         )
@@ -81,7 +82,7 @@ class ReferralRepository(RepositoryBase):
         filters: list[ColumnElement[bool]] = [_organization_not_deleted()]
 
         if ura_number is not None:
-            filters.append(ReferralEntity.ura_number == ura_number)
+            filters.append(_owned_by(ura_number))
 
         if pseudonym is not None:
             filters.append(ReferralEntity.pseudonym == pseudonym)
@@ -100,7 +101,7 @@ class ReferralRepository(RepositoryBase):
     ) -> int:
         stmt = delete(ReferralEntity)
 
-        stmt = stmt.where(ReferralEntity.ura_number == ura_number)
+        stmt = stmt.where(_owned_by(ura_number))
 
         if pseudonym is not None:
             stmt = stmt.where(ReferralEntity.pseudonym == pseudonym)
@@ -139,7 +140,7 @@ class ReferralRepository(RepositoryBase):
         source: str | None = None,
     ) -> None:
         try:
-            stmt = delete(ReferralEntity).where(ReferralEntity.ura_number == ura_number)
+            stmt = delete(ReferralEntity).where(_owned_by(ura_number))
             if pseudonym:
                 stmt = stmt.where(ReferralEntity.pseudonym == pseudonym)
 
@@ -158,7 +159,7 @@ class ReferralRepository(RepositoryBase):
         pseudonym: str | None = None,
         source: str | None = None,
     ) -> bool:
-        conditions = [ReferralEntity.ura_number == ura_number]
+        conditions = [_owned_by(ura_number)]
         if pseudonym:
             conditions.append(ReferralEntity.pseudonym == pseudonym)
 

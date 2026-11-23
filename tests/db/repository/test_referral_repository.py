@@ -11,6 +11,7 @@ from app.db.models.key_info import KeyInfoEntity
 from app.db.models.organization import OrganizationEntity
 from app.db.models.referral import ReferralEntity
 from app.db.repository.referral_repository import ReferralRepository
+from tests.conftest import OrganizationFor
 
 
 def test_find_by_id_should_succeed(
@@ -64,9 +65,10 @@ def test_find_many_should_return_two_item(
     referral_repository: ReferralRepository,
     mock_referral_entity: ReferralEntity,
     mock_key_info: KeyInfoEntity,
+    organization_for: OrganizationFor,
 ) -> None:
     mock_referral_entity_2 = ReferralEntity(
-        ura_number="0000123",
+        organization=organization_for("0000123"),
         pseudonym="some-pseudonym",
         source="Some-Device2",
         key_info=mock_key_info,
@@ -86,16 +88,16 @@ def test_find_many_should_return_two_item(
 
 
 def test_find_many_with_alternative_params_should_succeed(
-    referral_repository: ReferralRepository, mock_key_info: KeyInfoEntity
+    referral_repository: ReferralRepository, mock_key_info: KeyInfoEntity, organization_for: OrganizationFor
 ) -> None:
     mock_referral_1 = ReferralEntity(
-        ura_number="0000123",
+        organization=organization_for("0000123"),
         pseudonym="ps-1",
         source="Some-Device",
         key_info=mock_key_info,
     )
     mock_referral_2 = ReferralEntity(
-        ura_number="0000124",
+        organization=organization_for("0000124"),
         pseudonym="ps-2",
         source="Some-Other-Device",
         key_info=mock_key_info,
@@ -110,12 +112,14 @@ def test_find_many_with_alternative_params_should_succeed(
     assert expected == actual
 
 
-def _referrals_created_in_reverse_order(key_info: KeyInfoEntity, amount: int) -> list[ReferralEntity]:
+def _referrals_created_in_reverse_order(
+    key_info: KeyInfoEntity, organization: OrganizationEntity, amount: int
+) -> list[ReferralEntity]:
     """Referrals that are inserted newest first, so the order of a query cannot follow the insertion order."""
     first = datetime(2026, 1, 1, tzinfo=UTC)
     return [
         ReferralEntity(
-            ura_number="0000123",
+            organization=organization,
             pseudonym=f"ps-{i}",
             source="Some-Device",
             key_info=key_info,
@@ -128,8 +132,9 @@ def _referrals_created_in_reverse_order(key_info: KeyInfoEntity, amount: int) ->
 def test_find_many_should_order_by_creation_time(
     referral_repository: ReferralRepository,
     mock_key_info: KeyInfoEntity,
+    organization_for: OrganizationFor,
 ) -> None:
-    referrals = _referrals_created_in_reverse_order(mock_key_info, 3)
+    referrals = _referrals_created_in_reverse_order(mock_key_info, organization_for("0000123"), 3)
 
     with referral_repository.db_session:
         for referral in referrals:
@@ -142,8 +147,9 @@ def test_find_many_should_order_by_creation_time(
 def test_find_many_should_return_the_requested_page(
     referral_repository: ReferralRepository,
     mock_key_info: KeyInfoEntity,
+    organization_for: OrganizationFor,
 ) -> None:
-    referrals = _referrals_created_in_reverse_order(mock_key_info, 5)
+    referrals = _referrals_created_in_reverse_order(mock_key_info, organization_for("0000123"), 5)
 
     with referral_repository.db_session:
         for referral in referrals:
@@ -160,9 +166,12 @@ def test_find_many_should_return_the_requested_page(
 def test_count_should_apply_the_filters(
     referral_repository: ReferralRepository,
     mock_key_info: KeyInfoEntity,
+    organization_for: OrganizationFor,
 ) -> None:
-    referrals = _referrals_created_in_reverse_order(mock_key_info, 3)
-    other_ura = ReferralEntity(ura_number="0000124", pseudonym="ps-0", source="Some-Device", key_info=mock_key_info)
+    referrals = _referrals_created_in_reverse_order(mock_key_info, organization_for("0000123"), 3)
+    other_ura = ReferralEntity(
+        organization=organization_for("0000124"), pseudonym="ps-0", source="Some-Device", key_info=mock_key_info
+    )
 
     with referral_repository.db_session:
         for referral in [*referrals, other_ura]:
@@ -213,7 +222,7 @@ def test_add_one_with_same_id_should_raise_exception(
         mock_referral_entity_2 = ReferralEntity(
             id=mock_referral_entity.id,
             pseudonym="some-other-pseudonym",
-            ura_number=mock_referral_entity.ura_number,
+            organization=mock_referral_entity.organization,
             source=mock_referral_entity.source,
             key_id=mock_key_info.id,
         )
@@ -233,7 +242,7 @@ def test_add_one_with_same_unique_index_should_raise_exception(
     with referral_repository.db_session:
         mock_referral_entity.key_info = mock_key_info
         mock_2 = ReferralEntity(
-            ura_number=mock_referral_entity.ura_number,
+            organization=mock_referral_entity.organization,
             pseudonym=mock_referral_entity.pseudonym,
             source=mock_referral_entity.source,
             key_id=mock_key_info.id,
@@ -280,23 +289,23 @@ def test_delete_one_should_raise_exception_when_does_not_exist(
 
 
 def test_delete_with_only_ura_number_should_remove_all_recordss(
-    referral_repository: ReferralRepository, mock_key_info: KeyInfoEntity
+    referral_repository: ReferralRepository, mock_key_info: KeyInfoEntity, organization_for: OrganizationFor
 ) -> None:
     referral_1 = ReferralEntity(
-        ura_number="0000123",
+        organization=organization_for("0000123"),
         pseudonym="ps-1",
         source="SomeDevice",
         key_info=mock_key_info,
     )
     referral_2 = ReferralEntity(
-        ura_number="0000123",
+        organization=organization_for("0000123"),
         pseudonym="ps-2",
         source="SomeOtherDevice",
         key_info=mock_key_info,
     )
     # referral from a different provider
     referral_3 = ReferralEntity(
-        ura_number="0000125",
+        organization=organization_for("0000125"),
         pseudonym="ps-3",
         source="AntoherDevice",
         key_info=mock_key_info,
@@ -313,23 +322,23 @@ def test_delete_with_only_ura_number_should_remove_all_recordss(
 
 
 def test_delete_with_pseudonym_should_remove_all_records_for_patient(
-    referral_repository: ReferralRepository, mock_key_info: KeyInfoEntity
+    referral_repository: ReferralRepository, mock_key_info: KeyInfoEntity, organization_for: OrganizationFor
 ) -> None:
     referral_1 = ReferralEntity(
-        ura_number="0000123",
+        organization=organization_for("0000123"),
         pseudonym="ps-1",
         source="ImagingMachine",
         key_info=mock_key_info,
     )
     referral_2 = ReferralEntity(
-        ura_number="0000123",
+        organization=organization_for("0000123"),
         pseudonym="ps-1",
         source="SomeEPD",
         key_info=mock_key_info,
     )
     # referral from a different patient
     referral_3 = ReferralEntity(
-        ura_number="0000123",
+        organization=organization_for("0000123"),
         pseudonym="ps-2",
         source="SomeXRay",
         key_info=mock_key_info,
@@ -395,51 +404,77 @@ NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
 
 @pytest.mark.parametrize(
-    "organizations,visible",
+    "deleted_at,recreate,visible",
     [
-        pytest.param([None], True, id="active"),
-        pytest.param([NOW], False, id="deleted"),
-        pytest.param([NOW, None], True, id="deleted-then-recreated"),
-        pytest.param([], True, id="no-organization"),
+        pytest.param(None, False, True, id="active"),
+        pytest.param(NOW, False, False, id="deleted"),
+        pytest.param(NOW, True, False, id="deleted-then-recreated"),
     ],
 )
-def test_referral_visibility_depends_on_organization(
+def test_referral_visibility_depends_on_its_organization(
     referral_repository: ReferralRepository,
     mock_referral_entity: ReferralEntity,
     mock_key_info: KeyInfoEntity,
-    organizations: list[datetime | None],
+    deleted_at: datetime | None,
+    recreate: bool,
     visible: bool,
 ) -> None:
+    ura_number = mock_referral_entity.ura_number
     with referral_repository.db_session:
-        for deleted_at in organizations:
-            referral_repository.db_session.add(
-                OrganizationEntity(id=uuid4(), external_id=mock_referral_entity.ura_number, deleted_at=deleted_at)
-            )
+        mock_referral_entity.organization.deleted_at = deleted_at
         mock_referral_entity.key_info = mock_key_info
         referral_repository.add_one(mock_referral_entity)
+        if recreate:
+            # Referrals are not transferred to a recreated organization with the same URA number
+            referral_repository.db_session.add(OrganizationEntity(id=uuid4(), external_id=ura_number))
+            referral_repository.db_session.commit()
 
         by_id = referral_repository.find_by_id(mock_referral_entity.id)
-        many = referral_repository.find_many(ura_number=mock_referral_entity.ura_number)
-        count = referral_repository.count(ura_number=mock_referral_entity.ura_number)
+        many = referral_repository.find_many(ura_number=ura_number)
+        count = referral_repository.count(ura_number=ura_number)
+        everywhere = referral_repository.count(pseudonym=mock_referral_entity.pseudonym)
 
     assert (by_id is not None) is visible
-    assert len(many) == count == (1 if visible else 0)
+    assert len(many) == count == everywhere == (1 if visible else 0)
 
 
 def test_deleted_organization_hides_only_its_own_referrals(
     referral_repository: ReferralRepository,
     mock_key_info: KeyInfoEntity,
+    organization_for: OrganizationFor,
 ) -> None:
+    organization_for("10000001").deleted_at = NOW
     with referral_repository.db_session:
-        referral_repository.db_session.add(OrganizationEntity(id=uuid4(), external_id="00000001", deleted_at=NOW))
-        referral_repository.db_session.add(OrganizationEntity(id=uuid4(), external_id="00000002", deleted_at=None))
-        for ura in ("00000001", "00000002"):
+        for ura in ("10000001", "10000002"):
             referral_repository.add_one(
-                ReferralEntity(ura_number=ura, pseudonym="some-pseudonym", source="Some-Device", key_info=mock_key_info)
+                ReferralEntity(
+                    organization=organization_for(ura),
+                    pseudonym="some-pseudonym",
+                    source="Some-Device",
+                    key_info=mock_key_info,
+                )
             )
 
         actual = referral_repository.find_many(pseudonym="some-pseudonym")
         count = referral_repository.count(pseudonym="some-pseudonym")
 
-    assert [r.ura_number for r in actual] == ["00000002"]
+    assert [r.ura_number for r in actual] == ["10000002"]
     assert count == 1
+
+
+def test_referrals_of_a_deleted_organization_are_not_deleted_through_its_ura_number(
+    referral_repository: ReferralRepository,
+    mock_referral_entity: ReferralEntity,
+    mock_key_info: KeyInfoEntity,
+) -> None:
+    ura_number = mock_referral_entity.ura_number
+    with referral_repository.db_session:
+        mock_referral_entity.organization.deleted_at = NOW
+        mock_referral_entity.key_info = mock_key_info
+        referral_repository.add_one(mock_referral_entity)
+        referral_repository.db_session.add(OrganizationEntity(id=uuid4(), external_id=ura_number))
+        referral_repository.db_session.commit()
+
+        deleted = referral_repository.delete_many(ura_number=ura_number)
+
+    assert deleted == 0
