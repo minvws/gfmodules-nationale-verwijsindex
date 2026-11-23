@@ -5,6 +5,7 @@ import pytest
 from gfmodules.logging import LogEvent
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
+from app.errors.mapping import UNEXPECTED_ERROR_MESSAGE
 from app.logging.events import Log
 from app.models.pseudonym import OprfPseudonym, PseudonymResponse
 from app.models.ura import UraNumber
@@ -145,7 +146,7 @@ def test_localize_logs_an_error_when_it_breaks(
     (fields,) = logged_fields(caplog, Log.LOCALIZATION_ERROR)
     assert fields["levelno"] == logging.ERROR
     assert fields["http_status"] == 500
-    assert "boom" not in fields["error_reason"]
+    assert fields["error_reason"] == UNEXPECTED_ERROR_MESSAGE
 
 
 def test_localize_logs_an_error_when_the_crypto_service_fails(
@@ -283,7 +284,7 @@ def test_delete_many_logs_an_error_when_it_breaks(
     (fields,) = logged_fields(caplog, Log.REFERRALS_DELETE_ERROR)
     assert fields["levelno"] == logging.ERROR
     assert fields["http_status"] == 500
-    assert "boom" not in fields["error_reason"]
+    assert fields["error_reason"] == UNEXPECTED_ERROR_MESSAGE
 
 
 def test_delete_many_logs_no_failure_when_nothing_matches(
