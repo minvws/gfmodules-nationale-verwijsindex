@@ -170,12 +170,13 @@ class TestInvalidEntryLogging:
     @pytest.mark.parametrize(
         "entry",
         [
+            _NO_RESOURCE,
             {"request": {"method": "DELETE", "url": "List?subject:identifier=urn:wrong|token"}},
             _wrong_ura_entry(),
             _wrong_device_entry(),
             _post_entry_with_invalid_token(),
         ],
-        ids=["invalid-url-parameter", "invalid-ura", "invalid-device", "invalid-pseudonym"],
+        ids=["missing-resource", "invalid-url-parameter", "invalid-ura", "invalid-device", "invalid-pseudonym"],
     )
     def test_reports_a_rejected_entry_with_the_logged_reason(self, client: TestClient, entry: dict[str, Any]) -> None:
         with capture_records("app") as records:
@@ -183,7 +184,7 @@ class TestInvalidEntryLogging:
 
         reported = response.json()["entry"][0]["response"]["outcome"]["issue"][0]["details"]["text"]
         logged = assert_event_emitted(records, Log.INVALID_REQUEST)
-        assert logged.message["error_reason"] == reported
+        assert reported == f"Bundle.entry.0: {logged.message['error_reason']}"
         assert "\n" not in reported
         assert "errors.pydantic.dev" not in reported
 
