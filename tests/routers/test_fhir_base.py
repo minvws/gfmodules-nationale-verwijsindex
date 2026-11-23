@@ -24,8 +24,8 @@ def client(
     return make_test_client(referral_service, crypto_client, key_info_service, make_auth_context())
 
 
-def _bundle(*entries: dict[str, Any]) -> dict[str, Any]:
-    return {"resourceType": "Bundle", "type": "transaction", "entry": list(entries)}
+def _bundle(*entries: dict[str, Any], bundle_type: str = "batch") -> dict[str, Any]:
+    return {"resourceType": "Bundle", "type": bundle_type, "entry": list(entries)}
 
 
 def _post_entry(ura: str = TEST_URA) -> dict[str, Any]:
@@ -43,6 +43,19 @@ class TestRegisterBundle:
         entry = response.json()["entry"][0]
         assert entry["response"]["status"] == "201"
         assert entry["resource"]["id"] is not None
+
+    def test_answers_a_batch_with_a_batch_response(self, client: TestClient) -> None:
+        response = client.post("/fhir", json=_bundle(_post_entry()), headers=FHIR_JSON)
+
+        assert response.status_code == 200
+        assert response.json()["type"] == "batch-response"
+
+    def test_still_accepts_a_transaction_bundle(self, client: TestClient) -> None:
+        response = client.post("/fhir", json=_bundle(_post_entry(), bundle_type="transaction"), headers=FHIR_JSON)
+
+        assert response.status_code == 200
+        assert response.json()["type"] == "searchset"
+        assert response.json()["entry"][0]["response"]["status"] == "201"
 
     def test_keeps_the_subject_token_out_of_the_logs_of_a_rejected_entry(self, client: TestClient) -> None:
         entry = {"request": {"method": "DELETE", "url": "List?subject:identifier=urn:wrong|leaky-token-value"}}
