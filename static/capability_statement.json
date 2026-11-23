@@ -47,7 +47,7 @@
             "resource": [
                 {
                     "type": "List",
-                    "documentation": "Lokalisatie-registratie: een List die aangeeft dat de custodian (extensie http://minvws.github.io/generiekefuncties-docs/StructureDefinition/nl-gf-localization-custodian, URA) gegevens heeft over de patiënt in List.subject (pseudoniem, system http://minvws.github.io/generiekefuncties-docs/NamingSystem/nvi-identifier), afkomstig van List.source (Device). Zoekresultaten worden gepagineerd met _count (paginagrootte, minimaal 1) en _offset (startpositie, standaard 0), of via de next/previous links in de Bundle.",
+                    "documentation": "Lokalisatie-registratie: een List die aangeeft dat de custodian (extensie http://minvws.github.io/generiekefuncties-docs/StructureDefinition/nl-gf-localization-custodian, URA) gegevens heeft over de patiënt in List.subject (pseudoniem, system http://minvws.github.io/generiekefuncties-docs/NamingSystem/nvi-identifier), afkomstig van List.source (Device, system urn:ietf:rfc:3986). Bij create zijn extension (custodian), subject, source, status, mode en emptyReason verplicht. Zoekresultaten worden gepagineerd met _count (paginagrootte, minimaal 1; groter dan het geconfigureerde maximum wordt afgetopt, standaard 50 en maximaal 100) en _offset (startpositie, standaard 0), of via de next/previous links in de Bundle. Onbekende of niet ondersteunde zoekparameters (zoals _sort, _include of _format) worden geweigerd met 422 in plaats van genegeerd.",
                     "interaction": [
                         {
                             "code": "create",
@@ -95,7 +95,7 @@
             "interaction": [
                 {
                     "code": "batch",
-                    "documentation": "POST /fhir met een Bundle van type batch met List entries (POST, GET of DELETE). Entries worden onafhankelijk van elkaar verwerkt en het antwoord is een Bundle van type batch-response met een eigen response per entry. Per entry gelden dezelfde scopes als bij de losse interacties. Bundles van type transaction worden voorlopig nog geaccepteerd, maar worden niet atomair verwerkt."
+                    "documentation": "POST /fhir met een Bundle van type batch met List entries. Ondersteunde entry requests: POST List, GET List/[id], GET List?[params], DELETE List/[id] en DELETE List?[params]; andere methodes (zoals PUT) en resources worden per entry geweigerd. Entries worden onafhankelijk van elkaar verwerkt en het antwoord is een Bundle van type batch-response met een eigen response per entry. Per entry gelden dezelfde scopes als bij de losse interacties. Bundles van type transaction worden voorlopig nog geaccepteerd, maar worden niet atomair verwerkt."
                 }
             ]
         }

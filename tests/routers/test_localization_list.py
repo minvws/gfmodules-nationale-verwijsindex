@@ -213,6 +213,20 @@ class TestQuery:
 
         assert response.status_code == 403
 
+    def test_accepts_and_ignores_the_deprecated_code_param(self, client: TestClient) -> None:
+        client.post("/fhir/List", json=_body(), headers=FHIR_JSON)
+
+        without_code = client.get("/fhir/List", params={"source:identifier": TEST_SOURCE_ID})
+        with_code = client.get("/fhir/List", params={"source:identifier": TEST_SOURCE_ID, "code": "any-domain"})
+
+        assert with_code.status_code == 200
+        assert with_code.json()["total"] == without_code.json()["total"] == 1
+
+    def test_rejects_unknown_params(self, client: TestClient) -> None:
+        response = client.get("/fhir/List", params={"source:identifier": TEST_SOURCE_ID, "_sort": "date"})
+
+        assert response.status_code == 422
+
     def test_localize_query_needs_no_source_match(self, localize_client: TestClient) -> None:
         response = localize_client.get("/fhir/List", params={"subject:identifier": TEST_PSEUDONYM_TOKEN})
 
@@ -404,6 +418,13 @@ class TestDelete:
         client.post("/fhir/List", json=_body(), headers=FHIR_JSON)
 
         response = client.delete("/fhir/List", params={"source:identifier": TEST_SOURCE_ID})
+
+        assert response.status_code == 200
+
+    def test_delete_by_query_ignores_the_deprecated_code_param(self, client: TestClient) -> None:
+        client.post("/fhir/List", json=_body(), headers=FHIR_JSON)
+
+        response = client.delete("/fhir/List", params={"source:identifier": TEST_SOURCE_ID, "code": "any-domain"})
 
         assert response.status_code == 200
 

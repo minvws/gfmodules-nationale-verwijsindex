@@ -44,6 +44,24 @@ class TestRegisterBundle:
         assert entry["response"]["status"] == "201"
         assert entry["resource"]["id"] is not None
 
+    def test_ignores_the_deprecated_code_param_in_a_get_entry(self, client: TestClient) -> None:
+        client.post("/fhir", json=_bundle(_post_entry()), headers=FHIR_JSON)
+
+        response = client.post(
+            "/fhir",
+            json=_bundle({"request": {"method": "GET", "url": "List?source:identifier=SRC-001&code=any-domain"}}),
+            headers=FHIR_JSON,
+        )
+
+        entry = response.json()["entry"][0]
+        assert entry["response"]["status"] == "200"
+        assert entry["resource"]["total"] == 1
+
+    def test_answers_an_unsupported_method_with_405(self, client: TestClient) -> None:
+        response = client.post("/fhir", json=_bundle({"request": {"method": "PUT", "url": "List"}}), headers=FHIR_JSON)
+
+        assert response.json()["entry"][0]["response"]["status"] == "405"
+
     def test_answers_a_batch_with_a_batch_response(self, client: TestClient) -> None:
         response = client.post("/fhir", json=_bundle(_post_entry()), headers=FHIR_JSON)
 

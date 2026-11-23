@@ -203,15 +203,16 @@ class TestRequiredScope:
         assert denied.response.status == "403"
         assert service.calls == []
 
-    def test_unparseable_search_params_require_the_stricter_scope(
+    def test_unparseable_search_params_are_invalid_before_the_scope_check(
         self,
         bundle_service: BundleService,
         service: LocalizationListServiceSpy,
     ) -> None:
+        # Mirrors the standalone List query route, which rejects invalid params with 422 for any scope.
         result = process(bundle_service, make_entry("GET", "List?unsupported=1"), [AuthorizationScope.READ])
 
         assert result.response is not None
-        assert result.response.status == "403"
+        assert result.response.status == "422"
         assert service.calls == []
 
     def test_localize_scope_does_not_grant_read_by_id(
@@ -252,7 +253,7 @@ class TestRequiredScope:
         result = process(bundle_service, make_entry("PUT", ID_URL), ALL_SCOPES)
 
         assert result.response is not None
-        assert result.response.status == "403"
+        assert result.response.status == "405"
         assert result.response.outcome is not None
         assert "not supported" in str(result.response.outcome.model_dump())
         assert service.calls == []
