@@ -58,7 +58,7 @@ def log_invalid_request(status_code: int, reason: str) -> None:
     )
 
 
-def _log_rejected_request(status_code: int, exc: Exception, log_as: LogAs | None) -> None:
+def log_rejected_request(status_code: int, exc: Exception, log_as: LogAs | None) -> None:
     log_rejection(status_code, exc)
     if log_as == "invalid_request":
         log_invalid_request(status_code, summarize_reason(exc))
@@ -67,7 +67,7 @@ def _log_rejected_request(status_code: int, exc: Exception, log_as: LogAs | None
 def handle_mapped_exception(request: Request, exc: Exception) -> JSONResponse:
     spec = spec_for(exc)
     status_code = spec.http_status
-    _log_rejected_request(status_code, exc, spec.log_as)
+    log_rejected_request(status_code, exc, spec.log_as)
 
     if "fhir" in request.url.path:
         fhir_error = FHIRError(severity=spec.severity, code=spec.fhir_code, msg=str(exc))
@@ -87,7 +87,7 @@ def handle_unreadable_body(request: Request, exc: HTTPException) -> JSONResponse
 def handle_request_validation_exception(req: Request, exc: RequestValidationError) -> JSONResponse:
     path = req.url.path
     status_code = 422
-    _log_rejected_request(status_code, exc, "invalid_request")
+    log_rejected_request(status_code, exc, "invalid_request")
     if "fhir" in path:
         issues = []
 
