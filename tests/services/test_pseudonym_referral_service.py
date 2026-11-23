@@ -5,6 +5,7 @@ import pytest
 from gfmodules.logging import LogEvent
 
 from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
+from app.errors.mapping import UNEXPECTED_ERROR_MESSAGE
 from app.logging.events import Log
 from app.models.pseudonym import OprfPseudonym, PseudonymResponse
 from app.models.ura import UraNumber
@@ -145,7 +146,7 @@ def test_localize_logs_an_error_when_it_breaks(
     (fields,) = logged_fields(caplog, Log.LOCALIZATION_ERROR)
     assert fields["levelno"] == logging.ERROR
     assert fields["http_status"] == 500
-    assert fields["error_reason"] == "boom"
+    assert fields["error_reason"] == UNEXPECTED_ERROR_MESSAGE
 
 
 def test_localize_logs_an_error_when_the_crypto_service_fails(
@@ -226,3 +227,74 @@ def test_delete_many_without_pseudonym_removes_referrals_of_the_source(
 
     assert pseudonym_referral_service.delete_many(ura_number, source=SOURCE) == 2
     assert pseudonym_referral_service.query(ura_number)[0] == 1
+
+
+def test_query_logs_a_failure_when_the_pseudonym_is_rejected(
+    rejecting_service: PseudonymReferralService, ura_number: UraNumber, caplog: pytest.LogCaptureFixture
+) -> None:
+    with caplog.at_level(logging.INFO), pytest.raises(PseudonymExchangeError):
+        rejecting_service.query(ura_number, pseudonym=PSEUDONYM)
+
+    (fields,) = logged_fields(caplog, Log.REFERRAL_QUERY_FAILED)
+    assert fields["levelno"] == logging.WARNING
+    assert fields["http_status"] == 400
+
+
+def test_query_logs_an_error_when_the_crypto_service_fails(
+    referral_service: ReferralService,
+    key_info_service: KeyInfoService,
+    ura_number: UraNumber,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    service = _service_with(UnavailableCryptoClient(), referral_service, key_info_service)
+    with caplog.at_level(logging.INFO), pytest.raises(CryptoServiceError):
+        service.query(ura_number, pseudonym=PSEUDONYM)
+
+    (fields,) = logged_fields(caplog, Log.REFERRAL_QUERY_ERROR)
+    assert fields["levelno"] == logging.ERROR
+    assert fields["http_status"] == 502
+
+
+def test_query_without_a_pseudonym_logs_no_failure(
+    pseudonym_referral_service: PseudonymReferralService, ura_number: UraNumber, caplog: pytest.LogCaptureFixture
+) -> None:
+    with caplog.at_level(logging.INFO):
+        pseudonym_referral_service.query(ura_number)
+
+    assert logged_fields(caplog, Log.REFERRAL_QUERY_FAILED) == []
+
+
+def test_delete_many_logs_a_failure_when_the_pseudonym_is_rejected(
+    rejecting_service: PseudonymReferralService, ura_number: UraNumber, caplog: pytest.LogCaptureFixture
+) -> None:
+    with caplog.at_level(logging.INFO), pytest.raises(PseudonymExchangeError):
+        rejecting_service.delete_many(ura_number, pseudonym=PSEUDONYM, source=SOURCE)
+
+    (fields,) = logged_fields(caplog, Log.REFERRALS_DELETE_FAILED)
+    assert fields["levelno"] == logging.WARNING
+    assert fields["http_status"] == 400
+
+
+def test_delete_many_logs_an_error_when_it_breaks(
+    failing_service: PseudonymReferralService, ura_number: UraNumber, caplog: pytest.LogCaptureFixture
+) -> None:
+    with caplog.at_level(logging.INFO), pytest.raises(RuntimeError):
+        failing_service.delete_many(ura_number, pseudonym=PSEUDONYM, source=SOURCE)
+
+    (fields,) = logged_fields(caplog, Log.REFERRALS_DELETE_ERROR)
+    assert fields["levelno"] == logging.ERROR
+    assert fields["http_status"] == 500
+    assert fields["error_reason"] == UNEXPECTED_ERROR_MESSAGE
+
+
+def test_delete_many_logs_no_failure_when_nothing_matches(
+    pseudonym_referral_service: PseudonymReferralService,
+    key_info_service: KeyInfoService,
+    ura_number: UraNumber,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    key_info_service.add_one("nvi-label", "AES_CBC")
+    with caplog.at_level(logging.INFO):
+        assert pseudonym_referral_service.delete_many(ura_number, pseudonym=PSEUDONYM, source=SOURCE) == 0
+
+    assert logged_fields(caplog, Log.REFERRALS_DELETE_FAILED) == []
