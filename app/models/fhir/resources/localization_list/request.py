@@ -64,6 +64,12 @@ class LocalizationListParams(BaseModel):
         openapi_examples=_create_openapi_examples(DEVICE_SYSTEM),
         default=None,
     )
+    code: str | None = Query(
+        alias=CODE_PARAM,
+        default=None,
+        deprecated=True,
+        description="Data domain. Deprecated: accepted for backwards compatibility, but ignored",
+    )
 
     @field_validator("subject", mode="before")
     @classmethod

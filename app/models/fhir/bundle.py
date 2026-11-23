@@ -93,7 +93,7 @@ class BundleLink(FhirBaseModel):
 
 class Bundle(DomainResource, Generic[T]):
     resource_type: Literal["Bundle"] = "Bundle"
-    type: Literal["searchset", "transaction"] = "searchset"
+    type: Literal["searchset", "batch", "batch-response", "transaction"] = "searchset"
     timestamp: datetime | None = Field(default=None)
     total: int | None = None
     link: list[BundleLink] | None = None

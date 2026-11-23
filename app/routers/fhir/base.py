@@ -23,7 +23,9 @@ def register(
     bundle_service: Annotated[BundleService, Depends(get_bundle_service)],
     ctx: Annotated[AuthContext, Depends(get_auth_context)],
 ) -> Any:
-    results_bundle = Bundle[Any](entry=[])
+    # Entries are processed independently, so a batch gets a batch-response. Transaction bundles are still
+    # accepted for backwards compatibility, but are not atomic and keep their previous response type.
+    results_bundle = Bundle[Any](type="batch-response", entry=[]) if data.type == "batch" else Bundle[Any](entry=[])
     valid_bundle = bundle_service.validate_localization_bundle_structure(data)
     if not valid_bundle:
         raise InvalidModelError("Bundle.entry is invalid")

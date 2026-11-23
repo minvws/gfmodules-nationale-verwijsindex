@@ -1,24 +1,34 @@
 {
     "resourceType": "CapabilityStatement",
+    "text": {
+        "status": "generated",
+        "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Nationale Verwijsindex FHIR API (FHIR 4.0.1). Ondersteunt de List resource (create, read, search-type, delete en conditional delete) en Bundle verwerking via POST /fhir.</p></div>"
+    },
     "url": "http://nvi.example.nl/fhir/metadata",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "name": "NVICapabilityStatement",
-    "title": "NVI FHIR API",
+    "title": "Nationale Verwijsindex FHIR API",
     "status": "active",
-    "date": "2024-12-08",
+    "date": "2026-11-23",
     "publisher": "Ministerie van Volksgezondheid, Welzijn en Sport",
+    "description": "FHIR API van de Nationale Verwijsindex (NVI). Zorgaanbieders registreren via List resources dat zij gegevens van een (gepseudonimiseerde) patiënt hebben, en kunnen lokaliseren welke zorgaanbieders gegevens van een patiënt hebben.",
     "kind": "instance",
+    "software": {
+        "name": "gfmodules-national-referral-index"
+    },
     "implementation": {
-        "description": "NVI Master Patient Index FHIR API",
+        "description": "Nationale Verwijsindex FHIR API",
         "url": "https://nvi.example.nl/fhir"
     },
     "fhirVersion": "4.0.1",
     "format": [
+        "application/fhir+json",
         "json"
     ],
     "rest": [
         {
             "mode": "server",
+            "documentation": "Alle endpoints vereisen een geauthenticeerde organisatie. Registreren en verwijderen (POST/DELETE) vereist daarnaast een bron (x-gf-source-id); alleen registraties van de eigen URA en bron kunnen worden verwijderd.",
             "security": {
                 "cors": true,
                 "service": [
@@ -27,69 +37,65 @@
                             {
                                 "system": "http://terminology.hl7.org/CodeSystem/restful-security-service",
                                 "code": "OAuth",
-                                "display": "OAuth2 using SMART-on-FHIR profile"
+                                "display": "OAuth"
                             }
                         ]
                     }
                 ],
-                "description": "OAuth 2.0 met Verifiable Credentials voor organisatie authenticatie. mTLS vereist voor transport security."
+                "description": "OAuth 2.0 met Verifiable Credentials voor organisatie authenticatie, gevalideerd door de NVI gateway. mTLS vereist voor transport security. Benodigde scopes: nvi:create, nvi:read, nvi:delete en nvi:localize."
             },
             "resource": [
                 {
-                    "type": "NVIDataReference",
-                    "profile": "http://vws.nl/fhir/StructureDefinition/NVIDataReference-input",
-                    "supportedProfile": [
-                        "http://vws.nl/fhir/StructureDefinition/NVIDataReference-input",
-                        "http://vws.nl/fhir/StructureDefinition/NVIDataReference-output"
-                    ],
-                    "documentation": "Input profile wordt gebruikt voor POST requests (subject veld verplicht). Output profile wordt gebruikt voor GET/POST responses (subject veld verboden).",
+                    "type": "List",
+                    "documentation": "Lokalisatie-registratie: een List die aangeeft dat de custodian (extensie http://minvws.github.io/generiekefuncties-docs/StructureDefinition/nl-gf-localization-custodian, URA) gegevens heeft over de patiënt in List.subject (pseudoniem, system http://minvws.github.io/generiekefuncties-docs/NamingSystem/nvi-identifier), afkomstig van List.source (Device, system urn:ietf:rfc:3986). Bij create zijn extension (custodian), subject, source, status, mode en emptyReason verplicht. Zoekresultaten worden gepagineerd met _count (paginagrootte, minimaal 1; groter dan het geconfigureerde maximum wordt afgetopt, standaard 50 en maximaal 100) en _offset (startpositie, standaard 0), of via de next/previous links in de Bundle. Onbekende of niet ondersteunde zoekparameters (zoals _sort, _include of _format) worden geweigerd met 422 in plaats van genegeerd.",
                     "interaction": [
                         {
                             "code": "create",
-                            "documentation": "Registreer nieuwe beschikbaarheid. Request valideert tegen input profile, response tegen output profile. Vereist scope: nvi:register"
+                            "documentation": "Registreer een nieuwe List. Bestaat een identieke registratie al, dan wordt die ongewijzigd teruggegeven met status 200 in plaats van 201. De bron in de List moet overeenkomen met de bron van de aanvrager. Vereist scope: nvi:create"
+                        },
+                        {
+                            "code": "read",
+                            "documentation": "Haal een List op aan de hand van id. Vereist scope: nvi:read"
                         },
                         {
                             "code": "search-type",
-                            "documentation": "Zoek eigen registraties. Response valideert tegen output profile (subject veld wordt weggelaten). Vereist scope: nvi:read"
+                            "documentation": "Zoeken met alleen subject:identifier is een lokalisatie over alle zorgaanbieders (vereist scope: nvi:localize). Elke andere combinatie geeft alleen List resources van de eigen URA terug (vereist scope: nvi:read)."
                         },
                         {
                             "code": "delete",
-                            "documentation": "Verwijder registratie. Vereist scope: nvi:register"
+                            "documentation": "Verwijder een List aan de hand van id. Vereist scope: nvi:delete"
                         }
                     ],
+                    "versioning": "no-version",
+                    "readHistory": false,
+                    "updateCreate": false,
+                    "conditionalDelete": "multiple",
                     "searchParam": [
                         {
+                            "name": "subject",
+                            "definition": "http://hl7.org/fhir/SearchParameter/List-subject",
+                            "type": "reference",
+                            "documentation": "Alleen ondersteund met de :identifier modifier , in de vorm `subject:identifier=system|pseudoniem`."
+                        },
+                        {
                             "name": "source",
+                            "definition": "http://hl7.org/fhir/SearchParameter/List-source",
+                            "type": "reference",
+                            "documentation": "Alleen ondersteund met de :identifier modifier , in de vorm `source:identifier=system|device-id`. Moet overeenkomen met de bron van de aanvrager."
+                        },
+                        {
+                            "name": "code",
+                            "definition": "http://hl7.org/fhir/SearchParameter/clinical-code",
                             "type": "token",
-                            "documentation": "URA van de bron organisatie (verplicht)"
-                        },
-                        {
-                            "name": "pseudonym",
-                            "type": "string",
-                            "documentation": "JWE encrypted pseudoniem (verplicht)"
-                        },
-                        {
-                            "name": "oprfKey",
-                            "type": "string",
-                            "documentation": "OPRF deblinding key van BSNk v2 (verplicht)"
-                        },
-                        {
-                            "name": "careContext",
-                            "type": "token",
-                            "documentation": "ZIB code van de zorgcontext (optioneel bij DELETE)"
+                            "documentation": "Verouderd (data domein); wordt geaccepteerd maar genegeerd."
                         }
                     ]
-                },
+                }
+            ],
+            "interaction": [
                 {
-                    "type": "Organization",
-                    "interaction": [],
-                    "operation": [
-                        {
-                            "name": "localize",
-                            "definition": "http://vws.nl/fhir/OperationDefinition/Organization-localize",
-                            "documentation": "Lokaliseer bronnen die gegevens hebben van een patiënt. Vereist scope: nvi:localize"
-                        }
-                    ]
+                    "code": "batch",
+                    "documentation": "POST /fhir met een Bundle van type batch met List entries. Ondersteunde entry requests: POST List, GET List/[id], GET List?[params], DELETE List/[id] en DELETE List?[params]; andere methodes (zoals PUT) en resources worden per entry geweigerd. Entries worden onafhankelijk van elkaar verwerkt en het antwoord is een Bundle van type batch-response met een eigen response per entry. Per entry gelden dezelfde scopes als bij de losse interacties. Bundles van type transaction worden voorlopig nog geaccepteerd, maar worden niet atomair verwerkt."
                 }
             ]
         }

@@ -51,6 +51,9 @@ class BundleService:
             return resolved_url
 
         query = self._validated_query(method, resolved_url)
+        if isinstance(query, ValidationError):
+            return self._invalid_query_entry(index, query)
+
         required_scope = self.required_scope(method, resolved_url, query)
         if required_scope is not None and required_scope not in ctx.scope:
             error: Exception = UnauthorizedScopeError(ctx.scope, required_scope)
@@ -69,8 +72,6 @@ class BundleService:
                 return validated
             resource = validated
 
-        if isinstance(query, ValidationError):
-            return self._invalid_query_entry(index, query)
         params = query
 
         denied = self._deny_mismatched_source(ctx, resource, params, index)
@@ -80,8 +81,10 @@ class BundleService:
         action = self._entry_action(ctx, entry.request, resolved_url, resource, params)
         if action is None:
             return BundleEntry(
-                response=EntryResponse.make_forbidden_response(
-                    msg=f"Bundle.entry.{index}.request.method {method} not supported"
+                response=EntryResponse.make_error_response(
+                    msg=f"Bundle.entry.{index}.request.method {method} not supported",
+                    status="405",
+                    code="not-supported",
                 )
             )
 

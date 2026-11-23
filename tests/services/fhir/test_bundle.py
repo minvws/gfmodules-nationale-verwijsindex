@@ -122,13 +122,15 @@ def test_missing_request_returns_validation_response(bundle_service: BundleServi
     assert result.response.status == "422"
 
 
-def test_unsupported_method_returns_forbidden(bundle_service: BundleService) -> None:
+def test_unsupported_method_returns_method_not_allowed(bundle_service: BundleService) -> None:
     entry = _entry("PUT", "List")
 
     result = _process(bundle_service, entry, index=0)
 
     assert result.response is not None
-    assert result.response.status == "403"
+    assert result.response.status == "405"
+    assert result.response.outcome is not None
+    assert result.response.outcome.issue[0].code == "not-supported"
 
 
 def test_unsupported_resource_in_url_returns_validation(bundle_service: BundleService) -> None:
@@ -328,12 +330,9 @@ class TestEntryFailureMapping:
         assert result.response.outcome is not None
         assert result.response.outcome.issue[0].code == expected_code
 
-    @pytest.mark.parametrize(
-        ("scope", "status"),
-        [(AuthorizationScope.READ, "403"), (AuthorizationScope.LOCALIZE, "422")],
-    )
-    def test_invalid_subject_with_own_source_uses_existing_scope_fallback(
-        self, bundle_service: BundleService, scope: AuthorizationScope, status: str
+    @pytest.mark.parametrize("scope", [AuthorizationScope.READ, AuthorizationScope.LOCALIZE])
+    def test_invalid_subject_with_own_source_is_rejected_as_invalid(
+        self, bundle_service: BundleService, scope: AuthorizationScope
     ) -> None:
         ctx = AuthContext(
             claims=AuthenticationClaims(
@@ -351,13 +350,12 @@ class TestEntryFailureMapping:
         result = bundle_service.process_entry(ctx=ctx, entry=_entry("GET", url), index=0)
 
         assert result.response is not None
-        assert result.response.status == status
+        assert result.response.status == "422"
         assert result.response.outcome is not None
-        if status == "422":
-            assert result.response.outcome.issue[0].code == "invalid"
+        assert result.response.outcome.issue[0].code == "invalid"
         assert "not-a-valid-token!!!" not in str(result.response.outcome.model_dump())
 
-    def test_invalid_subject_system_keeps_stricter_scope_requirement(self, bundle_service: BundleService) -> None:
+    def test_invalid_subject_system_is_rejected_as_invalid_with_read_scope(self, bundle_service: BundleService) -> None:
         ctx = AuthContext(
             claims=AuthenticationClaims(
                 ura_number=AUTH_URA,
@@ -374,7 +372,7 @@ class TestEntryFailureMapping:
         result = bundle_service.process_entry(ctx=ctx, entry=_entry("GET", url), index=0)
 
         assert result.response is not None
-        assert result.response.status == "403"
+        assert result.response.status == "422"
 
     def test_read_of_an_unknown_id_logs_no_event(
         self, bundle_service: BundleService, caplog: pytest.LogCaptureFixture
