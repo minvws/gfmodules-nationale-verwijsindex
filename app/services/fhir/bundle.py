@@ -17,9 +17,9 @@ from app.models.fhir.resources.localization_list.resource import LocalizationLis
 from app.models.ura import UraNumber
 from app.services.auth.auth_context import AuthContextService
 from app.services.exceptions import (
+    BundleTooLargeError,
     InvalidModelError,
     InvalidResourceError,
-    RequestTooLargeError,
     UnauthorizedManagingRequestError,
     UnauthorizedScopeError,
     UnauthorizedSourceError,
@@ -265,7 +265,7 @@ class BundleService:
         if not bundle.entry:
             raise InvalidModelError("Bundle.entry must hold at least one entry")
         if len(bundle.entry) > self.max_entries:
-            raise RequestTooLargeError(f"Bundle.entry holds more than the maximum of {self.max_entries} entries")
+            raise BundleTooLargeError(f"Bundle.entry holds more than the maximum of {self.max_entries} entries")
 
     def resolve_request_url(self, url: str, index: int) -> EntryRequestDto | BundleEntry[LocalizationList]:
         try:

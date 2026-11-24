@@ -1,8 +1,6 @@
 [app]
 # Loglevel can be one of: debug, info, warning, error, critical
 loglevel=debug
-# Maximum size of a request body in bytes, larger requests are rejected before they are parsed
-max_request_body_bytes=1048576
 # Maximum number of entries in a transaction Bundle, larger bundles are rejected
 max_bundle_entries=100
 

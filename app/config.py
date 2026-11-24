@@ -28,7 +28,6 @@ class LogLevel(str, Enum):
 
 class ConfigApp(BaseModel):
     loglevel: LogLevel = Field(default=LogLevel.info)
-    max_request_body_bytes: int = Field(default=1048576, ge=1)
     max_bundle_entries: int = Field(default=100, ge=1)
 
 
