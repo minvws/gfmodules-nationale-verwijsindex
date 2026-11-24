@@ -3,6 +3,8 @@
 loglevel=debug
 # Maximum size of a request body in bytes, larger requests are rejected before they are parsed
 max_request_body_bytes=1048576
+# Maximum number of entries in a transaction Bundle, larger bundles are rejected
+max_bundle_entries=100
 
 [logging]
 # Syslog server as host:port (UDP), empty logs to stdout only
@@ -91,7 +93,3 @@ expected_audiences = https://localhost:8501
 default_page_size = 50
 # Upper limit for `_count`, larger values are clamped to this value
 max_page_size = 100
-
-[bundle]
-# Maximum number of entries in a transaction Bundle, larger bundles are rejected
-max_entries = 100

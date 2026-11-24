@@ -1,3 +1,5 @@
+from starlette.exceptions import HTTPException
+
 from app.models.auth.data import AuthorizationScope
 
 
@@ -92,5 +94,9 @@ class CryptoServiceError(Exception):
     pass
 
 
-class BundleTooLargeError(Exception):
-    pass
+class RequestTooLargeError(HTTPException):
+    def __init__(self, detail: str) -> None:
+        super().__init__(status_code=413, detail=detail)
+
+    def __str__(self) -> str:
+        return self.detail

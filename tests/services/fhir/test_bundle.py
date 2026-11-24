@@ -12,7 +12,7 @@ from app.models.fhir.resources.localization_list.request import LocalizationList
 from app.models.fhir.resources.localization_list.resource import LocalizationList
 from app.models.fhir.resources.operation_outcome.resource import OperationOutcome
 from app.models.ura import UraNumber
-from app.services.exceptions import BundleTooLargeError, InvalidModelError
+from app.services.exceptions import InvalidModelError, RequestTooLargeError
 from app.services.fhir.bundle import BundleService
 from app.services.fhir.localization_list import LocalizationListService
 from app.services.key_info import KeyInfoService
@@ -172,7 +172,7 @@ class TestBundleStructure:
     def test_bundle_over_the_maximum_is_too_large(self, bundle_service: BundleService) -> None:
         bundle: Bundle[Any] = Bundle(entry=[BundleEntry(), BundleEntry(), BundleEntry()])
 
-        with pytest.raises(BundleTooLargeError, match="maximum of 2 entries"):
+        with pytest.raises(RequestTooLargeError, match="maximum of 2 entries"):
             bundle_service.validate_entry_count(bundle)
 
 
