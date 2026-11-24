@@ -163,7 +163,7 @@ class TestBundleStructure:
     def test_empty_bundle_is_invalid(self, bundle_service: BundleService) -> None:
         bundle: Bundle[Any] = Bundle(entry=[])
 
-        with pytest.raises(InvalidModelError):
+        with pytest.raises(InvalidModelError, match="at least one entry"):
             bundle_service.validate_entry_count(bundle)
 
     def test_bundle_up_to_the_maximum_is_valid(self, bundle_service: BundleService) -> None:

@@ -263,7 +263,7 @@ class BundleService:
 
     def validate_entry_count(self, bundle: Bundle[Any]) -> None:
         if not bundle.entry:
-            raise InvalidModelError("Bundle.entry is invalid")
+            raise InvalidModelError("Bundle.entry must hold at least one entry")
         if len(bundle.entry) > self.max_entries:
             raise RequestTooLargeError(f"Bundle.entry holds more than the maximum of {self.max_entries} entries")
 
