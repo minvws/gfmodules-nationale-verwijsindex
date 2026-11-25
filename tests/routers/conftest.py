@@ -135,7 +135,7 @@ def make_test_client(
     app.dependency_overrides[get_pseudonym_referral_service] = lambda: pseudonym_referral_service
     app.dependency_overrides[get_localization_list_service] = lambda: localization_list_service
     app.dependency_overrides[get_bundle_service] = lambda: BundleService(
-        localization_list_service, max_entries=get_test_config().app.max_bundle_entries
+        localization_list_service, max_entries=get_test_config().fhir.max_bundle_entries
     )
 
     def override_auth_ctx(request: Request) -> AuthContext:

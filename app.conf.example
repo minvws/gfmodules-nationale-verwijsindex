@@ -1,8 +1,6 @@
 [app]
 # Loglevel can be one of: debug, info, warning, error, critical
 loglevel=debug
-# Maximum number of entries in a transaction Bundle, larger bundles are rejected
-max_bundle_entries=100
 
 [logging]
 # Syslog server as host:port (UDP), empty logs to stdout only
@@ -91,3 +89,7 @@ expected_audiences = https://localhost:8501
 default_page_size = 50
 # Upper limit for `_count`, larger values are clamped to this value
 max_page_size = 100
+
+[fhir]
+# Maximum number of entries in a transaction Bundle, larger bundles are rejected
+max_bundle_entries = 100

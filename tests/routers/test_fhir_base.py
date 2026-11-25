@@ -48,7 +48,7 @@ class TestRegisterBundle:
         assert entry["resource"]["id"] is not None
 
     def test_rejects_a_bundle_over_the_entry_limit_without_processing_it(self, client: TestClient) -> None:
-        entries = [_post_entry()] * (get_test_config().app.max_bundle_entries + 1)
+        entries = [_post_entry()] * (get_test_config().fhir.max_bundle_entries + 1)
         with capture_records("app") as records:
             response = client.post("/fhir", json=_bundle(*entries), headers=FHIR_JSON)
 
