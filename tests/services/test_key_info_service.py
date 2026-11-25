@@ -1,12 +1,49 @@
 import pytest
 
+from app.config import ConfigCryptoServiceApi
+from app.container import create_key_info_service
 from app.db.db import Database
 from app.db.models.key_info import KeyInfoEntity
 from app.db.models.referral import ReferralEntity
 from app.db.repository.key_info_repository import KeyInfoRepository
+from app.debug.crypto_service_api_client_mock import CryptoServiceApiClientMock
+from app.models.pseudonym import OprfPseudonym
+from app.models.ura import UraNumber
 from app.services.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.services.key_info import KeyInfoService
+from app.services.pseudonym_referral_service import PseudonymReferralService
+from app.services.pseudonym_resolver import PseudonymResolver
+from app.services.referral_service import ReferralService
 from tests.conftest import OrganizationFor
+
+DISABLED_CRYPTO_SERVICE = ConfigCryptoServiceApi(enabled=False, endpoint="http://crypto-service")
+
+
+def test_registration_works_with_the_crypto_service_disabled(
+    database: Database, referral_service: ReferralService, ura_number: UraNumber
+) -> None:
+    resolver = PseudonymResolver(
+        crypto_client=CryptoServiceApiClientMock(),
+        key_info_service=create_key_info_service(DISABLED_CRYPTO_SERVICE, database),
+    )
+    service = PseudonymReferralService(referral_service=referral_service, pseudonym_resolver=resolver)
+
+    referral, created = service.register(OprfPseudonym(pseudonym="JWE", oprf_key="BF"), ura_number, "SomeDevice")
+
+    assert created is True
+    assert referral.key_id is not None
+
+
+def test_crypto_service_disabled_stores_one_key_and_reuses_it(database: Database) -> None:
+    key_info_service = create_key_info_service(DISABLED_CRYPTO_SERVICE, database)
+
+    first = key_info_service.get_active_key()
+    second = key_info_service.get_active_key()
+
+    assert first.id is not None
+    assert second.id == first.id
+    with database.get_db_session() as session:
+        assert len(session.get_repository(KeyInfoRepository).find_many()) == 1
 
 
 def test_add_one_should_succeed(key_info_service: KeyInfoService, mock_key_info: KeyInfoEntity) -> None:
