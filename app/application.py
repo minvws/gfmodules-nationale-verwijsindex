@@ -17,6 +17,7 @@ from app.auth import auth_log_context, get_auth_ctx
 from app.config import (
     _ENVIRONMENT_CONFIG_PATH_NAME,
     _PATH,
+    Config,
     get_config,
 )
 from app.errors.handlers import register_exceptions
@@ -146,17 +147,30 @@ def _set_page_sizes(param: dict[str, Any], default_page_size: int, max_page_size
             option["maximum"] = max_page_size
 
 
-def _document_page_sizes(app: FastAPI, default_page_size: int, max_page_size: int) -> None:
+def _document_page_sizes(schema: dict[str, Any], default_page_size: int, max_page_size: int) -> None:
     """
     Shows the configured page sizes on the `_count` parameter in the OpenAPI schema. The maximum is not
     validated on the parameter itself: FHIR treats `_count` as a hint, so a larger value is capped instead of rejected.
     """
+    for param in _count_params(schema):
+        _set_page_sizes(param, default_page_size, max_page_size)
+
+
+def _document_bundle_entry_limits(schema: dict[str, Any], max_bundle_entries: int) -> None:
+    ref = schema["paths"]["/fhir"]["post"]["requestBody"]["content"]["application/json"]["schema"]["$ref"]
+    entry = schema["components"]["schemas"][ref.rsplit("/", 1)[-1]]["properties"]["entry"]
+    entry["minItems"] = 1
+    entry["maxItems"] = max_bundle_entries
+
+
+def _document_limits(app: FastAPI, config: Config) -> None:
     generate = app.openapi
 
     def openapi() -> dict[str, Any]:
         if app.openapi_schema is None:
-            for param in _count_params(generate()):
-                _set_page_sizes(param, default_page_size, max_page_size)
+            schema = generate()
+            _document_page_sizes(schema, config.pagination.default_page_size, config.pagination.max_page_size)
+            _document_bundle_entry_limits(schema, config.fhir.max_bundle_entries)
         return app.openapi_schema  # type: ignore[return-value]
 
     app.openapi = openapi  # type: ignore[method-assign]
@@ -194,7 +208,7 @@ def setup_fastapi() -> FastAPI:
         fastapi.include_router(router, dependencies=[Depends(get_auth_ctx), Depends(auth_log_context)])
 
     register_exceptions(fastapi)
-    _document_page_sizes(fastapi, config.pagination.default_page_size, config.pagination.max_page_size)
+    _document_limits(fastapi, config)
 
     fastapi.add_middleware(RequestContextMiddleware)
 
