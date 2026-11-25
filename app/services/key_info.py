@@ -69,25 +69,14 @@ class KeyInfoService:
             session.commit()
 
 
+MOCK_KEY_LABEL = "mock"
+
+
 class KeyInfoServiceMock(KeyInfoService):
-    def __init__(self) -> None:
-        pass
-
-    def get_one(self, label: str) -> KeyInfoEntity:
-        logger.info("Get mock key from mock service")
-        return KeyInfoEntity(label=label, mechanism="mock")
-
     def get_active_key(self) -> KeyInfoEntity:
-        logger.info("Get mock key from mock service")
-        return KeyInfoEntity(label="mock", mechanism="mock")
-
-    def get_many(self, mechanism: str | None = None) -> list[KeyInfoEntity]:
-        logger.info("Get mock key from mock service")
-        return [KeyInfoEntity(label="mock", mechanism=mechanism if mechanism else "mock")]
-
-    def add_one(self, label: str, mechanism: str) -> KeyInfoEntity:
-        logger.info("Add mock key to mock service")
-        return KeyInfoEntity(label=label, mechanism=mechanism)
-
-    def delete_one(self, label: str) -> None:
-        logger.info("Delete key from mock service")
+        with self.database.get_db_session() as session:
+            repo = session.get_repository(KeyInfoRepository)
+            stored = repo.find_one(MOCK_KEY_LABEL)
+            if stored is not None:
+                return stored
+            return repo.add_one(KeyInfoEntity(label=MOCK_KEY_LABEL, mechanism=MOCK_KEY_LABEL))

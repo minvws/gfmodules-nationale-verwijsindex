@@ -79,7 +79,7 @@ def container_config(binder: inject.Binder) -> None:
 def create_key_info_service(config: ConfigCryptoServiceApi, db: Database) -> KeyInfoService:
     if config.enabled:
         return KeyInfoService(db)
-    return KeyInfoServiceMock()
+    return KeyInfoServiceMock(db)
 
 
 def create_crypto_service_api_client(
