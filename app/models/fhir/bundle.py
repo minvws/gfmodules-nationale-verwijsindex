@@ -55,10 +55,8 @@ class EntryResponse(FhirBaseModel):
         )
 
     @classmethod
-    def make_good_response(cls, msg: str | None = None, status: str = "200") -> Self:
-        message = msg if msg else "Resource has been modified successfully"
-
-        return cls(status=status, outcome=OperationOutcome.make_good_outcome(msg=message))
+    def make_good_response(cls, msg: str, status: str = "200") -> Self:
+        return cls(status=status, outcome=OperationOutcome.make_good_outcome(msg=msg))
 
     @classmethod
     def make_error_response(cls, msg: str, status: str, code: str) -> Self:
