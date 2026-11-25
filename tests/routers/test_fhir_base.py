@@ -53,7 +53,7 @@ class TestRegisterBundle:
             response = client.post("/fhir", json=_bundle(*entries), headers=FHIR_JSON)
 
         assert response.status_code == 413
-        assert response.json()["issue"][0]["code"] == "too-costly"
+        assert response.json()["issue"][0]["code"] == "too-long"
         assert_event_emitted(records, Log.INVALID_REQUEST, http_status=413)
         assert records.for_event(Log.REGISTERED_REFERRAL) == []
 
