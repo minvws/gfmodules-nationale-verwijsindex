@@ -453,6 +453,30 @@ class TestDeleteErrorMapping:
         assert "internal detail" not in message
 
 
+class TestEntrySuccessMessage:
+    @pytest.mark.parametrize(
+        ("url", "scope", "expected_message"),
+        [
+            (QUERY_URL, AuthorizationScope.LOCALIZE, "Localized successfully"),
+            (SOURCE_QUERY_URL, AuthorizationScope.READ, "Search has been performed successfully"),
+        ],
+    )
+    def test_search_entry_reports_what_was_searched(
+        self,
+        bundle_service: BundleService,
+        url: str,
+        scope: AuthorizationScope,
+        expected_message: str,
+    ) -> None:
+        result = process(bundle_service, make_entry("GET", url), [scope])
+
+        assert result.response is not None
+        assert result.response.status == "200"
+        assert result.response.outcome is not None
+        assert result.response.outcome.issue[0].details is not None
+        assert result.response.outcome.issue[0].details.text == expected_message
+
+
 def _event_ids(caplog: pytest.LogCaptureFixture) -> list[str]:
     return [r.event_id for r in caplog.records if hasattr(r, "event_id")]
 

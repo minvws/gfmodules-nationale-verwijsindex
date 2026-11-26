@@ -127,11 +127,16 @@ class BundleService:
 
                 query_params = params
                 assert isinstance(query_params, LocalizationListSearchParams)
+                message = (
+                    "Localized successfully"
+                    if query_params.is_localize_params()
+                    else "Search has been performed successfully"
+                )
                 return lambda: BundleEntry(
                     resource=self.localization_list_service.query(
                         query_params, authenticated_ura, request_url=request.url
                     ),
-                    response=EntryResponse.make_good_response(),
+                    response=EntryResponse.make_good_response(message),
                 )
 
             case "POST":
