@@ -24,13 +24,14 @@ logger = logging.getLogger(__name__)
 
 _DENIAL_STATUSES = frozenset({401, 403})
 MAX_REASON_LENGTH = 500
+MAX_VALIDATION_ISSUES = 100
 
 
 def summarize_reason(exc: Exception) -> str:
     if isinstance(exc, (RequestValidationError, ValidationError)):
         reasons = [
             f"{'.'.join(str(loc) for loc in err.get('loc', ()))}: {err.get('msg', '')}".strip(" :")
-            for err in exc.errors()
+            for err in exc.errors()[:MAX_VALIDATION_ISSUES]
         ]
         reason = "; ".join(r for r in reasons if r) or "validation error"
     else:
@@ -88,10 +89,11 @@ def handle_request_validation_exception(req: Request, exc: RequestValidationErro
     path = req.url.path
     status_code = 422
     log_rejected_request(status_code, exc, "invalid_request")
+    errors = exc.errors()[:MAX_VALIDATION_ISSUES]
     if "fhir" in path:
         issues = []
 
-        for err in exc.errors():
+        for err in errors:
             issues.append(
                 OperationOutcomeIssue(
                     severity="error",
@@ -108,7 +110,7 @@ def handle_request_validation_exception(req: Request, exc: RequestValidationErro
             headers={"Content-Type": "application/fhir+json"},
         )
 
-    return JSONResponse(status_code=status_code, content=exc.errors())
+    return JSONResponse(status_code=status_code, content=errors)
 
 
 @restore_request_context

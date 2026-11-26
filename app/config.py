@@ -107,6 +107,10 @@ class ConfigPagination(BaseModel):
         return self
 
 
+class ConfigFhir(BaseModel):
+    max_bundle_entries: int = Field(default=100, ge=1)
+
+
 class ConfigLogging(GFConfigLogging):
     _split_console_streams = field_validator("console_streams", mode="before")(split_comma_separated())
     _split_syslog_streams = field_validator("syslog_streams", mode="before")(split_comma_separated())
@@ -121,6 +125,7 @@ class Config(BaseModel):
     uvicorn: ConfigUvicorn
     authorization_headers: ConfigAuthorizationHeaders
     pagination: ConfigPagination = Field(default_factory=ConfigPagination)
+    fhir: ConfigFhir = Field(default_factory=ConfigFhir)
 
 
 def read_ini_file(path: str) -> Any:

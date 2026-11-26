@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.testclient import TestClient
 from gfmodules.logging.middleware import RequestContext
 from gfmodules.logging.testing import assert_event_emitted, capture_records
@@ -12,6 +13,7 @@ from pydantic import BaseModel, ValidationError
 from app.errors import handlers
 from app.errors.handlers import (
     MAX_REASON_LENGTH,
+    MAX_VALIDATION_ISSUES,
     handle_unhandled_exception,
     log_invalid_request,
     register_exceptions,
@@ -151,6 +153,11 @@ class TestSummarizeReason:
     def test_cuts_a_reason_off_at_the_maximum_length(self) -> None:
         assert summarize_reason(RuntimeError("x" * (MAX_REASON_LENGTH + 1))) == "x" * MAX_REASON_LENGTH
 
+    def test_summarizes_only_the_first_validation_issues(self) -> None:
+        errors = [{"loc": (index,), "msg": ""} for index in range(MAX_VALIDATION_ISSUES + 1)]
+
+        assert summarize_reason(RequestValidationError(errors)).endswith("98; 99")
+
 
 class TestRequestValidationHandler:
     def test_fhir_path_renders_operation_outcome_issues(self) -> None:
@@ -167,6 +174,18 @@ class TestRequestValidationHandler:
 
         assert resp.status_code == 422
         assert isinstance(resp.json(), list)
+
+    def test_fhir_path_caps_the_number_of_issues(self) -> None:
+        resp = _client().post("/fhir/body", json={"values": ["x"] * (MAX_VALIDATION_ISSUES + 1)})
+
+        assert resp.status_code == 422
+        assert len(resp.json()["issue"]) == MAX_VALIDATION_ISSUES
+
+    def test_rest_path_caps_the_number_of_errors(self) -> None:
+        resp = _client().post("/rest/body", json={"values": ["x"] * (MAX_VALIDATION_ISSUES + 1)})
+
+        assert resp.status_code == 422
+        assert len(resp.json()) == MAX_VALIDATION_ISSUES
 
     def test_marks_non_missing_errors_as_invalid(self) -> None:
         resp = _client().get("/fhir/validated", params={"required": "not-an-int"})

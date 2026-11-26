@@ -12,6 +12,7 @@ from app.services.key_info import KeyInfoService
 from app.services.referral_service import ReferralService
 from tests.conftest import TEST_PSEUDONYM_TOKEN, make_list_resource
 from tests.routers.conftest import TEST_SOURCE_ID, TEST_URA, make_auth_context, make_test_client
+from tests.test_config import get_test_config
 
 FHIR_JSON = {"Content-Type": "application/fhir+json"}
 
@@ -45,6 +46,16 @@ class TestRegisterBundle:
         entry = response.json()["entry"][0]
         assert entry["response"]["status"] == "201"
         assert entry["resource"]["id"] is not None
+
+    def test_rejects_a_bundle_over_the_entry_limit_without_processing_it(self, client: TestClient) -> None:
+        entries = [_post_entry()] * (get_test_config().fhir.max_bundle_entries + 1)
+        with capture_records("app") as records:
+            response = client.post("/fhir", json=_bundle(*entries), headers=FHIR_JSON)
+
+        assert response.status_code == 413
+        assert response.json()["issue"][0]["code"] == "too-long"
+        assert_event_emitted(records, Log.INVALID_REQUEST, http_status=413)
+        assert records.for_event(Log.REGISTERED_REFERRAL) == []
 
     def test_rejects_an_empty_bundle(self, client: TestClient) -> None:
         response = client.post("/fhir", json=_bundle(), headers=FHIR_JSON)

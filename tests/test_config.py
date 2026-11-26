@@ -7,6 +7,7 @@ from app.config import (
     ConfigAuthorizationHeaders,
     ConfigCryptoServiceApi,
     ConfigDatabase,
+    ConfigFhir,
     ConfigLogging,
     ConfigPagination,
     ConfigTelemetry,
@@ -62,6 +63,14 @@ def test_pagination_defaults_when_the_section_is_missing() -> None:
 
     assert config.pagination.default_page_size == 50
     assert config.pagination.max_page_size == 100
+
+
+def test_bundle_entry_limit_defaults_when_the_section_is_missing() -> None:
+    assert get_test_config().fhir.max_bundle_entries == 100
+
+
+def test_the_example_config_reads_the_bundle_entry_limit_from_the_fhir_section() -> None:
+    assert ConfigFhir.model_validate(read_ini_file("app.conf.example")["fhir"]).max_bundle_entries == 100
 
 
 def test_pagination_rejects_a_default_larger_than_the_maximum() -> None:
